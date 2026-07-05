@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWE SuperCard Offline V0.10.2 - Trade XP</title> 
+    <style>
+        /* CSS GRAFIC PREMIUM */
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+        
+        body { 
+            font-family: 'Oswald', 'Impact', sans-serif; 
+            background: radial-gradient(circle at top, #1a2a3a 0%, #000000 100%); 
+            color: white; margin: 0; padding: 0; user-select: none; min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, #111, #000); 
+            padding: 12px 40px; border-bottom: 3px solid #333; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.9);
+        }
+        
+        .tier-container { display: flex; flex-direction: column; align-items: center; }
+        .tier-text { font-size: 24px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 10px currentColor; }
+        .tier-bar-bg { width: 320px; height: 20px; background: #222; border: 2px solid #555; border-radius: 8px; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 5px #000; position: relative;}
+        .tier-bar-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.5s ease; }
+        .tier-numbers { position: absolute; width: 100%; text-align: center; font-size: 13px; top: 0; left: 0; line-height: 20px; font-family: Arial; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000;}
+
+        .badge { background: #1a1a1a; padding: 10px 18px; border-radius: 8px; border: 1px solid #444; font-size: 22px; display: flex; gap: 18px;}
+        
+        .screen { display: none; padding: 24px; max-width: 1300px; margin: auto; }
+        .screen.active { display: block; animation: fadeIn 0.4s ease; }
+        
+        .menu-container { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-top: 50px; }
+        .menu-btn { 
+            background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; 
+            border: 2px solid #555; padding: 22px 34px; font-size: 22px; font-family: inherit;
+            cursor: pointer; border-radius: 12px; text-transform: uppercase; font-weight: bold; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.6); transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 200px;
+        }
+        .menu-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.9); border-color: #f1c40f; }
+        .btn-play { background: linear-gradient(135deg, #d35400, #c0392b); border-color: #f1c40f; font-size: 26px; }
+        .btn-play:hover { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .btn-danger { background: linear-gradient(135deg, #c0392b, #8e44ad); border-color: #fff; font-size: 15px; padding: 11px 22px;}
+        
+        .card-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 15px; }
+        .card { 
+            width: 158px; height: 295px; background: #111; border-radius: 12px; 
+            position: relative; cursor: pointer; display: flex; flex-direction: column;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.8); overflow: hidden; border: 3px solid #fff;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: scale(1.06); z-index: 10; }
+        .card.used { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
+        
+        .rarity-Common { border-color: #95a5a6; background: linear-gradient(135deg, #7f8c8d, #2c3e50); box-shadow: 0 0 5px #95a5a6; }
+        .rarity-Uncommon { border-color: #2ecc71; background: linear-gradient(135deg, #27ae60, #145a32); box-shadow: 0 0 8px #2ecc71;}
+        .rarity-Rare { border-color: #3498db; background: linear-gradient(135deg, #2980b9, #154360); box-shadow: 0 0 10px #3498db;}
+        .rarity-SuperRare { border-color: #00bcd4; background: linear-gradient(135deg, #0097a7, #004d40); box-shadow: 0 0 12px #00bcd4;}
+        .rarity-UltraRare { border-color: #e040fb; background: linear-gradient(135deg, #d500f9, #4a148c); box-shadow: 0 0 15px #e040fb;}
+        .rarity-Epic { border-color: #9b59b6; background: linear-gradient(135deg, #8e44ad, #4a235a); box-shadow: 0 0 15px #9b59b6;}
+        .rarity-Legendary { border-color: #f1c40f; background: linear-gradient(135deg, #f39c12, #784212); box-shadow: 0 0 20px #f1c40f;}
+        .rarity-Survivor { border-color: #e74c3c; background: linear-gradient(135deg, #c0392b, #641e16); box-shadow: 0 0 25px #e74c3c;}
+        .rarity-Support { border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
+
+        .card img { width: 100%; height: 124px; object-fit: cover; border-bottom: 2px solid #000; }
+        .card-name-plate { 
+            background: linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0.6)); 
+            border-top: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3);
+            text-align: center; font-size: 12px; font-weight: bold; padding: 4px 5px;
+            position: relative; z-index: 2; margin-top: -15px; text-shadow: 1px 1px 2px #000;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 4px 6px; font-size: 11px; font-family: 'Arial', sans-serif;}
+        .stat { background: rgba(0,0,0,0.8); padding: 3px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.15);}
+        .stat-highlight { color: #fff; background: #e67e22; font-weight: bold; border-color: #f1c40f; transform: scale(1.05); }
+        
+        .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
+        .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; left: 4px; right: auto; }
+        .trade-panel { background: rgba(0,0,0,0.7); border: 1px solid #444; border-radius: 12px; padding: 15px; margin: 15px auto; max-width: 1100px; text-align: center; }
+        .trade-btn { margin: 5px; padding: 12px 20px; font-size: 16px; }
+        .card.trade-target { box-shadow: 0 0 25px #3498db; border-color: #3498db !important; }
+        .card.trade-sacrifice { box-shadow: 0 0 25px #e74c3c; border-color: #e74c3c !important; }
+        
+        .card-footer { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 6px; color: #bbb; }
+        .xp-bar { height: 6px; background: #000; margin: 3px 6px 0; border-radius: 3px; border: 1px solid #444; position: relative;}
+        .xp-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); width: 0%; }
+        .xp-text { text-align: center; font-size: 9px; color: #fff; font-family: Arial; margin-top: 1px; font-weight: bold;}
+
+        .match-arena { 
+            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), radial-gradient(circle, #2a2a2a, #000);
+            border: 4px solid #444; border-radius: 20px; box-shadow: inset 0 0 50px #000, 0 10px 20px rgba(0,0,0,0.5); 
+            padding: 30px; display: flex; justify-content: space-between; align-items: center;
+            min-height: 280px; position: relative; margin: 20px 0; overflow: hidden;
+        }
+        .vs-badge { 
+            font-size: 50px; font-style: italic; color: #e74c3c; text-shadow: 3px 3px 0 #fff, 0 0 30px red;
+            font-weight: bold; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5;
+        }
+        .arena-side { display: flex; gap: 10px; width: 45%; justify-content: center; z-index: 2;}
+        
+        /* ANIMAȚII LUPTĂ */
+        @keyframes clashLeft { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(60px) scale(1.1) rotate(5deg); } 50% { transform: translateX(-10px) scale(1); } 70% { transform: translateX(60px) scale(1.1) rotate(5deg); } 100% { transform: translateX(0) scale(1); } }
+        @keyframes clashRight { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 50% { transform: translateX(10px) scale(1); } 70% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 100% { transform: translateX(0) scale(1); } }
+        .anim-clash-left { animation: clashLeft 0.8s ease-in-out; }
+        .anim-clash-right { animation: clashRight 0.8s ease-in-out; }
+        .slide-in-left { animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideInLeft { 0% { transform: translateX(-150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes slideInRight { 0% { transform: translateX(150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { 0% { transform: scale(0.1); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+        #draft-board-grid { display: grid; grid-template-columns: repeat(5, 1fr) ; gap: 10px; max-width: 800px; margin: 20px auto; }
+        .draft-card { 
+            background: linear-gradient(135deg, #2c3e50, #1a252f); border: 2px solid #555; 
+            height: 90px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; 
+            justify-content: center; font-size: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .draft-card::before { content: "W"; color: rgba(255,255,255,0.05); font-size: 60px; position: absolute; }
+        .draft-card:hover { border-color: #3498db; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(52, 152, 219, 0.4); }
+        .draft-card.revealed { background: #111; border-color: #333; cursor: default; transform: none; box-shadow: inset 0 0 10px #000; }
+        .draft-card.revealed::before { content: ""; }
+
+        /* SISTEM NOTIFICĂRI NOU */
+        #game-notification {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9999; display: flex;
+            justify-content: center; align-items: center; transition: opacity 0.3s ease;
+        }
+        #game-notification.hidden { opacity: 0; pointer-events: none; }
+        .notification-content {
+            background: linear-gradient(135deg, #2c3e50, #000); color: white;
+            padding: 30px 50px; border-radius: 15px; font-size: 26px; font-weight: bold;
+            text-align: center; border: 3px solid #f1c40f; box-shadow: 0 0 30px #f1c40f;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+        .notification-content::after {
+            content: "TAP TO SKIP";
+            display: block;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 2px;
+            margin-top: 12px;
+        }
+        #game-notification { cursor: pointer; }
+        .section-title { text-align: center; color: #f1c40f; border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;}
+        .card.deck-edit-in { box-shadow: 0 0 20px #2ecc71; border-color: #2ecc71 !important; }
+        .card.deck-edit-out:hover { box-shadow: 0 0 15px #3498db; border-color: #3498db !important; }
+        .card.deck-edit-full { opacity: 0.5; pointer-events: none; }
+        .card-slot-label {
+            position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #f1c40f; font-size: 10px;
+            padding: 1px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;
+            font-family: Arial; font-weight: bold; letter-spacing: 1px;
+        }
+
+        /* ABILITĂȚI SPECIALE PE CARTE */
+        .card-ability {
+            background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(25,20,5,0.95));
+            border-top: 1px solid rgba(255,200,0,0.35);
+            padding: 4px 6px 5px; text-align: center;
+            flex-shrink: 0;
+        }
+        .ability-name { 
+            display: block; color: #f1c40f; font-size: 10px; font-weight: bold; 
+            font-family: 'Oswald', sans-serif; letter-spacing: 0.5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+        .ability-stats-row {
+            display: flex; justify-content: center; gap: 4px; margin-top: 3px;
+        }
+        .ability-stat-badge {
+            background: rgba(241,196,15,0.18); border: 1px solid rgba(241,196,15,0.5);
+            color: #ffe066; font-size: 10px; font-family: Arial; font-weight: bold;
+            border-radius: 3px; padding: 1px 5px; letter-spacing: 0.5px;
+        }
+        .ability-icon-small { font-size: 11px; margin-right: 3px; }
+        .ability-active-flash { 
+            animation: abilityFlash 0.6s ease-in-out;
+            border-color: #f1c40f !important;
+            box-shadow: 0 0 25px #f1c40f, inset 0 0 15px rgba(241,196,15,0.3) !important;
+        }
+        @keyframes abilityFlash {
+            0% { box-shadow: 0 0 5px #f1c40f; }
+            50% { box-shadow: 0 0 40px #f1c40f, 0 0 80px #f39c12; }
+            100% { box-shadow: 0 0 15px #f1c40f; }
+        }
+
+        /* SUPPORT CARD - contur verde în loc de popup */
+        .card.support-active {
+            border-color: #2ecc71 !important;
+            box-shadow: 0 0 25px #2ecc71, inset 0 0 15px rgba(46,204,113,0.2) !important;
+            transform: translateY(-8px) scale(1.05);
+        }
+        .card.support-ready {
+            border-color: #2ecc71 !important;
+            box-shadow: 0 0 12px #2ecc71 !important;
+            animation: supportPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes supportPulse {
+            0%, 100% { box-shadow: 0 0 8px #2ecc71; }
+            50% { box-shadow: 0 0 20px #2ecc71, 0 0 35px rgba(46,204,113,0.4); }
+        }
+
+        /* CĂRȚI INDISPONIBILE ÎN LUPTĂ - mai întunecate */
+        .card.battle-inactive {
+            opacity: 0.25 !important;
+            filter: grayscale(80%) brightness(0.4) !important;
+            pointer-events: none !important;
+            transform: none !important;
+        }
+        .card.battle-inactive:hover { transform: none !important; }
+
+        /* BANNER TIP LUPTĂ - mai vizibil */
+        .match-type-banner {
+            text-align: center;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 4px #000;
+            border: 2px solid;
+            animation: bannerGlow 2s ease-in-out infinite;
+        }
+        .match-type-banner.divas {
+            background: linear-gradient(135deg, #8e1a5e, #c0392b, #8e1a5e);
+            border-color: #ff69b4;
+            color: #ffb3da;
+            box-shadow: 0 0 20px rgba(255,105,180,0.5);
+        }
+        .match-type-banner.divas::before { content: "👯 "; }
+        .match-type-banner.divas::after { content: " 👯"; }
+        .match-type-banner.superstar {
+            background: linear-gradient(135deg, #1a3a5e, #154360, #1a3a5e);
+            border-color: #3498db;
+            color: #aad4f5;
+            box-shadow: 0 0 20px rgba(52,152,219,0.5);
+        }
+        .match-type-banner.superstar::before { content: "🤼 "; }
+        .match-type-banner.superstar::after { content: " 🤼"; }
+        @keyframes bannerGlow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+
+        /* NOTIFICARE ABILITATE ACTIVATĂ */
+        .ability-notif {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #000, #1a1a0a);
+            border: 2px solid #f1c40f; border-radius: 12px;
+            padding: 10px 20px; color: #f1c40f; font-size: 15px; font-weight: bold;
+            z-index: 9998; text-align: center; box-shadow: 0 0 20px rgba(241,196,15,0.5);
+            animation: abilityNotifIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+        }
+        @keyframes abilityNotifIn {
+            0% { transform: translateX(-50%) translateY(50px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-notification" class="hidden">
+        <div class="notification-content" id="notification-text"></div>
+    </div>
+
+    <header>
+        <div style="font-size: 26px; text-shadow: 2px 2px #000; display:flex; align-items:center; gap:10px;">
+            🔥 SUPERCARD
+        </div>
+        
+        <div class="tier-container">
+            <div class="tier-text" id="tier-name" style="color:#fff;">CALCULATING...</div>
+            <div class="tier-bar-bg">
+                <div class="tier-bar-fill" id="tier-bar"></div>
+                <div class="tier-numbers" id="tier-numbers-display">0 / 0</div>
+            </div>
+            <div style="font-size: 11px; color:#aaa; margin-top:2px;">(Rank based on top 6 cards)</div>
+        </div>
+
+        <div class="badge">
+            <span style="color:gold;">💰 <span id="coins-display">0</span></span>
+            <span style="color:#3498db;">🎴 Picks: <span id="picks-display">0</span></span>
+
+        </div>
+    </header>
+
+    <div id="main-menu" class="screen active">
+        <div class="menu-container">
+            <button class="menu-btn btn-play" onclick="showOpponentSelect()">
+                <span style="font-size: 35px;">⚔️</span> EXHIBITION
+            </button>
+            <button class="menu-btn" onclick="showScreen('deck-screen'); renderDeck()">
+                <span style="font-size: 35px;">🗂️</span> Deck & Training
+            </button>
+            <button class="menu-btn" onclick="showScreen('draft-board-screen'); renderDraftBoard()">
+                <span style="font-size: 35px;">🎁</span> Draft Board
+            </button>
+            <button class="menu-btn" onclick="showScreen('store-screen')">
+                <span style="font-size: 35px;">🛒</span> Shop
+            </button>
+            <button class="menu-btn btn-danger" onclick="resetGamePrompt()" style="min-width:100px; padding: 10px;">
+                🔄 HARD RESET
+            </button>
+        </div>
+    </div>
+
+    <div id="opp-select-screen" class="screen">
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 20px;" onclick="showScreen('main-menu')">⬅️ BACK TO MENU</button>
+        <h2 class="section-title">CHOOSE YOUR OPPONENT</h2>
+        <div id="opponents-container" class="card-container" style="gap: 40px;"></div>
+        <div style="text-align:center; margin-top: 20px;">
+            <button class="menu-btn" style="flex-direction:row; padding: 12px 28px; border-color:#3498db;" onclick="showOpponentSelect()">🔀 NEW OPPONENTS</button>
+        </div>
+    </div>
+
+    <div id="deck-screen" class="screen">
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom: 20px; flex-wrap:wrap;">
+            <button class="menu-btn" style="flex-direction:row; padding: 10px 20px;" onclick="showScreen('main-menu')">⬅️ BACK TO MENU</button>
+            <button id="btn-edit-deck" class="menu-btn" style="flex-direction:row; padding: 10px 20px; border-color:#3498db;" onclick="toggleDeckEdit()">✏️ EDIT DECK</button>
+            <button id="btn-auto-deck" class="menu-btn" style="flex-direction:row; padding: 10px 20px; display:none; border-color:#2ecc71;" onclick="applyAutoDeck()">🤖 AUTO BEST</button>
+            <button id="btn-save-deck" class="menu-btn btn-play" style="flex-direction:row; padding: 10px 20px; display:none;" onclick="saveDeckEdit()">💾 SAVE DECK</button>
+            <button id="btn-cancel-deck" class="menu-btn btn-danger" style="flex-direction:row; padding: 10px 20px; font-size:14px; display:none;" onclick="cancelDeckEdit()">✖ CANCEL</button>
+        </div>
+        <div id="deck-edit-info" style="display:none; background:rgba(52,152,219,0.15); border:1px solid #3498db; border-radius:10px; padding:10px 20px; margin-bottom:15px; font-family:Arial; font-size:14px; color:#aaa;">
+            Edit mode active. Tap a card from your collection to add/remove it from the deck.
+            Slots: <span id="deck-slots-info" style="color:#fff; font-weight:bold;"></span>
+        </div>
+        
+        <h2 class="section-title">ACTIVE DECK (<span id="deck-mode-label">Top cards: 4 M, 1 F, 1 SUPP</span>)</h2>
+        <div id="active-deck-grid" class="card-container" style="background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 1px solid #444; box-shadow: inset 0 0 20px #000;"></div>
+        
+        <h2 class="section-title" style="margin-top: 40px;">YOUR COLLECTION (Total: <span id="col-count">0</span>)</h2>
+        <div class="trade-panel">
+            <p style="color: #aaa; font-family: Arial; margin-top: 0;">
+                <strong style="color:#f1c40f;">TRADE XP:</strong> select a target card, then sacrifice cards from your collection.
+                Common = <strong>25 XP</strong>, Uncommon = 50, Rare = 100… (×2 per tier).
+                <span style="color:#e040fb;">Normal Upgrade as fodder = <strong>2× XP</strong>!</span>
+                <span style="color:#f1c40f;">High-level fodder = 40% bonus XP from invested XP.</span>
+                <strong>Support</strong> cards can also be used as fodder.
+                At LVL 10: <strong>Normal Upgrade</strong> (max 15) or <strong>Perfect ★</strong> (reset ★0, max 20).
+            </p>
+            <div id="trade-status" style="color:#3498db; font-family: Arial; margin-bottom: 10px;">No card selected.</div>
+            <button id="btn-trade" class="menu-btn btn-play trade-btn" style="display:none; flex-direction:row;" onclick="feedSacrifices()">🔄 FEED XP (TRADE)</button>
+            <button id="btn-promote-normal" class="menu-btn trade-btn" style="display:none; flex-direction:row;" onclick="promoteNormal()">⬆️ NORMAL UPGRADE (MAX 15)</button>
+            <button id="btn-promote-perfect" class="menu-btn btn-play trade-btn" style="display:none; flex-direction:row;" onclick="promotePerfect()">★ PERFECT UPGRADE (MAX 20)</button>
+            <button id="btn-clear-trade" class="menu-btn btn-danger trade-btn" style="display:none; flex-direction:row; font-size:14px; padding:8px 16px;" onclick="clearTradeSelection()">✖ CLEAR SELECTION</button>
+        </div>
+        <div id="collection-grid" class="card-container"></div>
+    </div>
+
+    <div id="match-screen" class="screen">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button class="menu-btn btn-danger" style="flex-direction:row;" onclick="endMatch(true)">🏳️ FORFEIT</button>
+            <div style="color: #bbb; font-family: Arial; font-size: 14px;" id="support-status">Tap your Support card to activate it before this round!</div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px 30px; border-radius: 15px; border: 1px solid #333;">
+            <div style="font-size: 24px; color: #3498db;">YOU <br><span id="score-player" style="font-size: 50px; font-weight:bold;">0</span></div>
+            <div id="match-info" style="font-size: 24px; color: #f1c40f; text-align: center; text-shadow: 2px 2px #000;">ROUND 1</div>
+            <div style="font-size: 24px; color: #e74c3c; text-align:right;">AI <br><span id="score-opp" style="font-size: 50px; font-weight:bold;">0</span></div>
+        </div>
+        
+        <div class="match-arena" id="arena-area"><div class="vs-badge">VS</div></div>
+
+        <div style="text-align: center; margin: 20px 0; height: 60px;">
+            <button id="btn-confirm-play" class="menu-btn btn-play" style="display:none; margin: auto; flex-direction:row; padding: 10px 30px;" onclick="resolveRound()">🔥 SEND TO THE RING!</button>
+        </div>
+
+        <div id="match-type-banner" class="match-type-banner superstar" style="display:none;"></div>
+        <h3 class="section-title">PICK <span id="cards-to-pick" style="color: #3498db; font-size: 28px;">1</span> <span id="cards-text">CARD</span>:</h3>
+        <div class="card-container" id="player-hand-area" style="background: rgba(0,0,0,0.6); padding: 20px; border-radius: 15px; border: 1px solid #444;"></div>
+    </div>
+
+    <div id="draft-board-screen" class="screen">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button class="menu-btn" style="flex-direction:row; padding: 10px 20px;" onclick="showScreen('main-menu')">⬅️ MENU (Keep picks)</button>
+            <h2 style="margin:0;">PICKS REMAINING: <span id="draft-picks" style="color:#3498db; font-size: 36px; text-shadow: 0 0 10px #3498db;">0</span></h2>
+        </div>
+        <div id="draft-board-grid"></div>
+    </div>
+
+    <div id="store-screen" class="screen">
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 20px;" onclick="showScreen('main-menu')">⬅️ MENU</button>
+        <h2 class="section-title">CARD PACK SHOP</h2>
+        
+        <div class="card-container" style="gap: 25px;">
+            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#95a5a6;" onclick="buyPack(100, ['Common', 'Uncommon'])">
+                <span style="font-size: 60px;">📦</span>
+                <h3>BASIC PACK</h3>
+                <p style="color: gold; font-size: 24px; margin: 10px 0;">100 💰</p>
+                <small style="color:#aaa; text-align:center;">Chance for Uncommon</small>
+            </div>
+            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#00bcd4; box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);" onclick="buyPack(500, ['Rare', 'SuperRare'])">
+                <span style="font-size: 60px;">💎</span>
+                <h3 style="color: #00bcd4;">SUPER PACK</h3>
+                <p style="color: gold; font-size: 24px; margin: 10px 0;">500 💰</p>
+                <small style="color:#aaa; text-align:center;">Guaranteed Rare+</small>
+            </div>
+            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#e040fb; box-shadow: 0 0 20px rgba(224, 64, 251, 0.4);" onclick="buyPack(1500, ['UltraRare', 'Epic'])">
+                <span style="font-size: 60px;">⚡</span>
+                <h3 style="color: #e040fb;">ULTRA PACK</h3>
+                <p style="color: gold; font-size: 24px; margin: 10px 0;">1500 💰</p>
+                <small style="color:#aaa; text-align:center;">Ultra Rare / Epic</small>
+            </div>
+            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#e74c3c; box-shadow: 0 0 30px rgba(231, 76, 60, 0.6);" onclick="buyPack(4000, ['Legendary', 'Survivor'])">
+                <span style="font-size: 60px;">👑</span>
+                <h3 style="color: #e74c3c;">SURVIVOR PACK</h3>
+                <p style="color: gold; font-size: 24px; margin: 10px 0;">4000 💰</p>
+                <small style="color:#aaa; text-align:center;">Legendary or Survivor!</small>
+            </div>
+        </div>
+    </div>
+
+    <div id="pull-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div style="background: radial-gradient(circle, #222, #000); padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; text-align: center; animation: popIn 0.4s ease-out; box-shadow: 0 0 50px rgba(241, 196, 15, 0.3);">
+            <h2 id="pull-title" style="margin-top:0; color:#fff; letter-spacing: 2px;">YOU PULLED A NEW CARD!</h2>
+            <div id="pull-card-container" style="display:flex; justify-content:center; margin: 20px 0; transform: scale(1.3);"></div>
+            <button class="menu-btn btn-play" style="margin: 30px auto 0;" onclick="closePullModal()">CONTINUE</button>
+        </div>
+    </div>
+
+    <script>
+        // BAZA DE DATE
+        const DB = [
+            { id: 1, name: "Adam Rose", rarity: "Common", gender: "M", pow: 58, tgh: 60, spd: 65, cha: 72, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Adam+Rose" },
+            { id: 2, name: "Bo Dallas", rarity: "Common", gender: "M", pow: 60, tgh: 62, spd: 60, cha: 75, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Bo+Dallas" },
+            { id: 3, name: "Darren Young", rarity: "Common", gender: "M", pow: 64, tgh: 61, spd: 63, cha: 60, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Darren+Young" },
+            { id: 4, name: "Heath Slater", rarity: "Common", gender: "M", pow: 59, tgh: 58, spd: 66, cha: 68, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Heath+Slater" },
+            { id: 5, name: "R-Truth", rarity: "Common", gender: "M", pow: 61, tgh: 60, spd: 70, cha: 74, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=R-Truth" },
+            { id: 6, name: "Titus O'Neil", rarity: "Common", gender: "M", pow: 75, tgh: 72, spd: 55, cha: 65, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Titus+O'Neil" },
+            { id: 7, name: "Zack Ryder", rarity: "Common", gender: "M", pow: 62, tgh: 60, spd: 68, cha: 70, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Zack+Ryder" },
+            { id: 11, name: "Cameron", rarity: "Common", gender: "F", pow: 52, tgh: 55, spd: 62, cha: 65, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Cameron" },
+            { id: 12, name: "Eva Marie", rarity: "Common", gender: "F", pow: 50, tgh: 52, spd: 58, cha: 70, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Eva+Marie" },
+            { id: 13, name: "Rosa Mendes", rarity: "Common", gender: "F", pow: 51, tgh: 53, spd: 59, cha: 64, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Rosa+Mendes" },
+            { id: 20, name: "Steel Chair", rarity: "Common", gender: "S", pow: 10, tgh: 0, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Steel+Chair" },
+            { id: 21, name: "Taunt", rarity: "Common", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 10, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Taunt" },
+
+            { id: 101, name: "Big E", rarity: "Uncommon", gender: "M", pow: 105, tgh: 98, spd: 75, cha: 85, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Big+E" },
+            { id: 102, name: "Christian", rarity: "Uncommon", gender: "M", pow: 85, tgh: 88, spd: 92, cha: 95, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Christian" },
+            { id: 103, name: "Cody Rhodes", rarity: "Uncommon", gender: "M", pow: 90, tgh: 92, spd: 95, cha: 98, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Cody+Rhodes" },
+            { id: 104, name: "Goldust", rarity: "Uncommon", gender: "M", pow: 86, tgh: 89, spd: 85, cha: 102, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Goldust" },
+            { id: 105, name: "Mark Henry", rarity: "Uncommon", gender: "M", pow: 110, tgh: 105, spd: 65, cha: 80, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Mark+Henry" },
+            { id: 106, name: "Rey Mysterio", rarity: "Uncommon", gender: "M", pow: 82, tgh: 85, spd: 115, cha: 95, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Rey+Mysterio" },
+            { id: 107, name: "Ryback", rarity: "Uncommon", gender: "M", pow: 108, tgh: 102, spd: 70, cha: 82, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Ryback" },
+            { id: 111, name: "Alicia Fox", rarity: "Uncommon", gender: "F", pow: 78, tgh: 80, spd: 85, cha: 82, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Alicia+Fox" },
+            { id: 112, name: "Layla", rarity: "Uncommon", gender: "F", pow: 75, tgh: 78, spd: 82, cha: 85, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Layla" },
+            { id: 113, name: "Summer Rae", rarity: "Uncommon", gender: "F", pow: 74, tgh: 76, spd: 84, cha: 88, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Summer+Rae" },
+            { id: 120, name: "Trash Can", rarity: "Uncommon", gender: "S", pow: 0, tgh: 15, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Trash+Can" },
+            { id: 121, name: "Stop Sign", rarity: "Uncommon", gender: "S", pow: 15, tgh: 0, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Stop+Sign" },
+
+            { id: 201, name: "Alberto Del Rio", rarity: "Rare", gender: "M", pow: 135, tgh: 140, spd: 138, cha: 145, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Alberto+Del+Rio" },
+            { id: 202, name: "Big Show", rarity: "Rare", gender: "M", pow: 165, tgh: 170, spd: 105, cha: 130, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Big+Show" },
+            { id: 203, name: "Cesaro", rarity: "Rare", gender: "M", pow: 155, tgh: 150, spd: 135, cha: 125, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Cesaro" },
+            { id: 204, name: "Chris Jericho", rarity: "Rare", gender: "M", pow: 130, tgh: 135, spd: 145, cha: 165, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Chris+Jericho" },
+            { id: 205, name: "Dolph Ziggler", rarity: "Rare", gender: "M", pow: 138, tgh: 132, spd: 155, cha: 160, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Dolph+Ziggler" },
+            { id: 206, name: "Kane", rarity: "Rare", gender: "M", pow: 160, tgh: 155, spd: 110, cha: 125, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Kane" },
+            { id: 207, name: "Kofi Kingston", rarity: "Rare", gender: "M", pow: 125, tgh: 130, spd: 160, cha: 140, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Kofi+Kingston" },
+            { id: 208, name: "The Miz", rarity: "Rare", gender: "M", pow: 128, tgh: 135, spd: 130, cha: 155, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=The+Miz" },
+            { id: 211, name: "AJ Lee", rarity: "Rare", gender: "F", pow: 115, tgh: 120, spd: 135, cha: 145, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=AJ+Lee" },
+            { id: 212, name: "Brie Bella", rarity: "Rare", gender: "F", pow: 125, tgh: 122, spd: 130, cha: 135, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Brie+Bella" },
+            { id: 213, name: "Naomi", rarity: "Rare", gender: "F", pow: 122, tgh: 125, spd: 140, cha: 130, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Naomi" },
+            { id: 220, name: "Table", rarity: "Rare", gender: "S", pow: 25, tgh: 25, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Table" },
+
+            { id: 301, name: "Batista", rarity: "SuperRare", gender: "M", pow: 260, tgh: 250, spd: 190, cha: 220, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Batista" },
+            { id: 302, name: "Bray Wyatt", rarity: "SuperRare", gender: "M", pow: 245, tgh: 255, spd: 195, cha: 265, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Bray+Wyatt" },
+            { id: 303, name: "Dean Ambrose", rarity: "SuperRare", gender: "M", pow: 235, tgh: 240, spd: 225, cha: 250, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Dean+Ambrose" },
+            { id: 304, name: "John Cena", rarity: "SuperRare", gender: "M", pow: 265, tgh: 260, spd: 215, cha: 270, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=John+Cena" },
+            { id: 305, name: "Roman Reigns", rarity: "SuperRare", gender: "M", pow: 270, tgh: 265, spd: 210, cha: 235, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Roman+Reigns" },
+            { id: 306, name: "Seth Rollins", rarity: "SuperRare", gender: "M", pow: 230, tgh: 235, spd: 260, cha: 245, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Seth+Rollins" },
+            { id: 307, name: "Triple H", rarity: "SuperRare", gender: "M", pow: 255, tgh: 260, spd: 205, cha: 265, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Triple+H" },
+            { id: 308, name: "Undertaker", rarity: "SuperRare", gender: "M", pow: 260, tgh: 270, spd: 195, cha: 275, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Undertaker" },
+            { id: 311, name: "Natalya", rarity: "SuperRare", gender: "F", pow: 220, tgh: 225, spd: 210, cha: 215, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Natalya" },
+            { id: 312, name: "Nikki Bella", rarity: "SuperRare", gender: "F", pow: 230, tgh: 220, spd: 215, cha: 235, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Nikki+Bella" },
+            { id: 313, name: "Paige", rarity: "SuperRare", gender: "F", pow: 215, tgh: 230, spd: 225, cha: 240, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Paige" },
+            { id: 320, name: "Ladder", rarity: "SuperRare", gender: "S", pow: 0, tgh: 0, spd: 35, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Ladder" },
+
+            { id: 401, name: "Daniel Bryan", rarity: "UltraRare", gender: "M", pow: 360, tgh: 370, spd: 410, cha: 420, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Daniel+Bryan" },
+            { id: 402, name: "Edge", rarity: "UltraRare", gender: "M", pow: 380, tgh: 375, spd: 395, cha: 410, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Edge" },
+            { id: 403, name: "Randy Orton", rarity: "UltraRare", gender: "M", pow: 400, tgh: 390, spd: 385, cha: 405, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Randy+Orton" },
+            { id: 404, name: "Rob Van Dam", rarity: "UltraRare", gender: "M", pow: 370, tgh: 360, spd: 420, cha: 390, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Rob+Van+Dam" },
+            { id: 405, name: "Shawn Michaels", rarity: "UltraRare", gender: "M", pow: 385, tgh: 380, spd: 405, cha: 425, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Shawn+Michaels" },
+            { id: 406, name: "Stone Cold", rarity: "UltraRare", gender: "M", pow: 410, tgh: 415, spd: 380, cha: 430, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Stone+Cold" },
+            { id: 407, name: "The Rock", rarity: "UltraRare", gender: "M", pow: 405, tgh: 400, spd: 390, cha: 440, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=The+Rock" },
+            { id: 411, name: "AJ Lee", rarity: "UltraRare", gender: "F", pow: 340, tgh: 335, spd: 370, cha: 380, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=AJ+Lee" },
+            { id: 412, name: "Brie Bella", rarity: "UltraRare", gender: "F", pow: 350, tgh: 345, spd: 360, cha: 365, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Brie+Bella" },
+            { id: 420, name: "Paul Heyman", rarity: "UltraRare", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 45, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Paul+Heyman" },
+
+            { id: 501, name: "Booker T", rarity: "Epic", gender: "M", pow: 540, tgh: 535, spd: 550, cha: 570, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Booker+T" },
+            { id: 502, name: "Brock Lesnar", rarity: "Epic", gender: "M", pow: 610, tgh: 590, spd: 530, cha: 560, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Brock+Lesnar" },
+            { id: 503, name: "John Cena", rarity: "Epic", gender: "M", pow: 595, tgh: 585, spd: 545, cha: 605, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=John+Cena" },
+            { id: 504, name: "Kane", rarity: "Epic", gender: "M", pow: 580, tgh: 575, spd: 490, cha: 520, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Kane" },
+            { id: 505, name: "Randy Orton", rarity: "Epic", gender: "M", pow: 575, tgh: 570, spd: 555, cha: 580, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Randy+Orton" },
+            { id: 506, name: "Rey Mysterio", rarity: "Epic", gender: "M", pow: 510, tgh: 520, spd: 615, cha: 565, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Rey+Mysterio" },
+            { id: 507, name: "Ric Flair", rarity: "Epic", gender: "M", pow: 530, tgh: 550, spd: 525, cha: 620, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Ric+Flair" },
+            { id: 511, name: "Cameron", rarity: "Epic", gender: "F", pow: 490, tgh: 495, spd: 510, cha: 505, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Cameron" },
+            { id: 512, name: "Naomi", rarity: "Epic", gender: "F", pow: 500, tgh: 505, spd: 530, cha: 515, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Naomi" },
+            { id: 513, name: "Natalya", rarity: "Epic", gender: "F", pow: 515, tgh: 525, spd: 500, cha: 510, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Natalya" },
+            { id: 520, name: "Jimmy Hart", rarity: "Epic", gender: "S", pow: 0, tgh: 0, spd: 65, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Jimmy+Hart" },
+
+            { id: 601, name: "Bruno Sammartino", rarity: "Legendary", gender: "M", pow: 850, tgh: 880, spd: 720, cha: 830, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Bruno+Sammartino" },
+            { id: 602, name: "Eddie Guerrero", rarity: "Legendary", gender: "M", pow: 780, tgh: 790, spd: 860, cha: 870, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Eddie+Guerrero" },
+            { id: 603, name: "Hulk Hogan", rarity: "Legendary", gender: "M", pow: 865, tgh: 850, spd: 740, cha: 900, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Hulk+Hogan" },
+            { id: 604, name: "Randy Savage", rarity: "Legendary", gender: "M", pow: 820, tgh: 810, spd: 840, cha: 880, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Randy+Savage" },
+            { id: 605, name: "Shawn Michaels", rarity: "Legendary", gender: "M", pow: 815, tgh: 805, spd: 855, cha: 890, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Shawn+Michaels" },
+            { id: 606, name: "Stone Cold", rarity: "Legendary", gender: "M", pow: 860, tgh: 870, spd: 790, cha: 900, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Stone+Cold" },
+            { id: 607, name: "The Rock", rarity: "Legendary", gender: "M", pow: 850, tgh: 840, spd: 820, cha: 910, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=The+Rock" },
+            { id: 608, name: "Ultimate Warrior", rarity: "Legendary", gender: "M", pow: 875, tgh: 860, spd: 800, cha: 885, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Ultimate+Warrior" },
+            { id: 609, name: "Undertaker", rarity: "Legendary", gender: "M", pow: 870, tgh: 890, spd: 770, cha: 895, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Undertaker" },
+            { id: 611, name: "AJ Lee", rarity: "Legendary", gender: "F", pow: 740, tgh: 730, spd: 780, cha: 800, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=AJ+Lee" },
+            { id: 612, name: "Brie Bella", rarity: "Legendary", gender: "F", pow: 750, tgh: 745, spd: 760, cha: 770, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Brie+Bella" },
+            { id: 613, name: "Stephanie McMahon", rarity: "Legendary", gender: "F", pow: 720, tgh: 735, spd: 710, cha: 810, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Stephanie+McMahon" },
+            { id: 620, name: "Zeb Colter", rarity: "Legendary", gender: "S", pow: 0, tgh: 85, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Zeb+Colter" },
+
+            { id: 701, name: "Sting", rarity: "Survivor", gender: "M", pow: 645, tgh: 638, spd: 611, cha: 720, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Sting" },
+            { id: 702, name: "Roman Reigns", rarity: "Survivor", gender: "M", pow: 630, tgh: 602, spd: 564, cha: 564, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Roman+Reigns" },
+            { id: 703, name: "Seth Rollins", rarity: "Survivor", gender: "M", pow: 602, tgh: 587, spd: 627, cha: 602, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Seth+Rollins" },
+            { id: 704, name: "Dean Ambrose", rarity: "Survivor", gender: "M", pow: 602, tgh: 587, spd: 627, cha: 639, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Dean+Ambrose" },
+            { id: 705, name: "Bray Wyatt", rarity: "Survivor", gender: "M", pow: 677, tgh: 647, spd: 602, cha: 677, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Bray+Wyatt" },
+            { id: 706, name: "Daniel Bryan", rarity: "Survivor", gender: "M", pow: 611, tgh: 647, spd: 639, cha: 677, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Daniel+Bryan" },
+            { id: 707, name: "Andre the Giant", rarity: "Survivor", gender: "M", pow: 682, tgh: 707, spd: 538, cha: 686, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Andre+The+Giant" },
+            { id: 708, name: "The Rock", rarity: "Survivor", gender: "M", pow: 658, tgh: 647, spd: 602, cha: 752, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=The+Rock" },
+            { id: 711, name: "Eve", rarity: "Survivor", gender: "F", pow: 617, tgh: 587, spd: 587, cha: 624, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Eve" },
+            { id: 712, name: "Nikki Bella", rarity: "Survivor", gender: "F", pow: 596, tgh: 579, spd: 652, cha: 669, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Nikki+Bella" },
+            { id: 713, name: "Emma", rarity: "Survivor", gender: "F", pow: 1080, tgh: 1100, spd: 1150, cha: 1140, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Emma" },
+            { id: 720, name: "Mr. Fuji", rarity: "Survivor", gender: "S", pow: 0, tgh: 120, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Mr.+Fuji" },
+
+            // === COMMON (adăugat) ===
+            { id: 8, name: "Fandango", rarity: "Common", gender: "M", pow: 63, tgh: 61, spd: 70, cha: 72, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Fandango" },
+            { id: 9, name: "Justin Gabriel", rarity: "Common", gender: "M", pow: 60, tgh: 58, spd: 74, cha: 65, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Justin+Gabriel" },
+            { id: 10, name: "Santino Marella", rarity: "Common", gender: "M", pow: 58, tgh: 62, spd: 61, cha: 78, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Santino+Marella" },
+            { id: 14, name: "Tamina", rarity: "Common", gender: "F", pow: 68, tgh: 65, spd: 58, cha: 60, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Tamina" },
+            { id: 15, name: "Jey Uso", rarity: "Common", gender: "M", pow: 65, tgh: 64, spd: 67, cha: 66, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Jey+Uso" },
+            { id: 16, name: "Jimmy Uso", rarity: "Common", gender: "M", pow: 64, tgh: 63, spd: 68, cha: 67, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Jimmy+Uso" },
+            { id: 17, name: "Tyson Kidd", rarity: "Common", gender: "M", pow: 61, tgh: 63, spd: 72, cha: 64, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Tyson+Kidd" },
+            { id: 18, name: "Rusev", rarity: "Common", gender: "M", pow: 78, tgh: 75, spd: 58, cha: 62, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Rusev" },
+            { id: 19, name: "Luke Harper", rarity: "Common", gender: "M", pow: 76, tgh: 74, spd: 62, cha: 58, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Luke+Harper" },
+            { id: 22, name: "The Great Khali", rarity: "Common", gender: "M", pow: 82, tgh: 80, spd: 42, cha: 55, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=The+Great+Khali" },
+            { id: 23, name: "Yokozuna", rarity: "Common", gender: "M", pow: 80, tgh: 78, spd: 45, cha: 58, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Yokozuna" },
+            { id: 24, name: "Virgil", rarity: "Common", gender: "M", pow: 57, tgh: 59, spd: 64, cha: 62, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Virgil" },
+            { id: 25, name: "Kofi Kingston", rarity: "Common", gender: "M", pow: 62, tgh: 60, spd: 73, cha: 70, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Kofi+Kingston" },
+            { id: 26, name: "Sheamus", rarity: "Common", gender: "M", pow: 75, tgh: 73, spd: 65, cha: 68, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Sheamus" },
+            { id: 27, name: "Rob Van Dam", rarity: "Common", gender: "M", pow: 68, tgh: 65, spd: 78, cha: 72, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Rob+Van+Dam" },
+            { id: 28, name: "Roman Reigns", rarity: "Common", gender: "M", pow: 76, tgh: 78, spd: 68, cha: 74, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Roman+Reigns" },
+            { id: 29, name: "Goldust", rarity: "Common", gender: "M", pow: 65, tgh: 64, spd: 66, cha: 70, img: "https://via.placeholder.com/150x222/7f8c8d/FFFFFF?text=Goldust" },
+
+            // === UNCOMMON (adăugat) ===
+            { id: 108, name: "Bad News Barrett", rarity: "Uncommon", gender: "M", pow: 100, tgh: 96, spd: 82, cha: 90, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Bad+News+Barrett" },
+            { id: 109, name: "Jack Swagger", rarity: "Uncommon", gender: "M", pow: 98, tgh: 100, spd: 80, cha: 78, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Jack+Swagger" },
+            { id: 110, name: "Bray Wyatt", rarity: "Uncommon", gender: "M", pow: 105, tgh: 108, spd: 78, cha: 112, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Bray+Wyatt" },
+            { id: 114, name: "Brock Lesnar", rarity: "Uncommon", gender: "M", pow: 125, tgh: 118, spd: 72, cha: 85, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Brock+Lesnar" },
+            { id: 115, name: "Daniel Bryan", rarity: "Uncommon", gender: "M", pow: 95, tgh: 98, spd: 108, cha: 105, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Daniel+Bryan" },
+            { id: 116, name: "Dean Ambrose", rarity: "Uncommon", gender: "M", pow: 98, tgh: 100, spd: 92, cha: 96, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Dean+Ambrose" },
+            { id: 117, name: "Dolph Ziggler", rarity: "Uncommon", gender: "M", pow: 92, tgh: 90, spd: 108, cha: 105, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Dolph+Ziggler" },
+            { id: 118, name: "Seth Rollins", rarity: "Uncommon", gender: "M", pow: 96, tgh: 95, spd: 112, cha: 100, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Seth+Rollins" },
+            { id: 119, name: "Randy Orton", rarity: "Uncommon", gender: "M", pow: 110, tgh: 108, spd: 95, cha: 105, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Randy+Orton" },
+            { id: 122, name: "John Cena", rarity: "Uncommon", gender: "M", pow: 118, tgh: 115, spd: 90, cha: 120, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=John+Cena" },
+            { id: 123, name: "Sheamus", rarity: "Uncommon", gender: "M", pow: 108, tgh: 110, spd: 82, cha: 88, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Sheamus" },
+            { id: 124, name: "The Rock", rarity: "Uncommon", gender: "M", pow: 115, tgh: 110, spd: 95, cha: 125, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=The+Rock" },
+            { id: 125, name: "Triple H", rarity: "Uncommon", gender: "M", pow: 112, tgh: 115, spd: 88, cha: 108, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Triple+H" },
+            { id: 126, name: "Undertaker", rarity: "Uncommon", gender: "M", pow: 118, tgh: 120, spd: 82, cha: 115, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Undertaker" },
+            { id: 127, name: "Shawn Michaels", rarity: "Uncommon", gender: "M", pow: 105, tgh: 102, spd: 115, cha: 118, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Shawn+Michaels" },
+            { id: 128, name: "Edge", rarity: "Uncommon", gender: "M", pow: 108, tgh: 105, spd: 100, cha: 110, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Edge" },
+            { id: 129, name: "Eva Marie", rarity: "Uncommon", gender: "F", pow: 75, tgh: 72, spd: 78, cha: 90, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Eva+Marie" },
+            { id: 130, name: "Natalya", rarity: "Uncommon", gender: "F", pow: 82, tgh: 85, spd: 80, cha: 78, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Natalya" },
+            { id: 131, name: "Nikki Bella", rarity: "Uncommon", gender: "F", pow: 84, tgh: 82, spd: 80, cha: 85, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Nikki+Bella" },
+            { id: 132, name: "Paige", rarity: "Uncommon", gender: "F", pow: 80, tgh: 82, spd: 86, cha: 84, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Paige" },
+
+            // === RARE (adăugat) ===
+            { id: 209, name: "Batista", rarity: "Rare", gender: "M", pow: 175, tgh: 168, spd: 128, cha: 142, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Batista" },
+            { id: 210, name: "Bray Wyatt", rarity: "Rare", gender: "M", pow: 158, tgh: 162, spd: 135, cha: 172, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Bray+Wyatt" },
+            { id: 214, name: "Bad News Barrett", rarity: "Rare", gender: "M", pow: 150, tgh: 155, spd: 138, cha: 142, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Bad+News+Barrett" },
+            { id: 215, name: "Brock Lesnar", rarity: "Rare", gender: "M", pow: 185, tgh: 178, spd: 118, cha: 140, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Brock+Lesnar" },
+            { id: 216, name: "Daniel Bryan", rarity: "Rare", gender: "M", pow: 145, tgh: 150, spd: 162, cha: 158, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Daniel+Bryan" },
+            { id: 217, name: "Dean Ambrose", rarity: "Rare", gender: "M", pow: 148, tgh: 152, spd: 145, cha: 150, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Dean+Ambrose" },
+            { id: 218, name: "Sheamus", rarity: "Rare", gender: "M", pow: 168, tgh: 172, spd: 128, cha: 138, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Sheamus" },
+            { id: 219, name: "Triple H", rarity: "Rare", gender: "M", pow: 168, tgh: 172, spd: 138, cha: 160, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Triple+H" },
+            { id: 221, name: "Randy Orton", rarity: "Rare", gender: "M", pow: 165, tgh: 162, spd: 145, cha: 158, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Randy+Orton" },
+            { id: 222, name: "Roman Reigns", rarity: "Rare", gender: "M", pow: 170, tgh: 175, spd: 138, cha: 148, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Roman+Reigns" },
+            { id: 223, name: "Seth Rollins", rarity: "Rare", gender: "M", pow: 148, tgh: 145, spd: 168, cha: 152, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Seth+Rollins" },
+            { id: 224, name: "Rob Van Dam", rarity: "Rare", gender: "M", pow: 140, tgh: 138, spd: 162, cha: 148, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Rob+Van+Dam" },
+            { id: 225, name: "Hulk Hogan", rarity: "Rare", gender: "M", pow: 172, tgh: 165, spd: 118, cha: 180, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Hulk+Hogan" },
+            { id: 226, name: "Shawn Michaels", rarity: "Rare", gender: "M", pow: 155, tgh: 152, spd: 165, cha: 170, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Shawn+Michaels" },
+            { id: 227, name: "Undertaker", rarity: "Rare", gender: "M", pow: 178, tgh: 182, spd: 128, cha: 170, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Undertaker" },
+            { id: 228, name: "The Rock", rarity: "Rare", gender: "M", pow: 170, tgh: 165, spd: 148, cha: 182, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=The+Rock" },
+            { id: 229, name: "John Cena", rarity: "Rare", gender: "M", pow: 175, tgh: 170, spd: 138, cha: 175, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=John+Cena" },
+            { id: 230, name: "Erick Rowan", rarity: "Rare", gender: "M", pow: 162, tgh: 165, spd: 122, cha: 118, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Erick+Rowan" },
+            { id: 231, name: "Goldust", rarity: "Rare", gender: "M", pow: 138, tgh: 140, spd: 135, cha: 142, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Goldust" },
+            { id: 232, name: "Mark Henry", rarity: "Rare", gender: "M", pow: 178, tgh: 172, spd: 102, cha: 125, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Mark+Henry" },
+            { id: 233, name: "Nikki Bella", rarity: "Rare", gender: "F", pow: 138, tgh: 135, spd: 132, cha: 138, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Nikki+Bella" },
+            { id: 234, name: "Paige", rarity: "Rare", gender: "F", pow: 132, tgh: 135, spd: 142, cha: 138, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Paige" },
+            { id: 235, name: "Natalya", rarity: "Rare", gender: "F", pow: 135, tgh: 140, spd: 130, cha: 128, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Natalya" },
+            { id: 236, name: "Eve Torres", rarity: "Rare", gender: "F", pow: 128, tgh: 125, spd: 135, cha: 138, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Eve+Torres" },
+            { id: 237, name: "Mr. Perfect", rarity: "Rare", gender: "M", pow: 145, tgh: 142, spd: 150, cha: 152, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Mr.+Perfect" },
+            { id: 238, name: "Sgt. Slaughter", rarity: "Rare", gender: "M", pow: 148, tgh: 145, spd: 122, cha: 135, img: "https://via.placeholder.com/150x222/2980b9/FFFFFF?text=Sgt.+Slaughter" },
+
+            // === SUPERRARE (adăugat) ===
+            { id: 308, name: "Last Ride (Undertaker)", rarity: "SuperRare", gender: "M", pow: 268, tgh: 278, spd: 198, cha: 248, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Undertaker" },
+            { id: 309, name: "Triple H", rarity: "SuperRare", gender: "M", pow: 262, tgh: 268, spd: 218, cha: 258, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Triple+H" },
+            { id: 310, name: "Randy Orton", rarity: "SuperRare", gender: "M", pow: 255, tgh: 252, spd: 235, cha: 255, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Randy+Orton" },
+            { id: 314, name: "Andre the Giant", rarity: "SuperRare", gender: "M", pow: 285, tgh: 295, spd: 165, cha: 255, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Andre+the+Giant" },
+            { id: 315, name: "Eddie Guerrero", rarity: "SuperRare", gender: "M", pow: 240, tgh: 238, spd: 258, cha: 265, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Eddie+Guerrero" },
+            { id: 316, name: "Roman Reigns", rarity: "SuperRare", gender: "M", pow: 260, tgh: 268, spd: 215, cha: 240, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Roman+Reigns" },
+            { id: 317, name: "Seth Rollins", rarity: "SuperRare", gender: "M", pow: 235, tgh: 232, spd: 265, cha: 242, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Seth+Rollins" },
+            { id: 318, name: "Ryback", rarity: "SuperRare", gender: "M", pow: 275, tgh: 268, spd: 185, cha: 210, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Ryback" },
+            { id: 319, name: "Sheamus", rarity: "SuperRare", gender: "M", pow: 265, tgh: 272, spd: 202, cha: 218, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Sheamus" },
+            { id: 320, name: "Big Show", rarity: "SuperRare", gender: "M", pow: 280, tgh: 275, spd: 168, cha: 205, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Big+Show" },
+            { id: 321, name: "Cesaro", rarity: "SuperRare", gender: "M", pow: 258, tgh: 252, spd: 228, cha: 215, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Cesaro" },
+            { id: 322, name: "Jake Roberts", rarity: "SuperRare", gender: "M", pow: 235, tgh: 232, spd: 218, cha: 252, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Jake+Roberts" },
+            { id: 323, name: "Mr. McMahon", rarity: "SuperRare", gender: "M", pow: 225, tgh: 220, spd: 195, cha: 280, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Mr.+McMahon" },
+            { id: 324, name: "Naomi", rarity: "SuperRare", gender: "F", pow: 225, tgh: 228, spd: 248, cha: 235, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Naomi" },
+            { id: 325, name: "Nikki Bella", rarity: "SuperRare", gender: "F", pow: 235, tgh: 230, spd: 235, cha: 240, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Nikki+Bella" },
+            { id: 326, name: "AJ Lee", rarity: "SuperRare", gender: "F", pow: 222, tgh: 218, spd: 252, cha: 258, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=AJ+Lee" },
+            { id: 327, name: "Brie Bella", rarity: "SuperRare", gender: "F", pow: 228, tgh: 225, spd: 238, cha: 242, img: "https://via.placeholder.com/150x222/00bcd4/FFFFFF?text=Brie+Bella" },
+            { id: 328, name: "Million Dollar Man", rarity: "SuperRare", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 35, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Ted+DiBiase" },
+
+            // === ULTRARARE (adăugat) ===
+            { id: 408, name: "Daniel Bryan", rarity: "UltraRare", gender: "M", pow: 365, tgh: 375, spd: 415, cha: 405, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Daniel+Bryan" },
+            { id: 409, name: "Brock Lesnar", rarity: "UltraRare", gender: "M", pow: 460, tgh: 445, spd: 338, cha: 375, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Brock+Lesnar" },
+            { id: 410, name: "Triple H", rarity: "UltraRare", gender: "M", pow: 430, tgh: 440, spd: 368, cha: 415, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Triple+H" },
+            { id: 413, name: "Paige", rarity: "UltraRare", gender: "F", pow: 355, tgh: 362, spd: 388, cha: 378, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Paige" },
+            { id: 414, name: "Naomi", rarity: "UltraRare", gender: "F", pow: 345, tgh: 350, spd: 395, cha: 368, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Naomi" },
+            { id: 415, name: "Natalya", rarity: "UltraRare", gender: "F", pow: 358, tgh: 368, spd: 372, cha: 355, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Natalya" },
+            { id: 416, name: "Randy Orton", rarity: "UltraRare", gender: "M", pow: 428, tgh: 422, spd: 398, cha: 418, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Randy+Orton" },
+            { id: 417, name: "Roman Reigns", rarity: "UltraRare", gender: "M", pow: 440, tgh: 450, spd: 368, cha: 395, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Roman+Reigns" },
+            { id: 418, name: "Dean Ambrose", rarity: "UltraRare", gender: "M", pow: 398, tgh: 405, spd: 388, cha: 408, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Dean+Ambrose" },
+            { id: 419, name: "Seth Rollins", rarity: "UltraRare", gender: "M", pow: 385, tgh: 378, spd: 435, cha: 395, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Seth+Rollins" },
+            { id: 421, name: "Undertaker", rarity: "UltraRare", gender: "M", pow: 455, tgh: 465, spd: 340, cha: 448, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Undertaker" },
+            { id: 422, name: "Sheamus", rarity: "UltraRare", gender: "M", pow: 432, tgh: 440, spd: 358, cha: 372, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Sheamus" },
+            { id: 423, name: "Cesaro", rarity: "UltraRare", gender: "M", pow: 420, tgh: 415, spd: 382, cha: 362, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Cesaro" },
+            { id: 424, name: "Booker T", rarity: "UltraRare", gender: "M", pow: 398, tgh: 390, spd: 402, cha: 418, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Booker+T" },
+            { id: 425, name: "JBL", rarity: "UltraRare", gender: "M", pow: 408, tgh: 415, spd: 358, cha: 388, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=JBL" },
+            { id: 426, name: "Andre the Giant", rarity: "UltraRare", gender: "M", pow: 468, tgh: 478, spd: 295, cha: 415, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Andre+the+Giant" },
+            { id: 427, name: "Ric Flair", rarity: "UltraRare", gender: "M", pow: 390, tgh: 385, spd: 378, cha: 448, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Ric+Flair" },
+            { id: 428, name: "Macho Man", rarity: "UltraRare", gender: "M", pow: 408, tgh: 398, spd: 412, cha: 432, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Macho+Man" },
+            { id: 429, name: "Xavier Woods", rarity: "UltraRare", gender: "M", pow: 365, tgh: 360, spd: 388, cha: 375, img: "https://via.placeholder.com/150x222/9b59b6/FFFFFF?text=Xavier+Woods" },
+            { id: 430, name: "Dusty Rhodes", rarity: "UltraRare", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 55, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Dusty+Rhodes" },
+
+            // === EPIC (adăugat) ===
+            { id: 508, name: "Triple H", rarity: "Epic", gender: "M", pow: 598, tgh: 608, spd: 538, cha: 578, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Triple+H" },
+            { id: 509, name: "Dean Ambrose", rarity: "Epic", gender: "M", pow: 562, tgh: 568, spd: 552, cha: 572, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Dean+Ambrose" },
+            { id: 510, name: "Seth Rollins", rarity: "Epic", gender: "M", pow: 548, tgh: 542, spd: 608, cha: 558, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Seth+Rollins" },
+            { id: 514, name: "Stephanie McMahon", rarity: "Epic", gender: "F", pow: 480, tgh: 488, spd: 472, cha: 545, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Stephanie+McMahon" },
+            { id: 515, name: "Brie Bella", rarity: "Epic", gender: "F", pow: 498, tgh: 502, spd: 508, cha: 512, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Brie+Bella" },
+            { id: 516, name: "Paige", rarity: "Epic", gender: "F", pow: 488, tgh: 495, spd: 525, cha: 518, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Paige" },
+            { id: 517, name: "Dolph Ziggler", rarity: "Epic", gender: "M", pow: 542, tgh: 535, spd: 598, cha: 582, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Dolph+Ziggler" },
+            { id: 518, name: "Sheamus", rarity: "Epic", gender: "M", pow: 605, tgh: 612, spd: 508, cha: 538, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Sheamus" },
+            { id: 519, name: "Hulk Hogan", rarity: "Epic", gender: "M", pow: 618, tgh: 605, spd: 495, cha: 642, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Hulk+Hogan" },
+            { id: 521, name: "Batista", rarity: "Epic", gender: "M", pow: 612, tgh: 598, spd: 512, cha: 565, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Batista" },
+            { id: 522, name: "Edge", rarity: "Epic", gender: "M", pow: 578, tgh: 572, spd: 558, cha: 585, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Edge" },
+            { id: 523, name: "Macho Man", rarity: "Epic", gender: "M", pow: 568, tgh: 558, spd: 572, cha: 608, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Macho+Man" },
+            { id: 524, name: "Daniel Bryan", rarity: "Epic", gender: "M", pow: 542, tgh: 552, spd: 608, cha: 578, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Daniel+Bryan" },
+            { id: 525, name: "Roman Reigns", rarity: "Epic", gender: "M", pow: 595, tgh: 608, spd: 525, cha: 558, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Roman+Reigns" },
+            { id: 526, name: "Razor Ramon", rarity: "Epic", gender: "M", pow: 558, tgh: 552, spd: 538, cha: 575, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Razor+Ramon" },
+            { id: 527, name: "Vader", rarity: "Epic", gender: "M", pow: 622, tgh: 615, spd: 478, cha: 525, img: "https://via.placeholder.com/150x222/8e44ad/FFFFFF?text=Vader" },
+            { id: 528, name: "Harley Race", rarity: "Epic", gender: "S", pow: 0, tgh: 72, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Harley+Race" },
+
+            // === LEGENDARY (adăugat) ===
+            { id: 610, name: "Brock Lesnar", rarity: "Legendary", gender: "M", pow: 905, tgh: 885, spd: 748, cha: 838, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Brock+Lesnar" },
+            { id: 614, name: "Triple H", rarity: "Legendary", gender: "M", pow: 858, tgh: 868, spd: 778, cha: 862, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Triple+H" },
+            { id: 615, name: "Dean Ambrose", rarity: "Legendary", gender: "M", pow: 808, tgh: 818, spd: 802, cha: 835, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Dean+Ambrose" },
+            { id: 616, name: "Bray Wyatt", rarity: "Legendary", gender: "M", pow: 825, tgh: 838, spd: 768, cha: 875, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Bray+Wyatt" },
+            { id: 617, name: "Roman Reigns", rarity: "Legendary", gender: "M", pow: 858, tgh: 875, spd: 758, cha: 825, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Roman+Reigns" },
+            { id: 618, name: "Daniel Bryan", rarity: "Legendary", gender: "M", pow: 798, tgh: 808, spd: 865, cha: 848, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Daniel+Bryan" },
+            { id: 619, name: "Dolph Ziggler", rarity: "Legendary", gender: "M", pow: 795, tgh: 788, spd: 855, cha: 845, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Dolph+Ziggler" },
+            { id: 621, name: "Nikki Bella", rarity: "Legendary", gender: "F", pow: 762, tgh: 755, spd: 768, cha: 778, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Nikki+Bella" },
+            { id: 622, name: "Paige", rarity: "Legendary", gender: "F", pow: 748, tgh: 758, spd: 785, cha: 775, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Paige" },
+            { id: 623, name: "Natalya", rarity: "Legendary", gender: "F", pow: 755, tgh: 768, spd: 748, cha: 742, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Natalya" },
+            { id: 624, name: "Seth Rollins", rarity: "Legendary", gender: "M", pow: 812, tgh: 802, spd: 868, cha: 838, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Seth+Rollins" },
+            { id: 625, name: "Randy Orton", rarity: "Legendary", gender: "M", pow: 845, tgh: 838, spd: 812, cha: 848, img: "https://via.placeholder.com/150x222/f39c12/FFFFFF?text=Randy+Orton" },
+            { id: 626, name: "Big Boss Man", rarity: "Legendary", gender: "S", pow: 0, tgh: 95, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Big+Boss+Man" },
+
+            // === SURVIVOR (adăugat) ===
+            { id: 709, name: "Triple H", rarity: "Survivor", gender: "M", pow: 1380, tgh: 1400, spd: 1180, cha: 1350, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Triple+H" },
+            { id: 710, name: "Undertaker", rarity: "Survivor", gender: "M", pow: 1420, tgh: 1450, spd: 1120, cha: 1380, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Undertaker" },
+            { id: 714, name: "AJ Lee", rarity: "Survivor", gender: "F", pow: 1100, tgh: 1125, spd: 1195, cha: 1240, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=AJ+Lee" },
+            { id: 715, name: "Brie Bella", rarity: "Survivor", gender: "F", pow: 1140, tgh: 1115, spd: 1148, cha: 1162, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Brie+Bella" },
+            { id: 716, name: "Randy Orton", rarity: "Survivor", gender: "M", pow: 1320, tgh: 1298, spd: 1268, cha: 1332, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Randy+Orton" },
+            { id: 717, name: "Andre the Giant", rarity: "Survivor", gender: "M", pow: 1480, tgh: 1520, spd: 950, cha: 1320, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Andre+the+Giant" },
+            { id: 718, name: "Dolph Ziggler", rarity: "Survivor", gender: "M", pow: 1178, tgh: 1155, spd: 1398, cha: 1312, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Dolph+Ziggler" },
+            { id: 719, name: "Rowdy Roddy Piper", rarity: "Survivor", gender: "M", pow: 1210, tgh: 1195, spd: 1228, cha: 1358, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Roddy+Piper" },
+            { id: 721, name: "Brock Lesnar", rarity: "Survivor", gender: "M", pow: 1460, tgh: 1420, spd: 1105, cha: 1268, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Brock+Lesnar" },
+            { id: 722, name: "Shawn Michaels", rarity: "Survivor", gender: "M", pow: 1245, tgh: 1228, spd: 1388, cha: 1408, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Shawn+Michaels" },
+            { id: 723, name: "Edge", rarity: "Survivor", gender: "M", pow: 1268, tgh: 1252, spd: 1245, cha: 1298, img: "https://via.placeholder.com/150x222/c0392b/FFFFFF?text=Edge" },
+            { id: 724, name: "Hacksaw Jim Duggan", rarity: "Survivor", gender: "S", pow: 0, tgh: 138, spd: 0, cha: 0, img: "https://via.placeholder.com/150x222/333333/FFFFFF?text=Jim+Duggan" }
+        ];
+
+        // ABILITĂȚI SPECIALE — 33% șansă de activare în luptă
+        // Common: nicio abilitate | Uncommon: +10 (1 stat) | Rare: +15 (1 stat)
+        // SuperRare: +20 (dacă exceleaza) sau +11+11 | UltraRare: +17+17
+        // Epic: +25+25 | Legendary: +42+42 | Survivor: +55+55
+        const ABILITIES = {
+            // COMMON Male
+            1:  { name: "Rose's Rush",    stats: ['spd','cha'], icon: '🌹', desc: 'Explozie de Carisma!' },
+            2:  { name: "Bo-Lieve!",      stats: ['cha','spd'], icon: '✨', desc: 'Inspira publicul!' },
+            3:  { name: "Gut Check",      stats: ['pow','tgh'], icon: '💪', desc: 'Putere bruta!' },
+            4:  { name: "Slater Slider",  stats: ['spd','cha'], icon: '🎸', desc: 'Lightning Move!' },
+            5:  { name: "What's Up!",     stats: ['cha','spd'], icon: '🎤', desc: 'Crowd Pop!' },
+            6:  { name: "Titus Bomb",     stats: ['pow','tgh'], icon: '💥', desc: 'Impact devastator!' },
+            7:  { name: "Broski Boot",    stats: ['spd','cha'], icon: '👟', desc: 'Fan Favorite!' },
+            // COMMON Female
+            11: { name: "Diva Dash",      stats: ['spd','cha'], icon: '💃', desc: 'Diva Energy!' },
+            12: { name: "All Red Rage",   stats: ['cha','spd'], icon: '❤️', desc: 'Carisma de foc!' },
+            13: { name: "Rosa Spin",      stats: ['spd','cha'], icon: '🌹', desc: 'Dans Distractiv!' },
+            // UNCOMMON Male
+            101: { name: "Big Ending",    stats: ['pow','tgh'], icon: '🏋️', desc: 'Finisher Power!' },
+            102: { name: "Killswitch",    stats: ['spd','cha'], icon: '⚡', desc: 'Quick Strike!' },
+            103: { name: "Cross Rhodes",  stats: ['pow','spd'], icon: '🎯', desc: 'Precision Strike!' },
+            104: { name: "Curtain Call",  stats: ['cha','tgh'], icon: '🎭', desc: 'Showman!' },
+            105: { name: "Hall of Pain",  stats: ['pow','tgh'], icon: '😤', desc: 'Unstoppable Force!' },
+            106: { name: "619",           stats: ['spd','cha'], icon: '🎭', desc: 'Lucha Libre!' },
+            107: { name: "Shell Shocked", stats: ['pow','tgh'], icon: '🦖', desc: 'FEED. ME. MORE!' },
+            111: { name: "Foxy Kick",     stats: ['spd','pow'], icon: '🦊', desc: 'Viteza Diva!' },
+            112: { name: "Lay-Cool",      stats: ['cha','spd'], icon: '😎', desc: 'The It Factor!' },
+            113: { name: "Summer Spin",   stats: ['cha','spd'], icon: '☀️', desc: 'Summertime Fun!' },
+            // RARE Male
+            201: { name: "Cross Armbreaker", stats: ['pow','tgh'], icon: '🦅', desc: 'Tap Out!' },
+            202: { name: "Chokeslam",     stats: ['pow','tgh'], icon: '🤛', desc: 'Giant Strength!' },
+            203: { name: "Cesaro Swing",  stats: ['tgh','pow'], icon: '🌀', desc: 'The Swing!' },
+            204: { name: "Walls of Jericho", stats: ['cha','spd'], icon: '🦁', desc: 'Y2J!' },
+            205: { name: "Zig Zag",       stats: ['spd','cha'], icon: '⚡', desc: 'Show Off!' },
+            206: { name: "Tombstone",     stats: ['pow','tgh'], icon: '🔥', desc: 'Kane Fury!' },
+            207: { name: "Trouble in Paradise", stats: ['spd','cha'], icon: '🌴', desc: 'Boom Boom!' },
+            208: { name: "Skull Crushing Finale", stats: ['pow','cha'], icon: '💀', desc: 'Must. Be. Awesome.' },
+            211: { name: "Black Widow",   stats: ['spd','cha'], icon: '🕷️', desc: 'Crazy Legs AJ!' },
+            212: { name: "Brie Mode",     stats: ['cha','spd'], icon: '💎', desc: 'Brie Mode!' },
+            213: { name: "Rear View",     stats: ['pow','spd'], icon: '💫', desc: 'Glow Power!' },
+            // SUPERRARE Male
+            301: { name: "Batista Bomb",  stats: ['pow','tgh'], icon: '🦁', desc: 'Animal Unleashed!' },
+            302: { name: "Sister Abigail", stats: ['pow','cha'], icon: '🕯️', desc: 'Follow The Buzzards!' },
+            303: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
+            304: { name: "Attitude Adjustment", stats: ['pow','cha'], icon: '🏆', desc: 'You Can\'t See Me!' },
+            305: { name: "Superman Punch", stats: ['pow','spd'], icon: '🏋️', desc: 'Believe That!' },
+            306: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Architect!' },
+            307: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Game!' },
+            308: { name: "Last Ride",     stats: ['pow','tgh'], icon: '💀', desc: 'Rest In Peace!' },
+            311: { name: "Sharpshooter", stats: ['tgh','spd'], icon: '🔱', desc: 'Queen of Harts!' },
+            312: { name: "Rack Attack",  stats: ['pow','tgh'], icon: '💎', desc: 'Fearless Nikki!' },
+            313: { name: "Ram-Paige",    stats: ['spd','pow'], icon: '⚡', desc: 'Anti-Diva!' },
+            // ULTRARARE Male
+            401: { name: "YES! Lock",    stats: ['tgh','spd'], icon: '🐐', desc: 'YES! YES! YES!' },
+            402: { name: "Spear",        stats: ['pow','spd'], icon: '⚡', desc: 'Rated-R Superstar!' },
+            403: { name: "RKO Outta Nowhere", stats: ['spd','pow'], icon: '🐢', desc: 'RKO! RKO!' },
+            404: { name: "Five Star Frog Splash", stats: ['spd','cha'], icon: '🐸', desc: 'Mr. Monday Night!' },
+            405: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'HBK Superkick!' },
+            406: { name: "Stone Cold Stunner", stats: ['pow','cha'], icon: '🍺', desc: 'Oh Hell Yeah!' },
+            407: { name: "People\'s Elbow", stats: ['cha','pow'], icon: '🎙️', desc: 'If You Smellll..!' },
+            411: { name: "AJ Lee Crazy", stats: ['cha','spd'], icon: '🕷️', desc: 'Pipebomb Diva!' },
+            412: { name: "Bella Buster",  stats: ['pow','cha'], icon: '💅', desc: 'Bella Twins!' },
+            // EPIC Male
+            501: { name: "Book End",     stats: ['pow','cha'], icon: '📚', desc: 'Can You Dig It?' },
+            502: { name: "F-5",          stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Incarnate!' },
+            503: { name: "STF",          stats: ['tgh','cha'], icon: '🏆', desc: 'Hustle Loyalty Respect!' },
+            504: { name: "Chokeslam to Hell", stats: ['pow','tgh'], icon: '😈', desc: 'Hellfire & Brimstone!' },
+            505: { name: "Punt Kick",    stats: ['pow','spd'], icon: '🐢', desc: 'Apex Predator!' },
+            506: { name: "619 Mayhem",   stats: ['spd','cha'], icon: '🎭', desc: 'Lucha! Lucha!' },
+            507: { name: "Figure Four",  stats: ['cha','tgh'], icon: '💎', desc: 'WOOOOO!' },
+            511: { name: "Cameron Diva", stats: ['cha','spd'], icon: '💄', desc: 'Funkadactyl!' },
+            512: { name: "Naomi Glow",   stats: ['cha','spd'], icon: '✨', desc: 'Feel The Glow!' },
+            513: { name: "Sharpshooter II", stats: ['tgh','pow'], icon: '🔱', desc: 'Natalya Neidhart!' },
+            // LEGENDARY Male
+            601: { name: "WWWF Slam",    stats: ['pow','tgh'], icon: '🏆', desc: 'Living Legend!' },
+            602: { name: "Frog Splash",  stats: ['spd','cha'], icon: '🐸', desc: 'Latino Heat! ¡Viva la Raza!' },
+            603: { name: "Leg Drop of Doom", stats: ['pow','cha'], icon: '🦵', desc: 'Whatcha Gonna Do?!' },
+            604: { name: "Savage Elbow", stats: ['pow','cha'], icon: '💥', desc: 'OH YEAH!' },
+            605: { name: "HBK Special",  stats: ['spd','cha'], icon: '❤️', desc: 'Showstopper!' },
+            606: { name: "Stone Cold Stunner", stats: ['pow','cha'], icon: '🍺', desc: 'The Rattlesnake!' },
+            607: { name: "Rock Bottom",  stats: ['pow','cha'], icon: '🎙️', desc: 'The Most Electrifying Man!' },
+            608: { name: "Warrior Splash", stats: ['pow','spd'], icon: '💪', desc: 'Warrior Power!' },
+            609: { name: "Tombstone RIP", stats: ['pow','tgh'], icon: '⚰️', desc: 'The Deadman Rises!' },
+            611: { name: "Black Widow II", stats: ['spd','cha'], icon: '🕷️', desc: 'Diva of the Year!' },
+            612: { name: "Bella Buster II", stats: ['cha','pow'], icon: '👑', desc: 'Total Divas!' },
+            613: { name: "McMahon Power", stats: ['cha','tgh'], icon: '💼', desc: 'It\'s Good for Business!' },
+            // SURVIVOR Male
+            701: { name: "Scorpion Deathlock", stats: ['tgh','pow'], icon: '🦂', desc: 'The Icon! The Legend!' },
+            702: { name: "Spear of Destiny", stats: ['pow','tgh'], icon: '🏋️', desc: 'Big Dog Territory!' },
+            703: { name: "Phoenix Stomp", stats: ['spd','pow'], icon: '🔥', desc: 'Visionary Architect!' },
+            704: { name: "Dirty Deeds II", stats: ['pow','spd'], icon: '😈', desc: 'Unstable Genius!' },
+            705: { name: "Sister Abigail II", stats: ['pow','cha'], icon: '🕷️', desc: 'The Eater of Worlds!' },
+            706: { name: "Running Knee",  stats: ['spd','tgh'], icon: '💥', desc: 'YES Movement!' },
+            707: { name: "AA + STF",      stats: ['pow','cha'], icon: '🏆', desc: 'Face of WWE!' },
+            708: { name: "People\'s Elbow II", stats: ['cha','pow'], icon: '🎙️', desc: 'Final Boss!' },
+            711: { name: "Ram-Paige II",  stats: ['spd','pow'], icon: '⚡', desc: 'First Divas Champ!' },
+            712: { name: "Rack Attack II", stats: ['pow','tgh'], icon: '💎', desc: 'Fearless!' },
+            713: { name: "Emma Dance",    stats: ['cha','spd'], icon: '🦋', desc: 'Emmalution!' },
+
+            // ABILITĂȚI COMMON noi
+            8:  { name: "Last Dance",     stats: ['cha','spd'], icon: '🕺', desc: 'Fandango!' },
+            15: { name: "Uso Splash",     stats: ['pow','spd'], icon: '🌊', desc: 'The Usos!' },
+            16: { name: "Uso Splash",     stats: ['pow','spd'], icon: '🌊', desc: 'The Usos!' },
+            18: { name: "Accolade",       stats: ['pow','tgh'], icon: '🏋️', desc: 'Rusev Crush!' },
+            19: { name: "Discus Clothesline", stats: ['pow','tgh'], icon: '💢', desc: 'Wyatt Family!' },
+            25: { name: "Trouble in Paradise", stats: ['spd','cha'], icon: '🌴', desc: 'Boom!' },
+            26: { name: "Brogue Kick",    stats: ['pow','spd'], icon: '🦵', desc: 'Celtic Warrior!' },
+            27: { name: "Five Star Frog Splash", stats: ['spd','cha'], icon: '🐸', desc: 'RVD!' },
+            28: { name: "Superman Punch", stats: ['pow','spd'], icon: '👊', desc: 'The Shield!' },
+
+            // ABILITĂȚI UNCOMMON noi
+            108: { name: "Bull Hammer",   stats: ['pow','tgh'], icon: '🔨', desc: 'Bad News!' },
+            109: { name: "Ankle Lock",    stats: ['tgh','pow'], icon: '🔒', desc: 'Real American!' },
+            110: { name: "Sister Abigail",stats: ['pow','cha'], icon: '🕯️', desc: 'Follow The Buzzards!' },
+            114: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Mode!' },
+            115: { name: "Running Knee",  stats: ['spd','tgh'], icon: '💥', desc: 'YES! YES! YES!' },
+            116: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
+            117: { name: "Zig Zag",       stats: ['spd','cha'], icon: '⚡', desc: 'Show Off!' },
+            118: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Seth Freakin Rollins!' },
+            119: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'RKO Outta Nowhere!' },
+            122: { name: "AA",            stats: ['pow','cha'], icon: '🏆', desc: 'Never Give Up!' },
+            123: { name: "Brogue Kick",   stats: ['pow','tgh'], icon: '🦵', desc: 'Sheamus!' },
+            124: { name: "Rock Bottom",   stats: ['pow','cha'], icon: '🎙️', desc: 'Know Your Role!' },
+            125: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Game!' },
+            126: { name: "Tombstone",     stats: ['pow','tgh'], icon: '⚰️', desc: 'Rest In Peace!' },
+            127: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'HBK!' },
+            128: { name: "Spear",         stats: ['pow','spd'], icon: '⚡', desc: 'Rated R Superstar!' },
+            130: { name: "Sharpshooter",  stats: ['tgh','spd'], icon: '🔱', desc: 'Queen of Harts!' },
+            131: { name: "Rack Attack",   stats: ['pow','tgh'], icon: '💎', desc: 'Fearless Nikki!' },
+            132: { name: "Ram-Paige",     stats: ['spd','pow'], icon: '⚡', desc: 'Anti-Diva!' },
+
+            // ABILITĂȚI RARE noi
+            209: { name: "Batista Bomb",  stats: ['pow','tgh'], icon: '💣', desc: 'Batista Bomb!' },
+            210: { name: "Sister Abigail",stats: ['pow','cha'], icon: '🕯️', desc: 'Eater of Worlds!' },
+            214: { name: "Bull Hammer",   stats: ['pow','tgh'], icon: '🔨', desc: 'Barrett!' },
+            215: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Incarnate!' },
+            216: { name: "Running Knee",  stats: ['spd','tgh'], icon: '💥', desc: 'YES! YES! YES!' },
+            217: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
+            218: { name: "Brogue Kick",   stats: ['pow','tgh'], icon: '🦵', desc: 'Celtic Warrior!' },
+            219: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'King of Kings!' },
+            221: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Apex Predator!' },
+            222: { name: "Spear",         stats: ['pow','tgh'], icon: '💪', desc: 'Roman Reigns!' },
+            223: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Architect!' },
+            224: { name: "Five Star",     stats: ['spd','cha'], icon: '🐸', desc: 'Mr. Monday Night!' },
+            225: { name: "Leg Drop",      stats: ['pow','cha'], icon: '🦵', desc: 'Whatcha Gonna Do?!' },
+            226: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'Showstopper!' },
+            227: { name: "Tombstone",     stats: ['pow','tgh'], icon: '⚰️', desc: 'The Phenom!' },
+            228: { name: "Rock Bottom",   stats: ['pow','cha'], icon: '🎙️', desc: 'The People\'s Champ!' },
+            229: { name: "AA",            stats: ['pow','cha'], icon: '🏆', desc: 'Hustle Loyalty Respect!' },
+            230: { name: "Discus Clothesline", stats: ['pow','tgh'], icon: '💢', desc: 'Wyatt Family!' },
+            232: { name: "World\'s Strongest Slam", stats: ['pow','tgh'], icon: '💪', desc: 'World\'s Strongest Man!' },
+            237: { name: "Perfect Plex",  stats: ['tgh','cha'], icon: '🎯', desc: 'Mr. Perfect!' },
+
+            // ABILITĂȚI SUPERRARE noi
+            309: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Cerebral Assassin!' },
+            310: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Apex Predator!' },
+            314: { name: "Chokeslam",     stats: ['pow','tgh'], icon: '🤛', desc: 'Andre the Giant!' },
+            315: { name: "Frog Splash",   stats: ['spd','cha'], icon: '🐸', desc: 'Latino Heat!' },
+            316: { name: "Spear",         stats: ['pow','tgh'], icon: '💪', desc: 'Roman Empire!' },
+            317: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Mr. Money in the Bank!' },
+            318: { name: "Meat Hook",     stats: ['pow','tgh'], icon: '🦖', desc: 'FEED. ME. MORE!' },
+            319: { name: "Brogue Kick",   stats: ['pow','tgh'], icon: '🦵', desc: 'Celtic Warrior!' },
+            320: { name: "WMD",           stats: ['pow','tgh'], icon: '🌍', desc: 'World\'s Largest Athlete!' },
+            321: { name: "Neutralizer",   stats: ['tgh','pow'], icon: '🌀', desc: 'The King of Swing!' },
+            322: { name: "DDT",           stats: ['pow','cha'], icon: '🐍', desc: 'Trust me!' },
+            323: { name: "Corporate Power", stats: ['cha','tgh'], icon: '💼', desc: 'WWE Chairman!' },
+            326: { name: "Black Widow",   stats: ['spd','cha'], icon: '🕷️', desc: 'Pipebomb!' },
+            327: { name: "Bella Buster",  stats: ['pow','cha'], icon: '💎', desc: 'Bella Power!' },
+
+            // ABILITĂȚI ULTRARARE noi
+            408: { name: "YES! Lock",     stats: ['tgh','spd'], icon: '🐐', desc: 'YES! YES! YES!' },
+            409: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Suplex City!' },
+            410: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'DX King of Kings!' },
+            413: { name: "Ram-Paige",     stats: ['spd','pow'], icon: '⚡', desc: 'Anti-Diva Champ!' },
+            414: { name: "Rear View",     stats: ['pow','spd'], icon: '✨', desc: 'Feel The Glow!' },
+            415: { name: "Sharpshooter", stats: ['tgh','spd'], icon: '🔱', desc: 'Natalya!' },
+            416: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Viper Strike!' },
+            417: { name: "Spear",         stats: ['pow','tgh'], icon: '💪', desc: 'Roman Reigns!' },
+            418: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
+            419: { name: "Phoenix Stomp", stats: ['spd','pow'], icon: '🔥', desc: 'Seth Rollins!' },
+            421: { name: "Last Ride",     stats: ['pow','tgh'], icon: '💀', desc: 'Rest In Peace!' },
+            422: { name: "Brogue Kick",   stats: ['pow','tgh'], icon: '🦵', desc: 'Celtic Warrior!' },
+            423: { name: "Cesaro Swing",  stats: ['tgh','pow'], icon: '🌀', desc: 'The Swiss Superman!' },
+            424: { name: "Scissors Kick", stats: ['spd','cha'], icon: '✂️', desc: 'Can You Dig It!' },
+            425: { name: "Clothesline from Hell", stats: ['pow','tgh'], icon: '💢', desc: 'JBL!' },
+            427: { name: "Figure Four",   stats: ['cha','tgh'], icon: '💎', desc: 'WOOOOO!' },
+            428: { name: "Elbow of Doom", stats: ['pow','cha'], icon: '💥', desc: 'OH YEAH!' },
+
+            // ABILITĂȚI EPIC noi
+            508: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Game!' },
+            509: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'The Shield!' },
+            510: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Seth Freakin Rollins!' },
+            514: { name: "Billion Dollar Slap", stats: ['cha','pow'], icon: '💼', desc: 'McMahon Power!' },
+            515: { name: "Bella Buster",  stats: ['pow','cha'], icon: '💎', desc: 'Bella Army!' },
+            516: { name: "Ram-Paige",     stats: ['spd','pow'], icon: '⚡', desc: 'First Divas Champion!' },
+            517: { name: "Zig Zag",       stats: ['spd','cha'], icon: '⚡', desc: 'Show Off!' },
+            518: { name: "Brogue Kick",   stats: ['pow','tgh'], icon: '🦵', desc: 'Great White!' },
+            519: { name: "Leg Drop",      stats: ['pow','cha'], icon: '🦵', desc: 'Whatcha Gonna Do!' },
+            521: { name: "Batista Bomb",  stats: ['pow','tgh'], icon: '💣', desc: 'Batista!' },
+            522: { name: "Spear",         stats: ['pow','spd'], icon: '⚡', desc: 'Ultimate Opportunist!' },
+            523: { name: "Elbow of Doom", stats: ['pow','cha'], icon: '💥', desc: 'OH YEAH Macho Man!' },
+            524: { name: "Running Knee",  stats: ['spd','tgh'], icon: '💥', desc: 'YES Movement!' },
+            525: { name: "Spear",         stats: ['pow','tgh'], icon: '💪', desc: 'Big Dog!' },
+            526: { name: "Razor\'s Edge",  stats: ['pow','cha'], icon: '💈', desc: 'Bad Guy!' },
+            527: { name: "Vader Bomb",    stats: ['pow','tgh'], icon: '🧱', desc: 'Vader Time!' },
+
+            // ABILITĂȚI LEGENDARY noi
+            610: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Incarnate!' },
+            614: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Cerebral Assassin!' },
+            615: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
+            616: { name: "Sister Abigail",stats: ['pow','cha'], icon: '🕯️', desc: 'Eater of Worlds!' },
+            617: { name: "Spear",         stats: ['pow','tgh'], icon: '💪', desc: 'Believe That!' },
+            618: { name: "YES! Lock",     stats: ['tgh','spd'], icon: '🐐', desc: 'YES! YES! YES!' },
+            619: { name: "Zig Zag",       stats: ['spd','cha'], icon: '⚡', desc: 'The Show Off!' },
+            621: { name: "Rack Attack",   stats: ['pow','tgh'], icon: '💎', desc: 'Fearless Nikki!' },
+            622: { name: "Ram-Paige",     stats: ['spd','pow'], icon: '⚡', desc: 'Anti-Diva!' },
+            623: { name: "Sharpshooter",  stats: ['tgh','spd'], icon: '🔱', desc: 'Queen of Harts!' },
+            624: { name: "Phoenix Stomp", stats: ['spd','pow'], icon: '🔥', desc: 'Monday Night Messiah!' },
+            625: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Apex Predator!' },
+
+            // ABILITĂȚI SURVIVOR noi
+            709: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'King of Kings!' },
+            710: { name: "Last Ride",     stats: ['pow','tgh'], icon: '💀', desc: 'The Phenom!' },
+            714: { name: "Black Widow",   stats: ['spd','cha'], icon: '🕷️', desc: 'Queen of Crazy!' },
+            715: { name: "Bella Buster",  stats: ['pow','cha'], icon: '💎', desc: 'Bella Army!' },
+            716: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Viper!' },
+            717: { name: "Double Arm Chokeslam", stats: ['pow','tgh'], icon: '🤜', desc: 'The 8th Wonder!' },
+            718: { name: "Zig Zag",       stats: ['spd','cha'], icon: '⚡', desc: 'The Show Off!' },
+            719: { name: "Rowdy Rage",    stats: ['pow','cha'], icon: '🎸', desc: 'Hot Rod!' },
+            721: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Suplex City Survivor!' },
+            722: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'Mr. WrestleMania!' },
+            723: { name: "Spear",         stats: ['pow','spd'], icon: '⚡', desc: 'Rated-R Survivor!' },
+        };
+
+        // TIER-URI ACTULIZATE CU + SI ++ 
+        const TIERS = [
+            { name: 'Common', base: 'Common', min: 0, color: '#95a5a6' },
+            { name: 'Uncommon', base: 'Uncommon', min: 1000, color: '#2ecc71' },
+            { name: 'Rare', base: 'Rare', min: 2000, color: '#3498db' },
+            { name: 'Rare+', base: 'Rare', min: 2800, color: '#3498db' },
+            { name: 'Rare++', base: 'Rare', min: 3400, color: '#3498db' },
+            { name: 'Super Rare', base: 'SuperRare', min: 4000, color: '#00bcd4' },
+            { name: 'Super Rare+', base: 'SuperRare', min: 5000, color: '#00bcd4' },
+            { name: 'Super Rare++', base: 'SuperRare', min: 6000, color: '#00bcd4' },
+            { name: 'Ultra Rare', base: 'UltraRare', min: 7500, color: '#e040fb' },
+            { name: 'Ultra Rare+', base: 'UltraRare', min: 8800, color: '#e040fb' },
+            { name: 'Ultra Rare++', base: 'UltraRare', min: 10000, color: '#e040fb' },
+            { name: 'Epic', base: 'Epic', min: 11500, color: '#9b59b6' },
+            { name: 'Epic+', base: 'Epic', min: 13000, color: '#9b59b6' },
+            { name: 'Epic++', base: 'Epic', min: 14500, color: '#9b59b6' },
+            { name: 'Legendary', base: 'Legendary', min: 16500, color: '#f1c40f' },
+            { name: 'Legendary+', base: 'Legendary', min: 18500, color: '#f1c40f' },
+            { name: 'Legendary++', base: 'Legendary', min: 21000, color: '#f1c40f' },
+            { name: 'Survivor', base: 'Survivor', min: 24000, color: '#e74c3c' },
+            { name: 'Survivor+', base: 'Survivor', min: 27000, color: '#e74c3c' },
+            { name: 'Survivor++', base: 'Survivor', min: 30000, color: '#e74c3c' }
+        ];
+
+        // Crește la fiecare update → hard reset automat la load
+        const GAME_VERSION = '0.11.0';
+        const SAVE_KEY = 'sc2014_save';
+
+        const RARITIES = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'Epic', 'Legendary', 'Survivor'];
+
+        const UPGRADE = {
+            BASE_MAX: 10,
+            NORMAL_MAX: 15,
+            PERFECT_MAX: 20,
+            XP_BASE: 25,
+            GROWTH: { base: 0.058, normal: 0.042, perfect: 0.072, perfectP2: 0.078 }
+        };
+
+        let player = { coins: 0, picks: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+        window.currentOpponents = [];
+        let tradeTarget = null;
+        let tradeSacrifices = [];
+
+        let _notifTimer = null;
+        let _notifCallback = null;
+
+        function showNotification(message, duration, callback) {
+            // Dacă există o notificare activă, o terminăm imediat
+            if (_notifTimer) {
+                clearTimeout(_notifTimer);
+                _notifTimer = null;
+                const prev = _notifCallback;
+                _notifCallback = null;
+                if (prev) prev();
+            }
+
+            const notif = document.getElementById('game-notification');
+            document.getElementById('notification-text').innerHTML = message;
+            notif.classList.remove('hidden');
+            _notifCallback = callback;
+
+            _notifTimer = setTimeout(() => {
+                _notifTimer = null;
+                const cb = _notifCallback;
+                _notifCallback = null;
+                notif.classList.add('hidden');
+                if (cb) cb();
+            }, duration);
+        }
+
+        // Click oriunde pe notificare → skip imediat
+        document.getElementById('game-notification').addEventListener('click', function() {
+            if (_notifTimer) {
+                clearTimeout(_notifTimer);
+                _notifTimer = null;
+                const cb = _notifCallback;
+                _notifCallback = null;
+                this.classList.add('hidden');
+                if (cb) cb();
+            }
+        });
+
+        function migrateCard(card) {
+            if (card.pro) {
+                card.upgradeType = 'perfect';
+                card.phase = card.level >= card.maxLvl ? 2 : 1;
+                if (card.phase === 2) card.level = Math.max(0, card.level - 10);
+                delete card.pro;
+            }
+            if (card.xp === undefined) card.xp = 0;
+            if (!card.upgradeType) card.upgradeType = null;
+            if (!card.phase) card.phase = 1;
+            if (!card.maxLvl) card.maxLvl = getMaxLevel(card);
+            return card;
+        }
+
+        function freshStart() {
+            player = { coins: 0, picks: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+            [201, 101, 111, 1, 2, 20].forEach(id => addCard(id));
+            autoEquipDeck();
+            generateBoard();
+            localStorage.setItem('sc_version', GAME_VERSION);
+            save(false);
+        }
+
+        function initGame() {
+            if (localStorage.getItem('sc_version') !== GAME_VERSION) {
+                localStorage.removeItem('sc2014_v010');
+                localStorage.removeItem('sc2014_v90');
+                localStorage.removeItem(SAVE_KEY);
+                freshStart();
+                updateUI();
+                return;
+            }
+            let saved = localStorage.getItem(SAVE_KEY);
+            if (saved) {
+                player = JSON.parse(saved);
+                player.inventory = (player.inventory || []).map(migrateCard);
+                save(false);
+            } else {
+                freshStart();
+            }
+            updateUI();
+        }
+        
+        function save(update = true) {
+            localStorage.setItem('sc_version', GAME_VERSION);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(player));
+            if (update) updateUI();
+        }
+        function uid() { return Math.random().toString(36).substr(2, 9); }
+        function resetGamePrompt() {
+            if (confirm("Are you sure? You will lose all progress!")) {
+                localStorage.removeItem(SAVE_KEY);
+                localStorage.removeItem('sc2014_v010');
+                localStorage.removeItem('sc2014_v90');
+                localStorage.removeItem('sc_version');
+                location.reload();
+            }
+        }
+
+        function getCardBase(card) { return DB.find(c => c.id === card.id); }
+        function getCardRarity(card) { return getCardBase(card).rarity; }
+
+        function getMaxLevel(card) {
+            if (card.upgradeType === 'normal') return UPGRADE.NORMAL_MAX;
+            if (card.upgradeType === 'perfect') return card.phase === 2 ? UPGRADE.BASE_MAX : UPGRADE.BASE_MAX;
+            return UPGRADE.BASE_MAX;
+        }
+
+        function getEffectiveLevel(card) {
+            if (card.upgradeType === 'perfect' && card.phase === 2) return 10 + card.level;
+            return card.level;
+        }
+
+        function getEffectiveMax(card) {
+            if (card.upgradeType === 'normal') return UPGRADE.NORMAL_MAX;
+            if (card.upgradeType === 'perfect') return UPGRADE.PERFECT_MAX;
+            return UPGRADE.BASE_MAX;
+        }
+
+        function getStatMultiplier(card) {
+            const lv = card.level;
+            if (!card.upgradeType) return 1 + (lv - 1) * UPGRADE.GROWTH.base;
+            if (card.upgradeType === 'normal') {
+                if (lv <= 10) return 1 + (lv - 1) * UPGRADE.GROWTH.base;
+                const at10 = 1 + 9 * UPGRADE.GROWTH.base;
+                return at10 + (lv - 10) * UPGRADE.GROWTH.normal;
+            }
+            if (card.upgradeType === 'perfect' && card.phase === 2) {
+                const base10 = 1 + 9 * UPGRADE.GROWTH.base;
+                return base10 + lv * UPGRADE.GROWTH.perfectP2;
+            }
+            return 1 + (lv - 1) * UPGRADE.GROWTH.base;
+        }
+
+        function isPerfectCard(card) { return card.upgradeType === 'perfect'; }
+        function canPromote(card) {
+            return getCardBase(card).gender !== 'S' && !card.upgradeType && card.level >= UPGRADE.BASE_MAX;
+        }
+
+        function getXpNeeded(card) {
+            if (getEffectiveLevel(card) >= getEffectiveMax(card)) return 0;
+            return Math.max(1, card.level) * 100;
+        }
+
+        function getSacrificeXp(uid) {
+            const c = player.inventory.find(x => x.uid === uid);
+            if (!c) return 0;
+            const idx = RARITIES.indexOf(getCardRarity(c));
+            return UPGRADE.XP_BASE * Math.pow(2, Math.max(0, idx));
+        }
+
+        function processLevelUps(card) {
+            let gained = 0;
+            while (getEffectiveLevel(card) < getEffectiveMax(card)) {
+                const needed = getXpNeeded(card);
+                if (needed <= 0 || card.xp < needed) break;
+                card.xp -= needed;
+                card.level++;
+                gained++;
+            }
+            card.maxLvl = getMaxLevel(card);
+            return gained;
+        }
+
+        function addCard(id) {
+            let base = DB.find(c => c.id === id);
+            if(!base) return;
+            player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1 });
+        }
+
+        function getStats(card) {
+            let base = getCardBase(card);
+            if(!base) return null;
+            if(base.gender === 'S') return { ...base, uid: card.uid, lvl: 1, maxLvl: 1, xp: 0, xpNeeded: 0, upgradeType: null, phase: 1, effectiveLvl: 1, effectiveMax: 1 };
+            let multi = getStatMultiplier(card);
+            return {
+                ...base, uid: card.uid,
+                lvl: card.level,
+                xp: card.xp || 0,
+                xpNeeded: getXpNeeded(card),
+                effectiveLvl: getEffectiveLevel(card),
+                maxLvl: getMaxLevel(card),
+                effectiveMax: getEffectiveMax(card),
+                upgradeType: card.upgradeType,
+                phase: card.phase,
+                perfect: isPerfectCard(card),
+                pow: Math.floor(base.pow * multi), tgh: Math.floor(base.tgh * multi),
+                spd: Math.floor(base.spd * multi), cha: Math.floor(base.cha * multi)
+            };
+        }
+
+        function clearTradeSelection() {
+            tradeTarget = null;
+            tradeSacrifices = [];
+            updateTradeUI();
+            renderDeck();
+        }
+
+        function getSacrificeXpEnhanced(uid, targetCard) {
+            const c = player.inventory.find(x => x.uid === uid);
+            if (!c) return { xp: 0, levelBonus: 0, isNormalUpgrade: false };
+            const base = getCardBase(c);
+            const idx = RARITIES.indexOf(getCardRarity(c));
+            let xp = UPGRADE.XP_BASE * Math.pow(2, Math.max(0, idx));
+
+            // Support cards give normal XP, no bonuses
+            if (base.gender === 'S') return { xp, levelBonus: 0, isNormalUpgrade: false };
+
+            const isNormalUpgrade = c.upgradeType === 'normal';
+            // Dublu XP dacă sacrificiul e un Normal Upgrade
+            if (isNormalUpgrade) xp *= 2;
+
+            // Dacă sacrificiul are nivel mai mare decât 1, transferă o parte din XP acumulat
+            // Formula: 25% din (nivel_sacrificiu - 1) * XP_per_level (bazat pe raritate)
+            const sacLevel = getEffectiveLevel(c);
+            let levelBonus = 0;
+            if (sacLevel > 1 && targetCard) {
+                const sacRarityIdx = RARITIES.indexOf(getCardRarity(c));
+                const xpPerLevel = UPGRADE.XP_BASE * Math.pow(2, Math.max(0, sacRarityIdx));
+                // 40% din XP-ul total investit în sacrificiu se transferă
+                let totalInvested = 0;
+                for (let lv = 1; lv < sacLevel; lv++) totalInvested += lv * 100;
+                levelBonus = Math.floor(totalInvested * 0.40);
+            }
+            return { xp, levelBonus, isNormalUpgrade };
+        }
+
+        function updateTradeUI() {
+            const status = document.getElementById('trade-status');
+            const btnTrade = document.getElementById('btn-trade');
+            const btnNorm = document.getElementById('btn-promote-normal');
+            const btnPerf = document.getElementById('btn-promote-perfect');
+            const btnClear = document.getElementById('btn-clear-trade');
+            if (!status) return;
+
+            btnTrade.style.display = 'none';
+            btnNorm.style.display = 'none';
+            btnPerf.style.display = 'none';
+            btnClear.style.display = tradeTarget ? 'inline-flex' : 'none';
+
+            if (!tradeTarget) {
+                status.innerHTML = 'Tap a card from your collection as the <strong>target</strong> for trade. You can also use Support cards as fodder!';
+                return;
+            }
+
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            if (!target) { clearTradeSelection(); return; }
+            const base = getCardBase(target);
+            if (base.gender === 'S') {
+                status.innerHTML = 'Support cards cannot be upgraded (but they can be used as fodder for others).';
+                return;
+            }
+
+            const effMax = getEffectiveMax(target);
+            const effLv = getEffectiveLevel(target);
+            const xpNeed = getXpNeeded(target);
+
+            let pendingXP = 0;
+            let bonusXP = 0;
+            let hasNormalUpgradeFodder = false;
+            tradeSacrifices.filter(u => u !== tradeTarget).forEach(u => {
+                const info = getSacrificeXpEnhanced(u, target);
+                pendingXP += info.xp;
+                bonusXP += info.levelBonus;
+                if (info.isNormalUpgrade) hasNormalUpgradeFodder = true;
+            });
+            const pending = pendingXP + bonusXP;
+
+            if (canPromote(target)) {
+                status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — choose <strong>Normal Upgrade</strong> or <strong>Perfect ★</strong>.`;
+                btnNorm.style.display = 'inline-flex';
+                btnPerf.style.display = 'inline-flex';
+                if (pending > 0) btnTrade.style.display = 'inline-flex';
+                return;
+            }
+
+            if (effLv >= effMax) {
+                status.innerHTML = `<strong>${base.name}</strong> is at max level (${effMax}).`;
+                return;
+            }
+
+            let xpDesc = `+${pendingXP} XP`;
+            if (bonusXP > 0) xpDesc += ` <span style="color:#f1c40f">+${bonusXP} XP level bonus</span>`;
+            if (hasNormalUpgradeFodder) xpDesc += ` <span style="color:#e040fb">(2× from Normal Upgrade!)</span>`;
+            status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — XP: <strong>${target.xp}/${xpNeed}</strong> | fodder: <strong>${xpDesc}</strong> = <strong style="color:#2ecc71">${pending} XP total</strong>`;
+            if (pending > 0) btnTrade.style.display = 'inline-flex';
+        }
+
+        function selectTradeCard(uid) {
+            const card = player.inventory.find(c => c.uid === uid);
+            if (!card) return;
+            const base = getCardBase(card);
+
+            // Support cards can ONLY be fodder, never target
+            if (base.gender === 'S') {
+                if (!tradeTarget) return; // no target set — ignoring
+                if (tradeSacrifices.includes(uid)) {
+                    tradeSacrifices = tradeSacrifices.filter(x => x !== uid);
+                } else {
+                    tradeSacrifices.push(uid);
+                }
+                updateTradeUI();
+                renderDeck();
+                return;
+            }
+
+            if (tradeTarget === uid) {
+                tradeTarget = null;
+                tradeSacrifices = [];
+            } else if (!tradeTarget) {
+                tradeTarget = uid;
+            } else if (tradeSacrifices.includes(uid)) {
+                tradeSacrifices = tradeSacrifices.filter(x => x !== uid);
+            } else if (uid !== tradeTarget) {
+                tradeSacrifices.push(uid);
+            }
+            updateTradeUI();
+            renderDeck();
+        }
+
+        function consumeSacrifices() {
+            tradeSacrifices.filter(u => u !== tradeTarget).forEach(uid => {
+                player.inventory = player.inventory.filter(c => c.uid !== uid);
+                player.deck.M = player.deck.M.filter(u => u !== uid);
+                player.deck.F = player.deck.F.filter(u => u !== uid);
+                player.deck.S = player.deck.S.filter(u => u !== uid);
+            });
+            tradeSacrifices = [];
+        }
+
+        function feedSacrifices() {
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            const sacs = tradeSacrifices.filter(u => u !== tradeTarget);
+            if (!target || sacs.length === 0) return;
+
+            let baseXP = 0, bonusXP = 0;
+            let hasNormalUpgradeFodder = false;
+            sacs.forEach(uid => {
+                const info = getSacrificeXpEnhanced(uid, target);
+                baseXP += info.xp;
+                bonusXP += info.levelBonus;
+                if (info.isNormalUpgrade) hasNormalUpgradeFodder = true;
+            });
+            const totalXP = baseXP + bonusXP;
+            consumeSacrifices();
+            target.xp = (target.xp || 0) + totalXP;
+            const levels = processLevelUps(target);
+
+            let msg = `+${baseXP} XP added!`;
+            if (hasNormalUpgradeFodder) msg += `<br><span style="color:#e040fb">🔮 2× XP from Normal Upgrade!</span>`;
+            if (bonusXP > 0) msg += `<br><span style="color:#f1c40f">+${bonusXP} XP level fodder bonus</span>`;
+            if (levels > 0) msg += `<br>⬆️ ${getCardBase(target).name} → LVL ${getEffectiveLevel(target)}`;
+            showNotification(msg, 2000);
+
+            if (canPromote(target)) tradeTarget = null;
+            autoEquipDeck(); save(); renderDeck();
+        }
+
+        function promoteNormal() {
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            if (!target || !canPromote(target)) return;
+            target.upgradeType = 'normal';
+            target.maxLvl = UPGRADE.NORMAL_MAX;
+            processLevelUps(target);
+            showNotification(`⬆️ UPGRADE NORMAL!<br>${getCardBase(target).name} can now reach LVL 15.`, 2500);
+            tradeTarget = null;
+            autoEquipDeck(); save(); renderDeck();
+        }
+
+        function promotePerfect() {
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            if (!target || !canPromote(target)) return;
+            target.upgradeType = 'perfect';
+            target.phase = 2;
+            target.level = 0;
+            target.xp = 0;
+            target.maxLvl = UPGRADE.BASE_MAX;
+            showNotification(`★ UPGRADE PERFECT!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL 20!`, 2500);
+            tradeTarget = null;
+            autoEquipDeck(); save(); renderDeck();
+        }
+
+        function autoEquipDeck(force = false) {
+            // Dacă userul și-a editat manual deck-ul, nu îl suprascrie automat
+            if (!force && player.deckManuallyEdited) {
+                // Verifică totuși că cărțile din deck mai există în inventar (pot fi sacrificate)
+                player.deck.M = player.deck.M.filter(uid => player.inventory.some(c => c.uid === uid));
+                player.deck.F = player.deck.F.filter(uid => player.inventory.some(c => c.uid === uid));
+                player.deck.S = player.deck.S.filter(uid => player.inventory.some(c => c.uid === uid));
+                // Dacă deck-ul manual a rămas fără suficiente cărți, completează automat
+                if (player.deck.M.length < 4 || player.deck.F.length < 1) {
+                    _fillMissingDeckSlots();
+                }
+                return;
+            }
+            let sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M').sort((a,b) => {
+                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+            });
+            let sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => {
+                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+            });
+            let sortedS = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => {
+                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+            });
+            
+            while(sortedM.length < 4) { addCard(1); sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M'); }
+            if(sortedF.length < 1) { addCard(11); sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F'); }
+
+            player.deck.M = sortedM.slice(0, 4).map(c => c.uid);
+            player.deck.F = sortedF.length > 0 ? [sortedF[0].uid] : [];
+            player.deck.S = sortedS.length > 0 ? [sortedS[0].uid] : [];
+        }
+
+        function _fillMissingDeckSlots() {
+            // Completează doar sloturile lipsă, fără a suprascrie ce e deja ales manual
+            let inDeck = new Set([...player.deck.M, ...player.deck.F, ...player.deck.S]);
+            if (player.deck.M.length < 4) {
+                let extra = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M' && !inDeck.has(c.uid))
+                    .sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); });
+                while (player.deck.M.length < 4 && extra.length > 0) {
+                    let c = extra.shift(); player.deck.M.push(c.uid); inDeck.add(c.uid);
+                }
+                while (player.deck.M.length < 4) { addCard(1); let c = player.inventory[player.inventory.length-1]; player.deck.M.push(c.uid); inDeck.add(c.uid); }
+            }
+            if (player.deck.F.length < 1) {
+                let extra = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F' && !inDeck.has(c.uid))
+                    .sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); });
+                if (extra.length > 0) { player.deck.F.push(extra[0].uid); }
+                else { addCard(11); let c = player.inventory[player.inventory.length-1]; player.deck.F.push(c.uid); }
+            }
+        }
+
+        // --- EDITARE MANUALĂ DECK ---
+        let deckEditMode = false;
+        let deckEditDraft = { M: [], F: [], S: [] }; // draft temporar cât ești în edit
+
+        function toggleDeckEdit() {
+            if (deckEditMode) {
+                cancelDeckEdit();
+            } else {
+                deckEditMode = true;
+                // Porneste cu deck-ul curent ca baza
+                deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
+                document.getElementById('btn-auto-deck').style.display = 'inline-flex';
+                document.getElementById('btn-save-deck').style.display = 'inline-flex';
+                document.getElementById('btn-cancel-deck').style.display = 'inline-flex';
+                document.getElementById('deck-edit-info').style.display = 'block';
+                document.getElementById('deck-mode-label').innerText = 'MANUAL EDIT — 4 M, 1 F, 1 SUPP';
+                document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITING...';
+                renderDeck();
+            }
+        }
+
+        function cancelDeckEdit() {
+            deckEditMode = false;
+            deckEditDraft = { M: [], F: [], S: [] };
+            document.getElementById('btn-auto-deck').style.display = 'none';
+            document.getElementById('btn-save-deck').style.display = 'none';
+            document.getElementById('btn-cancel-deck').style.display = 'none';
+            document.getElementById('deck-edit-info').style.display = 'none';
+            document.getElementById('deck-mode-label').innerText = 'Top cards: 4 M, 1 F, 1 SUPP';
+            document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITEAZĂ DECK';
+            renderDeck();
+        }
+
+        function saveDeckEdit() {
+            if (deckEditDraft.M.length !== 4) return showNotification('❌ You need exactly 4 Male cards in the deck!', 1500);
+            if (deckEditDraft.F.length !== 1) return showNotification('❌ You need exactly 1 Female card in the deck!', 1500);
+            // Support e opțional
+            player.deck.M = [...deckEditDraft.M];
+            player.deck.F = [...deckEditDraft.F];
+            player.deck.S = [...deckEditDraft.S];
+            player.deckManuallyEdited = true; // Marchează că deck-ul e manual — autoEquip nu îl va suprascrie
+            save();
+            showNotification('✅ Deck saved!', 1200);
+            cancelDeckEdit();
+        }
+
+        function applyAutoDeck() {
+            player.deckManuallyEdited = false; // Permite autoEquip să suprascrie
+            autoEquipDeck(true);
+            deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
+            renderDeck();
+            showNotification('🤖 Auto-best applied to draft!', 1000);
+        }
+
+        function toggleDeckCard(uid) {
+            if (!deckEditMode) return;
+            const card = player.inventory.find(c => c.uid === uid);
+            if (!card) return;
+            const g = getCardBase(card).gender;
+
+            const slot = g === 'M' ? 'M' : g === 'F' ? 'F' : 'S';
+            const limit = slot === 'M' ? 4 : 1;
+            const inDeck = deckEditDraft[slot].includes(uid);
+
+            if (inDeck) {
+                deckEditDraft[slot] = deckEditDraft[slot].filter(x => x !== uid);
+            } else {
+                if (deckEditDraft[slot].length >= limit) {
+                    // Înlocuiește primul din slot cu noul
+                    deckEditDraft[slot].shift();
+                }
+                deckEditDraft[slot].push(uid);
+            }
+            updateDeckSlotsInfo();
+            renderDeck();
+        }
+
+        function updateDeckSlotsInfo() {
+            const m = deckEditDraft.M.length, f = deckEditDraft.F.length, s = deckEditDraft.S.length;
+            const el = document.getElementById('deck-slots-info');
+            if (el) el.innerHTML = `M: <span style="color:${m===4?'#2ecc71':'#e74c3c'}">${m}/4</span>  F: <span style="color:${f===1?'#2ecc71':'#e74c3c'}">${f}/1</span>  SUPP: <span style="color:${s<=1?'#2ecc71':'#f1c40f'}">${s}/1</span>`;
+        }
+
+        function calculateDeckTier() {
+            let m = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,4);
+            let f = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,1);
+            let s = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,1);
+
+            let totalStats = 0;
+            [...m, ...f, ...s].forEach(c => { let st = getStats(c); totalStats += (st.pow + st.tgh + st.spd + st.cha); });
+
+            let cTier = TIERS[0]; let nTier = TIERS[1];
+            for(let i=0; i<TIERS.length; i++) {
+                if(totalStats >= TIERS[i].min) { cTier = TIERS[i]; nTier = TIERS[i+1] || null; }
+            }
+            let pct = 100;
+            if(nTier) pct = ((totalStats - cTier.min) / (nTier.min - cTier.min)) * 100;
+            return { name: cTier.name, base: cTier.base, pct: Math.min(100, Math.max(0, pct)), color: cTier.color, current: Math.floor(totalStats), next: nTier ? nTier.min : 'MAX' };
+        }
+
+        function updateUI() {
+            document.getElementById('coins-display').innerText = player.coins;
+            document.getElementById('picks-display').innerText = player.picks;
+            document.getElementById('draft-picks').innerText = player.picks;
+            if(document.getElementById('col-count')) document.getElementById('col-count').innerText = player.inventory.length;
+
+            let tierInfo = calculateDeckTier();
+            let tn = document.getElementById('tier-name');
+            tn.innerText = tierInfo.name; tn.style.color = tierInfo.color;
+            document.getElementById('tier-bar').style.width = tierInfo.pct + '%';
+            document.getElementById('tier-bar').style.background = `linear-gradient(90deg, ${tierInfo.color}, #fff)`;
+            document.getElementById('tier-numbers-display').innerText = `${tierInfo.current} / ${tierInfo.next}`;
+        }
+
+        function showScreen(id) { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+            if (id !== 'deck-screen') {
+                clearTradeSelection();
+                if (deckEditMode) cancelDeckEdit();
+            }
+        }
+
+        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="") {
+            let lvlLabel = stats.effectiveLvl ?? stats.lvl;
+            let maxLabel = stats.effectiveMax ?? stats.maxLvl;
+            if (stats.lvl === '?') {
+                lvlLabel = '?';
+                maxLabel = '?';
+            } else if (stats.perfect && stats.phase === 2) {
+                lvlLabel = `★${stats.lvl}`;
+                maxLabel = `${stats.effectiveLvl}/20`;
+            }
+            const xpMax = stats.xpNeeded || 0;
+            const xpPct = (stats.gender === 'S' || stats.lvl === '?' || xpMax === 0) ? 100 : Math.min(100, ((stats.xp || 0) / xpMax) * 100);
+            const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">◆</div>' : '';
+            
+            // Abilitate specială pentru cărțile non-Support, non-Common
+            let abilityHTML = '';
+            if (stats.gender !== 'S' && stats.rarity !== 'Common') {
+                const ab = ABILITIES[stats.id];
+                if (ab) {
+                    const s1 = ab.stats[0].toUpperCase();
+                    const s2 = ab.stats[1].toUpperCase();
+                    // Bonus fix afișat pe carte per raritate
+                    let badgesHTML = '';
+                    const rarity = stats.rarity;
+                    if (rarity === 'Uncommon') {
+                        // +10 la un singur stat (primul)
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +10</span>`;
+                    } else if (rarity === 'Rare') {
+                        // +15 la stat-ul principal
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +15</span>`;
+                    } else if (rarity === 'SuperRare') {
+                        // Verificăm dacă exceleaza considerabil
+                        const statVals = { pow: stats.pow, tgh: stats.tgh, spd: stats.spd, cha: stats.cha };
+                        const vals = Object.entries(statVals).filter(([k]) => statVals[k] > 0).sort((a, b) => b[1] - a[1]);
+                        const topStat = vals.length > 0 ? vals[0][0] : null;
+                        const topVal = vals.length > 0 ? vals[0][1] : 0;
+                        const secondVal = vals.length > 1 ? vals[1][1] : 0;
+                        const excels = topStat && (secondVal === 0 || (topVal - secondVal) / secondVal >= 0.05);
+                        if (excels && ab.stats.includes(topStat)) {
+                            badgesHTML = `<span class="ability-stat-badge">${topStat.toUpperCase()} +20</span>`;
+                        } else {
+                            badgesHTML = `<span class="ability-stat-badge">${s1} +11</span><span class="ability-stat-badge">${s2} +11</span>`;
+                        }
+                    } else if (rarity === 'UltraRare') {
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +17</span><span class="ability-stat-badge">${s2} +17</span>`;
+                    } else if (rarity === 'Epic') {
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +25</span><span class="ability-stat-badge">${s2} +25</span>`;
+                    } else if (rarity === 'Legendary') {
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +42</span><span class="ability-stat-badge">${s2} +42</span>`;
+                    } else if (rarity === 'Survivor') {
+                        badgesHTML = `<span class="ability-stat-badge">${s1} +55</span><span class="ability-stat-badge">${s2} +55</span>`;
+                    }
+                    abilityHTML = `<div class="card-ability">
+                        <span class="ability-name"><span class="ability-icon-small">${ab.icon}</span>${ab.name}</span>
+                        <div class="ability-stats-row">${badgesHTML}</div>
+                    </div>`;
+                }
+            }
+
+            return `
+                <div class="card rarity-${stats.rarity} ${extraClass}" onclick="${selectable ? `selectTradeCard('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
+                    ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
+                    <img src="${stats.img}">
+                    <div class="card-name-plate">${stats.name}</div>
+                    <div class="card-stats">
+                        <div class="stat ${highlight==='pow'?'stat-highlight':''}">${stats.pow>0?'POW: '+stats.pow:''}</div>
+                        <div class="stat ${highlight==='tgh'?'stat-highlight':''}">${stats.tgh>0?'TGH: '+stats.tgh:''}</div>
+                        <div class="stat ${highlight==='spd'?'stat-highlight':''}">${stats.spd>0?'SPD: '+stats.spd:''}</div>
+                        <div class="stat ${highlight==='cha'?'stat-highlight':''}">${stats.cha>0?'CHA: '+stats.cha:''}</div>
+                    </div>
+                    ${abilityHTML}
+                    ${stats.gender !== 'S' ? `
+                    <div class="card-footer"><span>LVL ${lvlLabel}</span><span>MAX ${maxLabel}</span></div>
+                    <div class="xp-bar"><div class="xp-fill" style="width:${xpPct}%"></div></div>
+                    <div class="xp-text">${stats.lvl==='?'?'SCALAT LA PUTEREA TA':((stats.xp||0)+' / '+(xpMax||'MAX')+' XP')}</div>` : '<div style="text-align:center;color:#bbb;font-size:12px;margin-top:5px; font-weight:bold;">SUPPORT</div>'}
+                </div>
+            `;
+        }
+
+        function renderDeck() {
+            if (!deckEditMode) autoEquipDeck();
+            document.getElementById('active-deck-grid').innerHTML = "";
+            document.getElementById('collection-grid').innerHTML = "";
+
+            const activeDeckUIDs = deckEditMode
+                ? [...deckEditDraft.M, ...deckEditDraft.F, ...deckEditDraft.S]
+                : [...player.deck.M, ...player.deck.F, ...player.deck.S];
+
+            if (deckEditMode) updateDeckSlotsInfo();
+
+            player.inventory.forEach(c => {
+                let s = getStats(c);
+                const inDeck = activeDeckUIDs.includes(c.uid);
+
+                if (deckEditMode) {
+                    // În edit mode, toate cărțile sunt în colecție dar marcăm ce e în deck
+                    let extra = inDeck ? 'deck-edit-in' : 'deck-edit-out';
+                    const g = getCardBase(c).gender;
+                    const slot = g === 'M' ? 'M' : g === 'F' ? 'F' : 'S';
+                    const limit = slot === 'M' ? 4 : 1;
+                    const slotFull = deckEditDraft[slot].length >= limit && !inDeck;
+                    if (slotFull && g !== 'S') extra += ' deck-edit-full'; // lock doar M/F dacă slot plin
+
+                    // Adaugă eticheta de slot
+                    let slotLabel = inDeck ? `IN DECK (${slot})` : '';
+
+                    let wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.innerHTML = renderHTMLCard(s, false, '', extra);
+                    if (slotLabel) wrapper.innerHTML += `<div class="card-slot-label">${slotLabel}</div>`;
+                    wrapper.onclick = () => toggleDeckCard(c.uid);
+                    wrapper.style.cursor = 'pointer';
+
+                    if (inDeck) {
+                        document.getElementById('active-deck-grid').appendChild(wrapper);
+                    } else {
+                        document.getElementById('collection-grid').appendChild(wrapper);
+                    }
+                } else {
+                    // Modul normal — trade
+                    if (inDeck) {
+                        let extra = tradeTarget === c.uid ? 'trade-target' : '';
+                        document.getElementById('active-deck-grid').innerHTML += renderHTMLCard(s, true, '', extra);
+                    } else {
+                        let extra = '';
+                        if (tradeTarget === c.uid) extra = 'trade-target';
+                        else if (tradeSacrifices.includes(c.uid)) extra = 'trade-sacrifice';
+                        let wrapper = document.createElement('div');
+                        wrapper.innerHTML = renderHTMLCard(s, true, '', extra);
+                        document.getElementById('collection-grid').appendChild(wrapper);
+                    }
+                }
+            });
+            if (!deckEditMode) updateTradeUI();
+        }
+
+        // --- MATCHMAKING: 4 opponents with varied difficulty ---
+        function showOpponentSelect() {
+            autoEquipDeck();
+            let myPower = calculateDeckTier().current;
+
+            // 4 opponents with distinct difficulty brackets
+            const brackets = [
+                { label: 'EASY',      emoji: '😌', minPct: 0.90, maxPct: 0.95, pickBonus: 0, aiMode: 'easy' },
+                { label: 'NORMAL',    emoji: '😐', minPct: 1.00, maxPct: 1.00, pickBonus: 0, aiMode: 'normal' },
+                { label: 'HARD',      emoji: '😤', minPct: 1.00, maxPct: 1.03, pickBonus: 1, aiMode: 'hard' },
+                { label: 'NIGHTMARE', emoji: '💀', minPct: 1.02, maxPct: 1.05, pickBonus: 2, aiMode: 'nightmare' },
+            ];
+
+            window.currentOpponents = brackets.map(b => {
+                let oppPower = Math.floor(myPower * (b.minPct + Math.random() * (b.maxPct - b.minPct)));
+                oppPower = Math.max(1, oppPower);
+                return { deck: createDeckForPower(oppPower), pickBonus: b.pickBonus, power: oppPower, label: b.label, emoji: b.emoji, aiMode: b.aiMode };
+            });
+
+            let container = document.getElementById('opponents-container');
+            container.innerHTML = '';
+
+            window.currentOpponents.forEach((opp, idx) => {
+                let relPct = Math.round((opp.power / myPower) * 100);
+                let diffColor;
+                if (opp.aiMode === 'easy') diffColor = '#2ecc71';
+                else if (opp.aiMode === 'normal') diffColor = '#f1c40f';
+                else if (opp.aiMode === 'hard') diffColor = '#e67e22';
+                else diffColor = '#e74c3c';
+
+                let diffLabel;
+                if (opp.power > myPower) diffLabel = `+${relPct - 100}% vs you`;
+                else if (opp.power < myPower) diffLabel = `-${100 - relPct}% vs you`;
+                else diffLabel = 'Even match';
+
+                let diffDesc;
+                if (opp.aiMode === 'easy') diffDesc = '🎲 AI plays mostly random';
+                else if (opp.aiMode === 'normal') diffDesc = '🧠 AI plays best card available';
+                else if (opp.aiMode === 'hard') diffDesc = '⚡ AI plays strategic & smart';
+                else diffDesc = '💡 AI plays near-optimally';
+
+                container.innerHTML += `
+                    <div class="card" style="width:220px; height:auto; padding:22px 18px; align-items:center; border-color:${diffColor}; box-shadow: 0 0 25px ${diffColor}55; cursor:pointer;" onclick="startMatchWithOpponent(${idx})">
+                        <div style="font-size: 52px; margin-bottom: 6px;">${opp.emoji}</div>
+                        <div style="color:${diffColor}; font-size:18px; font-weight:bold; letter-spacing:2px; margin-bottom:6px;">${opp.label}</div>
+                        <div style="color:#aaa; font-size:11px; font-family:Arial; margin-bottom:10px; letter-spacing:0.5px;">${diffDesc}</div>
+                        <div style="background: rgba(0,0,0,0.85); padding: 10px 14px; border-radius:10px; border:1px solid #555; width: 100%; text-align:center; margin-bottom:10px;">
+                            <div style="color:#aaa; font-size:11px; font-family:Arial; letter-spacing:1px; margin-bottom:4px;">OPPONENT POWER</div>
+                            <div style="color:#fff; font-size:26px; font-weight:bold;">${opp.power}</div>
+                            <div style="color:${diffColor}; font-size:12px; font-family:Arial; margin-top:4px;">${diffLabel}</div>
+                        </div>
+                        ${opp.pickBonus > 0 ? `<div style="background: rgba(241,196,15,0.15); border:1px solid #f1c40f; border-radius:8px; padding:6px 12px; color:#f1c40f; font-size:13px; font-weight:bold; width:100%; text-align:center; margin-bottom:8px;">🎴 +${opp.pickBonus} PICK BONUS if you win</div>` : ''}
+                        <div style="margin-top:8px; color:#fff; font-size:18px; font-weight:bold; letter-spacing:2px; text-shadow:0 0 10px ${diffColor};">▶ FIGHT!</div>
+                    </div>
+                `;
+            });
+
+            showScreen('opp-select-screen');
+        }
+
+        // Genereaza o echipă inamică scalată fix pe puterea target-ată, din tier-ul in care trebuie sa fie
+        function createDeckForPower(targetPower) {
+            let t = TIERS[2]; // Default Rare
+            for(let i=0; i<TIERS.length; i++) { if(targetPower >= TIERS[i].min) t = TIERS[i]; }
+            
+            let base = t.base;
+            let poolM = DB.filter(c => c.gender === 'M' && c.rarity === base);
+            let poolF = DB.filter(c => c.gender === 'F' && c.rarity === base);
+            let poolS = DB.filter(c => c.gender === 'S' && c.rarity === base);
+            
+            // Siguranta
+            if(!poolM.length) poolM = DB.filter(c => c.gender === 'M');
+            if(!poolF.length) poolF = DB.filter(c => c.gender === 'F');
+            if(!poolS.length) poolS = DB.filter(c => c.gender === 'S');
+            
+            let deck = [];
+            for(let i=0; i<4; i++) deck.push({ ...poolM[Math.floor(Math.random()*poolM.length)] });
+            deck.push({ ...poolF[Math.floor(Math.random()*poolF.length)] });
+            deck.push({ ...poolS[Math.floor(Math.random()*poolS.length)] });
+            
+            let sum = 0;
+            deck.forEach(c => sum += (c.pow + c.tgh + c.spd + c.cha));
+            sum = Math.max(1, sum);
+            
+            let ratio = targetPower / sum;
+            
+            // Construieste stats custom si returneaza "Stats Finale" pentru inamic
+            return deck.map((c, i) => {
+                return {
+                    ...c, uid: 'o_'+i, lvl: '?', maxLvl: '?', xp: 0, pro: false,
+                    pow: Math.floor(c.pow * ratio),
+                    tgh: Math.floor(c.tgh * ratio),
+                    spd: Math.floor(c.spd * ratio),
+                    cha: Math.floor(c.cha * ratio)
+                };
+            });
+        }
+
+        let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, pickBonus: 0 };
+
+        function startMatchWithOpponent(idx) {
+            let oppData = window.currentOpponents[idx];
+            autoEquipDeck(); save();
+            showScreen('match-screen');
+            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, pickBonus: oppData.pickBonus, aiMode: oppData.aiMode || 'normal' };
+            document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
+            document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
+            document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
+            nextRound();
+        }
+
+        function nextRound() {
+            if(match.round > 3 || match.pScore === 2 || match.oScore === 2) return endMatch(false);
+            match.selected = []; match.activeSupportUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0}; 
+            document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
+            document.getElementById('btn-confirm-play').style.display = 'none';
+
+            let availM = match.hand.filter(u => player.inventory.find(c=>c.uid===u) && DB.find(x=>x.id===player.inventory.find(c=>c.uid===u).id).gender === 'M' && !match.used.includes(u));
+            let availF = match.hand.filter(u => player.inventory.find(c=>c.uid===u) && DB.find(x=>x.id===player.inventory.find(c=>c.uid===u).id).gender === 'F' && !match.used.includes(u));
+
+            let rules = [];
+            if(availM.length >= 1) rules.push({ t: 'SINGLES', r: 1, g: 'M' });
+            if(availM.length >= 2) rules.push({ t: 'TAG TEAM', r: 2, g: 'M' });
+            if(availF.length >= 1) rules.push({ t: 'DIVAS', r: 1, g: 'F' });
+
+            let r = rules[Math.floor(Math.random() * rules.length)];
+            let st = ['pow', 'tgh', 'spd', 'cha'][Math.floor(Math.random()*4)];
+            match.rule = r; match.rule.stat = st;
+
+            // Banner tip luptă vizibil
+            const isDivas = r.g === 'F';
+            const matchTypeBannerClass = isDivas ? 'divas' : 'superstar';
+            const matchTypeLabel = isDivas ? 'DIVAS MATCH' : (r.t === 'TAG TEAM' ? 'TAG TEAM MATCH' : 'SUPERSTAR MATCH');
+            const matchTypeBannerEl = document.getElementById('match-type-banner');
+            if (matchTypeBannerEl) {
+                matchTypeBannerEl.className = `match-type-banner ${matchTypeBannerClass}`;
+                matchTypeBannerEl.innerText = matchTypeLabel;
+                matchTypeBannerEl.style.display = 'block';
+            }
+
+            document.getElementById('match-info').innerHTML = `ROUND ${match.round}<br><span style="color:#fff; font-size:18px;">STAT: <span style="color:#f1c40f">${st.toUpperCase()}</span></span>`;
+            document.getElementById('cards-to-pick').innerText = r.r;
+            document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
+            
+            renderHand();
+        }
+
+        function renderHand() {
+            let h = document.getElementById('player-hand-area'); h.innerHTML = "";
+            match.hand.forEach(u => {
+                let cardObj = player.inventory.find(c=>c.uid===u);
+                if(!cardObj) return; 
+                let s = getStats(cardObj);
+                let isU = match.used.includes(u);
+                let isS = match.selected.includes(u);
+                let isSupportCard = s.gender === 'S';
+                let isActiveGender = s.gender === match.rule.g;
+                let isSupportActivated = (match.activeSupportUID === u);
+                
+                let div = document.createElement('div');
+                div.innerHTML = renderHTMLCard(s, false, match.rule.stat);
+                let cardEl = div.children[0];
+                
+                if (isU && !isSupportActivated) {
+                    // Carte deja folosita in rundele anterioare
+                    cardEl.classList.add('used');
+                } else if (isSupportActivated) {
+                    // Support activat — contur verde
+                    cardEl.classList.add('support-active');
+                } else if (isSupportCard) {
+                    // Support disponibil — pulsatie verde
+                    cardEl.classList.add('support-ready');
+                } else if (isS) {
+                    // Carte selectata
+                    cardEl.style.cssText = "transform: translateY(-15px); border-color: #3498db !important; box-shadow: 0 10px 30px rgba(52, 152, 219, 0.8) !important;";
+                } else if (!isActiveGender) {
+                    // Carte de gen gresit — intunecata
+                    cardEl.classList.add('battle-inactive');
+                }
+                
+                // Onclick handlers
+                if (isSupportCard && !isU && !isSupportActivated) {
+                    div.onclick = () => {
+                        match.activeSupportUID = u; match.used.push(u);
+                        match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
+                        document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}!</span>`;
+                        renderHand();
+                    };
+                } else if (isActiveGender && !isU) {
+                    div.onclick = () => {
+                        if(isS) match.selected = match.selected.filter(x=>x!==u);
+                        else if(match.selected.length < match.rule.r) match.selected.push(u);
+                        document.getElementById('btn-confirm-play').style.display = (match.selected.length === match.rule.r) ? 'flex' : 'none';
+                        renderHand();
+                    };
+                }
+                h.appendChild(div);
+            });
+        }
+
+        let _clashTimer1 = null, _clashTimer2 = null;
+
+        function skipClash(pTot, oTot) {
+            // Curăță timere rămase
+            if (_clashTimer1) { clearTimeout(_clashTimer1); _clashTimer1 = null; }
+            if (_clashTimer2) { clearTimeout(_clashTimer2); _clashTimer2 = null; }
+            // Dezabonează click-ul de skip
+            let arena = document.getElementById('arena-area');
+            arena.onclick = null;
+            arena.style.cursor = '';
+
+            if(pTot > oTot) {
+                match.pScore++;
+                showNotification(`<span style="color:#2ecc71;">ROUND WIN!</span><br>${pTot} beat ${oTot}`, 1500, () => {
+                    document.getElementById('score-player').innerText = match.pScore;
+                    match.round++; nextRound();
+                });
+            } else if(oTot > pTot) {
+                match.oScore++;
+                showNotification(`<span style="color:#e74c3c;">ROUND LOSS...</span><br>${pTot} lost to ${oTot}`, 1500, () => {
+                    document.getElementById('score-opp').innerText = match.oScore;
+                    match.round++; nextRound();
+                });
+            } else {
+                showNotification(`<span style="color:#f1c40f;">DRAW!</span><br>${pTot} vs ${oTot}`, 1500, () => { match.round++; nextRound(); });
+            }
+        }
+
+        function showAbilityNotif(msg) {
+            let old = document.getElementById('ability-notif');
+            if (old) old.remove();
+            let el = document.createElement('div');
+            el.id = 'ability-notif';
+            el.className = 'ability-notif';
+            el.innerHTML = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { if (el.parentNode) el.remove(); }, 3000);
+        }
+
+        // Returnează bonusul FIX al abilității bazat pe raritate și card
+        // Common: nicio abilitate
+        // Uncommon: +10 la un singur stat (primul din lista)
+        // Rare: +15 la un singur stat principal
+        // SuperRare: dacă exceleaza considerabil → +20 la acel stat; altfel +11 +11
+        // UltraRare: +17 +17
+        // Epic: +25 +25
+        // Legendary: +42 +42
+        // Survivor: +55 +55
+        function getAbilityBonus(cardStats, activeStat) {
+            const rarity = cardStats.rarity;
+            const ab = ABILITIES[cardStats.id];
+            if (!ab) return 0;
+
+            switch (rarity) {
+                case 'Common':
+                    return 0; // Common nu are abilitate
+
+                case 'Uncommon':
+                    // +10 doar la primul stat din lista abilității
+                    if (activeStat === ab.stats[0]) return 10;
+                    return 0;
+
+                case 'Rare':
+                    // +15 la stat-ul principal (primul din lista)
+                    if (activeStat === ab.stats[0]) return 15;
+                    return 0;
+
+                case 'SuperRare': {
+                    // Verificăm dacă cartea exceleaza considerabil la un stat față de restul
+                    const stats = { pow: cardStats.pow, tgh: cardStats.tgh, spd: cardStats.spd, cha: cardStats.cha };
+                    const vals = Object.entries(stats).filter(([k]) => stats[k] > 0);
+                    if (vals.length === 0) return 0;
+                    const sorted = vals.sort((a, b) => b[1] - a[1]);
+                    const topStat = sorted[0][0];
+                    const topVal = sorted[0][1];
+                    const secondVal = sorted.length > 1 ? sorted[1][1] : 0;
+                    // "Exceleaza considerabil" = top stat e cu cel puțin 5% mai mare decât al doilea
+                    const excels = secondVal === 0 || (topVal - secondVal) / secondVal >= 0.05;
+                    if (excels && activeStat === topStat) return 20;
+                    // Altfel +11 la oricare din cei 2 stats ai abilității
+                    if (ab.stats.includes(activeStat)) return 11;
+                    return 0;
+                }
+
+                case 'UltraRare':
+                    if (ab.stats.includes(activeStat)) return 17;
+                    return 0;
+
+                case 'Epic':
+                    if (ab.stats.includes(activeStat)) return 25;
+                    return 0;
+
+                case 'Legendary':
+                    if (ab.stats.includes(activeStat)) return 42;
+                    return 0;
+
+                case 'Survivor':
+                    if (ab.stats.includes(activeStat)) return 55;
+                    return 0;
+
+                default:
+                    return 0;
+            }
+        }
+
+        function resolveRound() {
+            let pTot = 0, oTot = 0;
+            let abilityMessages = [];
+            let abilityActivated = false;
+            
+            match.selected.forEach(u => { 
+                let cardObj = player.inventory.find(c=>c.uid===u);
+                let cardStats = getStats(cardObj);
+                let baseStat = cardStats[match.rule.stat];
+                pTot += baseStat; 
+                match.used.push(u); 
+
+                // Verifică abilitate specială (33% șansă)
+                const ab = ABILITIES[cardStats.id];
+                if (ab && ab.stats.includes(match.rule.stat)) {
+                    if (Math.random() < 0.33) {
+                        // ABILITATE ACTIVATĂ! Bonus fix bazat pe raritate
+                        const bonus = getAbilityBonus(cardStats, match.rule.stat);
+                        pTot += bonus;
+                        abilityMessages.push(`⚡ ${ab.icon} <strong>${cardStats.name}</strong>: "${ab.name}"! +${bonus} ${match.rule.stat.toUpperCase()}! ${ab.desc}`);
+                        abilityActivated = true;
+                        // Flash animatie pe carte in arena
+                        setTimeout(() => {
+                            let el = document.getElementById('card-'+cardStats.uid);
+                            if (el) { el.classList.add('ability-active-flash'); setTimeout(()=>el.classList.remove('ability-active-flash'), 700); }
+                        }, 700);
+                    }
+                }
+            });
+            pTot += match.supportBonus[match.rule.stat] || 0; 
+
+            // ---- AI CARD SELECTION ----
+            // Cărțile disponibile inamicului pentru genul rundei
+            let oppAvail = match.oppHand.filter(c => c.gender === match.rule.g && !match.used.includes(c.uid));
+            let oppSupportAvail = match.oppHand.filter(c => c.gender === 'S' && !match.used.includes(c.uid));
+            let oppP = [];
+            let aiUsedSupport = false;
+            let aiSupportBonus = 0;
+
+            const aiMode = match.aiMode || 'normal';
+            const activeStat = match.rule.stat;
+            const roundsLeft = 3 - match.round + 1;
+            const aiAhead = match.oScore > match.pScore;
+            const aiBehind = match.oScore < match.pScore;
+            const aiAbilityChance = aiMode === 'easy' ? 0.15 : aiMode === 'normal' ? 0.33 : aiMode === 'hard' ? 0.42 : 0.50;
+
+            // Sortează cărțile disponibile după stat-ul activ
+            const sortByActiveStat = (cards) => [...cards].sort((a, b) => b[activeStat] - a[activeStat]);
+            const sortRandom = (cards) => [...cards].sort(() => Math.random() - 0.5);
+
+            if (aiMode === 'easy') {
+                // EASY: 70% șansă de a juca random, 30% best card
+                if (Math.random() < 0.70) {
+                    oppP = sortRandom(oppAvail).slice(0, match.rule.r);
+                } else {
+                    oppP = sortByActiveStat(oppAvail).slice(0, match.rule.r);
+                }
+                // Support: activat random ~25% din timp, indiferent de context
+                if (oppSupportAvail.length > 0 && Math.random() < 0.25) {
+                    aiUsedSupport = true;
+                    aiSupportBonus = oppSupportAvail[0][activeStat] || 0;
+                    match.used.push(oppSupportAvail[0].uid);
+                }
+
+            } else if (aiMode === 'normal') {
+                // NORMAL: mereu best card disponibilă
+                oppP = sortByActiveStat(oppAvail).slice(0, match.rule.r);
+                // Support: activat dacă aduce bonus la stat-ul activ
+                if (oppSupportAvail.length > 0 && (oppSupportAvail[0][activeStat] || 0) > 0) {
+                    aiUsedSupport = true;
+                    aiSupportBonus = oppSupportAvail[0][activeStat] || 0;
+                    match.used.push(oppSupportAvail[0].uid);
+                }
+
+            } else if (aiMode === 'hard') {
+                // HARD: AI strategic
+                // - Dacă e în urmă și e ultima rundă importantă → joacă best
+                // - Dacă e în față → poate păstra best pentru mai târziu
+                // - Încearcă să contracareze stat-ul rundei cu carte potrivită
+                const sortedByActive = sortByActiveStat(oppAvail);
+                const sortedByTotal = [...oppAvail].sort((a,b) => (b.pow+b.tgh+b.spd+b.cha) - (a.pow+a.tgh+a.spd+a.cha));
+
+                if (aiBehind || match.round === 3) {
+                    // Joacă best card la stat-ul activ
+                    oppP = sortedByActive.slice(0, match.rule.r);
+                } else if (aiAhead && roundsLeft > 1) {
+                    // Conservă cel mai bun card — joacă al doilea cel mai bun
+                    const reserve = sortedByTotal.slice(0, 1).map(c => c.uid);
+                    const playable = sortedByActive.filter(c => !reserve.includes(c.uid));
+                    oppP = (playable.length >= match.rule.r ? playable : sortedByActive).slice(0, match.rule.r);
+                } else {
+                    oppP = sortedByActive.slice(0, match.rule.r);
+                }
+
+                // Support: folosit când aduce cel mai mare avantaj la stat-ul activ
+                if (oppSupportAvail.length > 0) {
+                    const suppCard = oppSupportAvail[0];
+                    const suppVal = suppCard[activeStat] || 0;
+                    // Activează dacă: e în urmă SAU bonusul e semnificativ (>50 la stat)
+                    if (suppVal > 0 && (aiBehind || match.round === 3 || suppVal > 50)) {
+                        aiUsedSupport = true;
+                        aiSupportBonus = suppVal;
+                        match.used.push(suppCard.uid);
+                    }
+                }
+
+            } else if (aiMode === 'nightmare') {
+                // NIGHTMARE: AI aproape optim
+                // - Mereu best card la stat-ul activ
+                // - Dacă e în urmă 0-1 → joacă absolut best la orice cost
+                // - Dacă câștigă deja → joacă second best și păstrează best pentru runda decisivă
+                const sortedByActive = sortByActiveStat(oppAvail);
+                const sortedByTotal = [...oppAvail].sort((a,b) => (b.pow+b.tgh+b.spd+b.cha) - (a.pow+a.tgh+a.spd+a.cha));
+
+                if (match.oScore === 0 && match.pScore === 0 && match.round === 1) {
+                    // Runda 1 fără scor: joacă best la stat
+                    oppP = sortedByActive.slice(0, match.rule.r);
+                } else if (aiBehind) {
+                    // Trebuie să câștige — all-in cu best
+                    oppP = sortedByActive.slice(0, match.rule.r);
+                } else if (aiAhead && roundsLeft > 1) {
+                    // Conservă best, joacă second best (dar tot o carte bună)
+                    const bestCard = sortedByTotal[0];
+                    const playable = sortedByActive.filter(c => c.uid !== (bestCard ? bestCard.uid : ''));
+                    oppP = (playable.length >= match.rule.r ? playable : sortedByActive).slice(0, match.rule.r);
+                } else {
+                    oppP = sortedByActive.slice(0, match.rule.r);
+                }
+
+                // Support: activat mereu dacă aduce orice bonus la stat-ul activ
+                if (oppSupportAvail.length > 0) {
+                    const suppCard = oppSupportAvail[0];
+                    const suppVal = suppCard[activeStat] || 0;
+                    if (suppVal > 0 || (aiBehind && match.round === 3)) {
+                        aiUsedSupport = true;
+                        aiSupportBonus = suppVal;
+                        match.used.push(suppCard.uid);
+                    }
+                }
+            }
+
+            // Marchează cărțile jucate ca used
+            oppP.forEach(c => { oTot += c[activeStat]; match.used.push(c.uid); });
+            oTot += aiSupportBonus;
+
+            // Inamicul activează abilitate cu șansă variabilă per dificultate
+            oppP.forEach(c => {
+                const ab = ABILITIES[c.id];
+                if (ab && ab.stats.includes(activeStat) && Math.random() < aiAbilityChance) {
+                    const bonus = getAbilityBonus(c, activeStat);
+                    oTot += bonus;
+                    abilityMessages.push(`🔴 ${ab.icon} <strong>${c.name}</strong> (AI): "${ab.name}"! +${bonus} ${activeStat.toUpperCase()}!`);
+                }
+            });
+
+            let arena = document.getElementById('arena-area');
+            arena.innerHTML = `
+                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat)).join('')}</div>
+                <div class="vs-badge">VS</div>
+                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat)).join('')}</div>
+            `;
+            document.getElementById('btn-confirm-play').style.display = 'none';
+            document.getElementById('support-status').innerText = ""; 
+
+            // Arată notificare abilitate activată
+            if (abilityMessages.length > 0) {
+                setTimeout(() => showAbilityNotif(abilityMessages.join('<br>')), 400);
+            }
+
+            // Click pe arena pentru skip animație clash
+            arena.style.cursor = 'pointer';
+            arena.onclick = () => skipClash(pTot, oTot);
+
+            _clashTimer1 = setTimeout(() => {
+                _clashTimer1 = null;
+                let ap = document.getElementById('arena-player');
+                let ao = document.getElementById('arena-opp');
+                if (ap) ap.classList.add('anim-clash-left');
+                if (ao) ao.classList.add('anim-clash-right');
+
+                _clashTimer2 = setTimeout(() => {
+                    _clashTimer2 = null;
+                    skipClash(pTot, oTot);
+                }, 800);
+            }, 600);
+        }
+
+        function endMatch(forfeit) {
+            if(forfeit) {
+                match.oScore = 3; match.pScore = 0;
+                showNotification('🏳️ You forfeited the match. Defeat!', 2000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+                return;
+            }
+            
+            let w = match.pScore > match.oScore;
+            let picksWon = (match.pScore === 3) ? 3 : (w ? 2 : 1);
+            
+            if (w && match.pickBonus > 0) {
+                picksWon += match.pickBonus; // Aplicam Pick Bonus pt victoriile pe Hard
+            }
+
+            player.picks += picksWon; player.coins += w ? 30 : 10; save(); 
+            
+            if(w) { showNotification(`🎉 YOU WON THE MATCH! 🎉<br>You received ${picksWon} Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); }); } 
+            else { showNotification(`💀 YOU LOST THE MATCH... 💀<br>You received 1 consolation pick.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); }); }
+        }
+
+        function generateBoard() {
+    player.board = new Array(25).fill(false);
+    player.resetIdx = Math.floor(Math.random() * 25);
+    save();
+}
+
+function renderDraftBoard() {
+    updateUI();
+    let g = document.getElementById('draft-board-grid');
+    g.innerHTML = "";
+
+    player.board.forEach((r, i) => {
+        let d = document.createElement('div');
+        d.className = `draft-card ${r ? 'revealed' : ''}`;
+        if (!r) d.onclick = () => pullDraft(i);
+        g.appendChild(d);
+    });
+}
+
+        function pullDraft(i) {
+            if(player.picks <= 0) return showNotification("No more picks! Play Exhibition to earn more.", 1500);
+            player.picks--; player.board[i] = true;
+
+            let isReset = (i === player.resetIdx);
+            let pulledId = 1;
+            
+            let tInfo = calculateDeckTier();
+            let baseRarities = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'Epic', 'Legendary', 'Survivor'];
+            let pBase = tInfo.base;
+            let bIdx = baseRarities.indexOf(pBase);
+            
+            if(isReset) {
+                let isPlus = tInfo.name.includes('+');
+                let isPlusPlus = tInfo.name.includes('++');
+                let dropRarity = pBase; 
+                
+                // Aplicăm procentajele pentru a pica tier-ul de bază cerute: 10% / 25% / 40%
+                let chanceForBase = 10;
+                if (isPlusPlus) chanceForBase = 40;
+                else if (isPlus) chanceForBase = 25;
+
+                let actualTargetIdx = Math.max(2, bIdx); // 2 = Rare, minimul pt board reset
+                
+                if (Math.random() * 100 > chanceForBase) {
+                    // Trage in jos (drop inferior)
+                    let maxLowerIdx = actualTargetIdx - 1;
+                    let minLowerIdx = 2; // Minim Rare
+                    
+                    if (maxLowerIdx < minLowerIdx) {
+                        dropRarity = 'Rare'; // Daca deja era Rare, ramane Rare ca minim pt reset
+                    } else {
+                        // Extrage un nivel inferior limitat la minim Rare
+                        let lowerIdx = Math.floor(Math.random() * (maxLowerIdx - minLowerIdx + 1)) + minLowerIdx;
+                        dropRarity = baseRarities[lowerIdx];
+                    }
+                } else {
+                    // A prins procentul, primește maximul tier-ului
+                    dropRarity = baseRarities[actualTargetIdx];
+                }
+                
+                let pool = DB.filter(c => c.rarity === dropRarity);
+                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare'); // Fallback
+                pulledId = pool[Math.floor(Math.random() * pool.length)].id;
+                
+            } else {
+                // Trageri Normale de umplutură pe bord (fără a da board reset)
+                let rand = Math.random() * 100;
+                let pRarity = 'Common';
+                if (rand > 75) pRarity = 'Uncommon';
+                
+                let pool = DB.filter(c => c.rarity === pRarity);
+                pulledId = pool[Math.floor(Math.random() * pool.length)].id;
+            }
+            
+            addCard(pulledId); save(); renderDraftBoard();
+            
+            let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
+            document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);
+            document.getElementById('pull-title').innerText = isReset ? "BOARD RESET! " + s.rarity.toUpperCase() + " CARD!" : "YOU PULLED A CARD!";
+            document.getElementById('pull-title').style.color = isReset ? "#f1c40f" : "#fff";
+            document.getElementById('pull-modal').style.display = "flex";
+            if(isReset) generateBoard();
+        }
+
+        function closePullModal() {
+            document.getElementById('pull-modal').style.display = "none";
+            renderDraftBoard();
+            if(player.picks === 0) {
+                setTimeout(() => { showNotification("Returning to Main Menu...", 1500, () => { showScreen('main-menu'); }); }, 500);
+            }
+        }
+
+        function buyPack(cost, rarityArray) {
+            if(player.coins < cost) return showNotification("❌ Insufficient funds! Play more Exhibition.", 2000);
+            player.coins -= cost; 
+            let pool = DB.filter(c => rarityArray.includes(c.rarity));
+            let cardId = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)].id : 1;
+            addCard(cardId); save(); 
+            let s = getStats({uid:'preview', id: cardId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
+            document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);
+            document.getElementById('pull-title').innerText = "PACK OPENED!";
+            document.getElementById('pull-modal').style.display = "flex";
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>

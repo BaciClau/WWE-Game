@@ -1,0 +1,263 @@
+/* CSS GRAFIC PREMIUM */
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+        
+        body { 
+            font-family: 'Oswald', 'Impact', sans-serif; 
+            background: radial-gradient(circle at top, #1a2a3a 0%, #000000 100%); 
+            color: white; margin: 0; padding: 0; user-select: none; min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, #111, #000); 
+            padding: 12px 40px; border-bottom: 3px solid #333; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.9);
+        }
+        
+        .tier-container { display: flex; flex-direction: column; align-items: center; }
+        .tier-text { font-size: 24px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 10px currentColor; }
+        .tier-bar-bg { width: 320px; height: 20px; background: #222; border: 2px solid #555; border-radius: 8px; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 5px #000; position: relative;}
+        .tier-bar-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.5s ease; }
+        .tier-numbers { position: absolute; width: 100%; text-align: center; font-size: 13px; top: 0; left: 0; line-height: 20px; font-family: Arial; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000;}
+
+        .badge { background: #1a1a1a; padding: 10px 18px; border-radius: 8px; border: 1px solid #444; font-size: 22px; display: flex; gap: 18px;}
+        
+        .screen { display: none; padding: 24px; max-width: 1300px; margin: auto; }
+        .screen.active { display: block; animation: fadeIn 0.4s ease; }
+        
+        .menu-container { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-top: 50px; }
+        .menu-btn { 
+            background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; 
+            border: 2px solid #555; padding: 22px 34px; font-size: 22px; font-family: inherit;
+            cursor: pointer; border-radius: 12px; text-transform: uppercase; font-weight: bold; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.6); transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 200px;
+        }
+        .menu-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.9); border-color: #f1c40f; }
+        .btn-play { background: linear-gradient(135deg, #d35400, #c0392b); border-color: #f1c40f; font-size: 26px; }
+        .btn-play:hover { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .btn-danger { background: linear-gradient(135deg, #c0392b, #8e44ad); border-color: #fff; font-size: 15px; padding: 11px 22px;}
+        
+        .card-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 15px; }
+        .card { 
+            width: 158px; height: 295px; background: #111; border-radius: 12px; 
+            position: relative; cursor: pointer; display: flex; flex-direction: column;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.8); overflow: hidden; border: 3px solid #fff;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: scale(1.06); z-index: 10; }
+        .card.used { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
+        
+        .rarity-Common { border-color: #95a5a6; background: linear-gradient(135deg, #7f8c8d, #2c3e50); box-shadow: 0 0 5px #95a5a6; }
+        .rarity-Uncommon { border-color: #2ecc71; background: linear-gradient(135deg, #27ae60, #145a32); box-shadow: 0 0 8px #2ecc71;}
+        .rarity-Rare { border-color: #3498db; background: linear-gradient(135deg, #2980b9, #154360); box-shadow: 0 0 10px #3498db;}
+        .rarity-SuperRare { border-color: #00bcd4; background: linear-gradient(135deg, #0097a7, #004d40); box-shadow: 0 0 12px #00bcd4;}
+        .rarity-UltraRare { border-color: #e040fb; background: linear-gradient(135deg, #d500f9, #4a148c); box-shadow: 0 0 15px #e040fb;}
+        .rarity-Epic { border-color: #9b59b6; background: linear-gradient(135deg, #8e44ad, #4a235a); box-shadow: 0 0 15px #9b59b6;}
+        .rarity-Legendary { border-color: #f1c40f; background: linear-gradient(135deg, #f39c12, #784212); box-shadow: 0 0 20px #f1c40f;}
+        .rarity-Survivor { border-color: #e74c3c; background: linear-gradient(135deg, #c0392b, #641e16); box-shadow: 0 0 25px #e74c3c;}
+        .rarity-Support { border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
+
+        .card img { width: 100%; height: 124px; object-fit: cover; border-bottom: 2px solid #000; }
+        .card-name-plate { 
+            background: linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0.6)); 
+            border-top: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3);
+            text-align: center; font-size: 12px; font-weight: bold; padding: 4px 5px;
+            position: relative; z-index: 2; margin-top: -15px; text-shadow: 1px 1px 2px #000;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 4px 6px; font-size: 11px; font-family: 'Arial', sans-serif;}
+        .stat { background: rgba(0,0,0,0.8); padding: 3px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.15);}
+        .stat-highlight { color: #fff; background: #e67e22; font-weight: bold; border-color: #f1c40f; transform: scale(1.05); }
+        
+        .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
+        .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; left: 4px; right: auto; }
+        .trade-panel { background: rgba(0,0,0,0.7); border: 1px solid #444; border-radius: 12px; padding: 15px; margin: 15px auto; max-width: 1100px; text-align: center; }
+        .trade-btn { margin: 5px; padding: 12px 20px; font-size: 16px; }
+        .card.trade-target { box-shadow: 0 0 25px #3498db; border-color: #3498db !important; }
+        .card.trade-sacrifice { box-shadow: 0 0 25px #e74c3c; border-color: #e74c3c !important; }
+        
+        .card-footer { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 6px; color: #bbb; }
+        .xp-bar { height: 6px; background: #000; margin: 3px 6px 0; border-radius: 3px; border: 1px solid #444; position: relative;}
+        .xp-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); width: 0%; }
+        .xp-text { text-align: center; font-size: 9px; color: #fff; font-family: Arial; margin-top: 1px; font-weight: bold;}
+
+        .match-arena { 
+            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), radial-gradient(circle, #2a2a2a, #000);
+            border: 4px solid #444; border-radius: 20px; box-shadow: inset 0 0 50px #000, 0 10px 20px rgba(0,0,0,0.5); 
+            padding: 30px; display: flex; justify-content: space-between; align-items: center;
+            min-height: 280px; position: relative; margin: 20px 0; overflow: hidden;
+        }
+        .vs-badge { 
+            font-size: 50px; font-style: italic; color: #e74c3c; text-shadow: 3px 3px 0 #fff, 0 0 30px red;
+            font-weight: bold; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5;
+        }
+        .arena-side { display: flex; gap: 10px; width: 45%; justify-content: center; z-index: 2;}
+        
+        /* ANIMAȚII LUPTĂ */
+        @keyframes clashLeft { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(60px) scale(1.1) rotate(5deg); } 50% { transform: translateX(-10px) scale(1); } 70% { transform: translateX(60px) scale(1.1) rotate(5deg); } 100% { transform: translateX(0) scale(1); } }
+        @keyframes clashRight { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 50% { transform: translateX(10px) scale(1); } 70% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 100% { transform: translateX(0) scale(1); } }
+        .anim-clash-left { animation: clashLeft 0.8s ease-in-out; }
+        .anim-clash-right { animation: clashRight 0.8s ease-in-out; }
+        .slide-in-left { animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideInLeft { 0% { transform: translateX(-150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes slideInRight { 0% { transform: translateX(150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { 0% { transform: scale(0.1); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+        #draft-board-grid { display: grid; grid-template-columns: repeat(5, 1fr) ; gap: 10px; max-width: 800px; margin: 20px auto; }
+        .draft-card { 
+            background: linear-gradient(135deg, #2c3e50, #1a252f); border: 2px solid #555; 
+            height: 90px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; 
+            justify-content: center; font-size: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .draft-card::before { content: "W"; color: rgba(255,255,255,0.05); font-size: 60px; position: absolute; }
+        .draft-card:hover { border-color: #3498db; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(52, 152, 219, 0.4); }
+        .draft-card.revealed { background: #111; border-color: #333; cursor: default; transform: none; box-shadow: inset 0 0 10px #000; }
+        .draft-card.revealed::before { content: ""; }
+
+        /* SISTEM NOTIFICĂRI NOU */
+        #game-notification {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9999; display: flex;
+            justify-content: center; align-items: center; transition: opacity 0.3s ease;
+        }
+        #game-notification.hidden { opacity: 0; pointer-events: none; }
+        .notification-content {
+            background: linear-gradient(135deg, #2c3e50, #000); color: white;
+            padding: 30px 50px; border-radius: 15px; font-size: 26px; font-weight: bold;
+            text-align: center; border: 3px solid #f1c40f; box-shadow: 0 0 30px #f1c40f;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+        .notification-content::after {
+            content: "TAP TO SKIP";
+            display: block;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 2px;
+            margin-top: 12px;
+        }
+        #game-notification { cursor: pointer; }
+        .section-title { text-align: center; color: #f1c40f; border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;}
+        .card.deck-edit-in { box-shadow: 0 0 20px #2ecc71; border-color: #2ecc71 !important; }
+        .card.deck-edit-out:hover { box-shadow: 0 0 15px #3498db; border-color: #3498db !important; }
+        .card.deck-edit-full { opacity: 0.5; pointer-events: none; }
+        .card-slot-label {
+            position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #f1c40f; font-size: 10px;
+            padding: 1px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;
+            font-family: Arial; font-weight: bold; letter-spacing: 1px;
+        }
+
+        /* ABILITĂȚI SPECIALE PE CARTE */
+        .card-ability {
+            background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(25,20,5,0.95));
+            border-top: 1px solid rgba(255,200,0,0.35);
+            padding: 4px 6px 5px; text-align: center;
+            flex-shrink: 0;
+        }
+        .ability-name { 
+            display: block; color: #f1c40f; font-size: 10px; font-weight: bold; 
+            font-family: 'Oswald', sans-serif; letter-spacing: 0.5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+        .ability-stats-row {
+            display: flex; justify-content: center; gap: 4px; margin-top: 3px;
+        }
+        .ability-stat-badge {
+            background: rgba(241,196,15,0.18); border: 1px solid rgba(241,196,15,0.5);
+            color: #ffe066; font-size: 10px; font-family: Arial; font-weight: bold;
+            border-radius: 3px; padding: 1px 5px; letter-spacing: 0.5px;
+        }
+        .ability-icon-small { font-size: 11px; margin-right: 3px; }
+        .ability-active-flash { 
+            animation: abilityFlash 0.6s ease-in-out;
+            border-color: #f1c40f !important;
+            box-shadow: 0 0 25px #f1c40f, inset 0 0 15px rgba(241,196,15,0.3) !important;
+        }
+        @keyframes abilityFlash {
+            0% { box-shadow: 0 0 5px #f1c40f; }
+            50% { box-shadow: 0 0 40px #f1c40f, 0 0 80px #f39c12; }
+            100% { box-shadow: 0 0 15px #f1c40f; }
+        }
+
+        /* SUPPORT CARD - contur verde în loc de popup */
+        .card.support-active {
+            border-color: #2ecc71 !important;
+            box-shadow: 0 0 25px #2ecc71, inset 0 0 15px rgba(46,204,113,0.2) !important;
+            transform: translateY(-8px) scale(1.05);
+        }
+        .card.support-ready {
+            border-color: #2ecc71 !important;
+            box-shadow: 0 0 12px #2ecc71 !important;
+            animation: supportPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes supportPulse {
+            0%, 100% { box-shadow: 0 0 8px #2ecc71; }
+            50% { box-shadow: 0 0 20px #2ecc71, 0 0 35px rgba(46,204,113,0.4); }
+        }
+
+        /* CĂRȚI INDISPONIBILE ÎN LUPTĂ - mai întunecate */
+        .card.battle-inactive {
+            opacity: 0.25 !important;
+            filter: grayscale(80%) brightness(0.4) !important;
+            pointer-events: none !important;
+            transform: none !important;
+        }
+        .card.battle-inactive:hover { transform: none !important; }
+
+        /* BANNER TIP LUPTĂ - mai vizibil */
+        .match-type-banner {
+            text-align: center;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 4px #000;
+            border: 2px solid;
+            animation: bannerGlow 2s ease-in-out infinite;
+        }
+        .match-type-banner.divas {
+            background: linear-gradient(135deg, #8e1a5e, #c0392b, #8e1a5e);
+            border-color: #ff69b4;
+            color: #ffb3da;
+            box-shadow: 0 0 20px rgba(255,105,180,0.5);
+        }
+        .match-type-banner.divas::before { content: "👯 "; }
+        .match-type-banner.divas::after { content: " 👯"; }
+        .match-type-banner.superstar {
+            background: linear-gradient(135deg, #1a3a5e, #154360, #1a3a5e);
+            border-color: #3498db;
+            color: #aad4f5;
+            box-shadow: 0 0 20px rgba(52,152,219,0.5);
+        }
+        .match-type-banner.superstar::before { content: "🤼 "; }
+        .match-type-banner.superstar::after { content: " 🤼"; }
+        @keyframes bannerGlow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+
+        /* NOTIFICARE ABILITATE ACTIVATĂ */
+        .ability-notif {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #000, #1a1a0a);
+            border: 2px solid #f1c40f; border-radius: 12px;
+            padding: 10px 20px; color: #f1c40f; font-size: 15px; font-weight: bold;
+            z-index: 9998; text-align: center; box-shadow: 0 0 20px rgba(241,196,15,0.5);
+            animation: abilityNotifIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+        }
+        @keyframes abilityNotifIn {
+            0% { transform: translateX(-50%) translateY(50px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
