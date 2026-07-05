@@ -56,9 +56,21 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
             return card;
         }
 
+        // Alege N cărți random distincte dintr-o raritate dată (orice gen — M/F/S, nu contează).
+        function pickRandomStarterCards(rarity, count) {
+            const pool = DB.filter(c => c.rarity === rarity);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, count).map(c => c.id);
+        }
+
         function freshStart() {
-            player = { coins: 0, picks: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
-            [201, 101, 111, 1, 2, 20].forEach(id => addCard(id));
+            player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+            const starterIds = [
+                ...pickRandomStarterCards('Rare', 1),
+                ...pickRandomStarterCards('Uncommon', 2),
+                ...pickRandomStarterCards('Common', 3)
+            ];
+            starterIds.forEach(id => addCard(id));
             autoEquipDeck();
             generateBoard();
             localStorage.setItem('sc_version', GAME_VERSION);
