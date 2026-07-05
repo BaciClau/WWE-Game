@@ -136,17 +136,6 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             }
         }
 
-        function showAbilityNotif(msg) {
-            let old = document.getElementById('ability-notif');
-            if (old) old.remove();
-            let el = document.createElement('div');
-            el.id = 'ability-notif';
-            el.className = 'ability-notif';
-            el.innerHTML = msg;
-            document.body.appendChild(el);
-            setTimeout(() => { if (el.parentNode) el.remove(); }, 3000);
-        }
-
         // Returnează bonusul FIX al abilității bazat pe raritate și card
         // Common: nicio abilitate
         // Uncommon: +10 la un singur stat (primul din lista)
@@ -215,15 +204,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
         function resolveRound() {
             let pTot = 0, oTot = 0;
-            let abilityMessages = [];
-            let abilityActivated = false;
-            
-            match.selected.forEach(u => { 
+            let abilityEvents = [];
+
+            match.selected.forEach(u => {
                 let cardObj = player.inventory.find(c=>c.uid===u);
                 let cardStats = getStats(cardObj);
                 let baseStat = cardStats[match.rule.stat];
-                pTot += baseStat; 
-                match.used.push(u); 
+                pTot += baseStat;
+                match.used.push(u);
 
                 // Verifică abilitate specială (33% șansă)
                 const ab = ABILITIES[cardStats.id];
@@ -232,8 +220,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         // ABILITATE ACTIVATĂ! Bonus fix bazat pe raritate
                         const bonus = getAbilityBonus(cardStats, match.rule.stat);
                         pTot += bonus;
-                        abilityMessages.push(`⚡ ${ab.icon} <strong>${cardStats.name}</strong>: "${ab.name}"! +${bonus} ${match.rule.stat.toUpperCase()}! ${ab.desc}`);
-                        abilityActivated = true;
+                        abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false });
                         // Flash animatie + particule colorate pe raritate, pe carte in arena
                         setTimeout(() => {
                             let el = document.getElementById('card-'+cardStats.uid);
@@ -246,7 +233,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     }
                 }
             });
-            pTot += match.supportBonus[match.rule.stat] || 0; 
+            pTot += match.supportBonus[match.rule.stat] || 0;
 
             // ---- AI CARD SELECTION ----
             const activeStat = match.rule.stat;
@@ -268,7 +255,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 if (ab && ab.stats.includes(activeStat) && Math.random() < aiPlay.abilityChance) {
                     const bonus = getAbilityBonus(c, activeStat);
                     oTot += bonus;
-                    abilityMessages.push(`🔴 ${ab.icon} <strong>${c.name}</strong> (AI): "${ab.name}"! +${bonus} ${activeStat.toUpperCase()}!`);
+                    abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true });
                     setTimeout(() => {
                         let el = document.getElementById('card-'+c.uid);
                         if (el) {
@@ -286,11 +273,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat)).join('')}</div>
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
-            document.getElementById('support-status').innerText = ""; 
+            document.getElementById('support-status').innerText = "";
 
-            // Arată notificare abilitate activată
-            if (abilityMessages.length > 0) {
-                setTimeout(() => showAbilityNotif(abilityMessages.join('<br>')), 400);
+            // Arată popup-ul mare de abilitate activată (unul câte unul dacă sunt mai multe)
+            if (abilityEvents.length > 0) {
+                setTimeout(() => queueAbilityPopups(abilityEvents), 700);
             }
 
             // Click pe arena pentru skip animație clash
