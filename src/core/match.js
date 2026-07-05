@@ -113,6 +113,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
             if(pTot > oTot) {
                 match.pScore++;
+                cameraShake(false);
+                let arenaPlayer = document.getElementById('arena-player');
+                let bestRarity = match.selected.reduce((best, u) => {
+                    let s = getStats(player.inventory.find(c=>c.uid===u));
+                    if (!s) return best;
+                    return RARITIES.indexOf(s.rarity) > RARITIES.indexOf(best) ? s.rarity : best;
+                }, 'Common');
+                burstAtElement(arenaPlayer, bestRarity);
                 showNotification(`<span style="color:#2ecc71;">ROUND WIN!</span><br>${pTot} beat ${oTot}`, 1500, () => {
                     document.getElementById('score-player').innerText = match.pScore;
                     match.round++; nextRound();
@@ -226,10 +234,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         pTot += bonus;
                         abilityMessages.push(`⚡ ${ab.icon} <strong>${cardStats.name}</strong>: "${ab.name}"! +${bonus} ${match.rule.stat.toUpperCase()}! ${ab.desc}`);
                         abilityActivated = true;
-                        // Flash animatie pe carte in arena
+                        // Flash animatie + particule colorate pe raritate, pe carte in arena
                         setTimeout(() => {
                             let el = document.getElementById('card-'+cardStats.uid);
-                            if (el) { el.classList.add('ability-active-flash'); setTimeout(()=>el.classList.remove('ability-active-flash'), 700); }
+                            if (el) {
+                                el.classList.add('ability-active-flash');
+                                burstAtElement(el, cardStats.rarity);
+                                setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
+                            }
                         }, 700);
                     }
                 }
@@ -257,6 +269,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     const bonus = getAbilityBonus(c, activeStat);
                     oTot += bonus;
                     abilityMessages.push(`🔴 ${ab.icon} <strong>${c.name}</strong> (AI): "${ab.name}"! +${bonus} ${activeStat.toUpperCase()}!`);
+                    setTimeout(() => {
+                        let el = document.getElementById('card-'+c.uid);
+                        if (el) {
+                            el.classList.add('ability-active-flash');
+                            burstAtElement(el, c.rarity);
+                            setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
+                        }
+                    }, 700);
                 }
             });
             let arena = document.getElementById('arena-area');
@@ -292,21 +312,60 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function endMatch(forfeit) {
+            let priorStreak = player.winStreak || 0;
+
             if(forfeit) {
                 match.oScore = 3; match.pScore = 0;
-                showNotification('🏳️ You forfeited the match. Defeat!', 2000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+                player.winStreak = 0; save();
+                let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
+                showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
-            
+
             let w = match.pScore > match.oScore;
             let picksWon = (match.pScore === 3) ? 3 : (w ? 2 : 1);
-            
+
             if (w && match.pickBonus > 0) {
                 picksWon += match.pickBonus; // Aplicam Pick Bonus pt victoriile pe Hard
             }
 
-            player.picks += picksWon; player.coins += w ? 30 : 10; save(); 
-            
-            if(w) { showNotification(`🎉 YOU WON THE MATCH! 🎉<br>You received ${picksWon} Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); }); } 
-            else { showNotification(`💀 YOU LOST THE MATCH... 💀<br>You received 1 consolation pick.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); }); }
+            let coinsWon = w ? 30 : 10;
+            let streakMsgs = [];
+            let freePackEarned = false;
+
+            if (w) {
+                player.winStreak = priorStreak + 1;
+                let streak = player.winStreak;
+
+                if (streak % STREAK_REWARDS.freePackEvery === 0) {
+                    freePackEarned = true;
+                    streakMsgs.push(`🔥 ${streak}-Win Streak! FREE PACK!`);
+                }
+                if (streak % STREAK_REWARDS.pickBonusEvery === 0) {
+                    picksWon += STREAK_REWARDS.pickBonusAmount;
+                    streakMsgs.push(`🔥 ${streak}-Win Streak! +${STREAK_REWARDS.pickBonusAmount} Pick`);
+                }
+                if (streak % STREAK_REWARDS.coinBonusEvery === 0) {
+                    let bonus = Math.round(coinsWon * STREAK_REWARDS.coinBonusPct / 100);
+                    coinsWon += bonus;
+                    streakMsgs.push(`🔥 ${streak}-Win Streak! +${STREAK_REWARDS.coinBonusPct}% coins`);
+                }
+            } else {
+                player.winStreak = 0;
+            }
+
+            player.picks += picksWon; player.coins += coinsWon; save();
+
+            let streakHtml = streakMsgs.length ? `<br><span style="color:#ff9800; font-size:15px;">${streakMsgs.join('<br>')}</span>` : '';
+            let lossResetNote = (!w && priorStreak >= 3) ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
+
+            if(w) {
+                celebrateMatchWin();
+                showNotification(`🎉 YOU WON THE MATCH! 🎉<br>You received ${picksWon} Draft picks.${streakHtml}`, streakMsgs.length ? 4000 : 3000, () => {
+                    showScreen('draft-board-screen'); renderDraftBoard();
+                    if (freePackEarned) buyPack(0, STREAK_REWARDS.freePackRarities);
+                });
+            } else {
+                showNotification(`💀 YOU LOST THE MATCH... 💀<br>You received 1 consolation pick.${lossResetNote}`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+            }
         }

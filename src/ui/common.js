@@ -2,6 +2,8 @@ function updateUI() {
             document.getElementById('coins-display').innerText = player.coins;
             document.getElementById('picks-display').innerText = player.picks;
             document.getElementById('draft-picks').innerText = player.picks;
+            document.getElementById('streak-display').innerText = player.winStreak || 0;
+            document.getElementById('streak-badge').style.display = (player.winStreak > 0) ? 'inline' : 'none';
             if(document.getElementById('col-count')) document.getElementById('col-count').innerText = player.inventory.length;
 
             let tierInfo = calculateDeckTier();

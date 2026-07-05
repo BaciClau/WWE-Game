@@ -34,3 +34,14 @@ const TIERS = [
             XP_BASE: 25,
             GROWTH: { base: 0.058, normal: 0.042, perfect: 0.072, perfectP2: 0.078 }
         };
+
+        // Recompense pentru streak de victorii consecutive (reset la orice înfrângere/forfeit)
+        // Fiecare prag se activează la orice multiplu (ex: 6, 9, 12... la fel ca 3)
+        const STREAK_REWARDS = {
+            coinBonusEvery: 3,   // +10% coins la câștig
+            coinBonusPct: 10,
+            pickBonusEvery: 5,   // +1 Pick suplimentar
+            pickBonusAmount: 1,
+            freePackEvery: 10,   // Pack gratuit (Rare/SuperRare)
+            freePackRarities: ['Rare', 'SuperRare']
+        };

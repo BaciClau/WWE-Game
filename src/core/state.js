@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
         window.currentOpponents = [];
         let tradeTarget = null;
         let tradeSacrifices = [];
@@ -78,6 +78,7 @@ let player = { coins: 0, picks: 0, inventory: [], deck: { M: [], F: [], S: [] },
             if (saved) {
                 player = JSON.parse(saved);
                 player.inventory = (player.inventory || []).map(migrateCard);
+                if (player.winStreak === undefined) player.winStreak = 0;
                 save(false);
             } else {
                 freshStart();

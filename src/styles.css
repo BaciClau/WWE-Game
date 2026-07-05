@@ -59,7 +59,7 @@
         .rarity-Survivor { border-color: #e74c3c; background: linear-gradient(135deg, #c0392b, #641e16); box-shadow: 0 0 25px #e74c3c;}
         .rarity-Support { border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
 
-        .card img { width: 100%; height: 124px; object-fit: cover; border-bottom: 2px solid #000; }
+        .card img { width: 140%; max-width: 140%; height: 124px; object-fit: cover; object-position: left 40%; border-bottom: 2px solid #000; }
         .card-name-plate { 
             background: linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0.6)); 
             border-top: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3);
@@ -154,6 +154,26 @@
             font-family: Arial; font-weight: bold; letter-spacing: 1px;
         }
 
+        /* ACTIVE DECK — sloturi fixe (4 Superstar, 1 Diva, 1 Support) cu contur premium */
+        .deck-slot { position: relative; }
+        .deck-slot-filled .card {
+            outline: 3px solid rgba(241,196,15,0.55);
+            outline-offset: 3px;
+            border-radius: 14px;
+        }
+        .deck-slot-empty {
+            width: 158px; height: 295px; border-radius: 14px; box-sizing: border-box;
+            border: 2px dashed rgba(241,196,15,0.35);
+            background: repeating-linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 10px, transparent 10px, transparent 20px), rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            color: rgba(255,255,255,0.4); font-family: Arial;
+            transition: border-color 0.25s, color 0.25s, background-color 0.25s;
+        }
+        .deck-slot-empty:hover { border-color: rgba(241,196,15,0.7); color: rgba(255,255,255,0.65); }
+        .deck-slot-icon { font-size: 36px; opacity: 0.55; filter: grayscale(40%); }
+        .deck-slot-text { font-size: 13px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+        .deck-slot-sub { font-size: 10px; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase; }
+
         /* ABILITĂȚI SPECIALE PE CARTE */
         .card-ability {
             background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(25,20,5,0.95));
@@ -247,17 +267,79 @@
             50% { opacity: 0.85; }
         }
 
-        /* NOTIFICARE ABILITATE ACTIVATĂ */
-        .ability-notif {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(135deg, #000, #1a1a0a);
-            border: 2px solid #f1c40f; border-radius: 12px;
-            padding: 10px 20px; color: #f1c40f; font-size: 15px; font-weight: bold;
-            z-index: 9998; text-align: center; box-shadow: 0 0 20px rgba(241,196,15,0.5);
-            animation: abilityNotifIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            white-space: nowrap;
+        /* POPUP MARE — ABILITATE ACTIVATĂ */
+        .ability-popup-overlay {
+            position: fixed; inset: 0; z-index: 9996;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
+            animation: abilityPopupFadeIn 0.25s ease-out; cursor: pointer;
         }
-        @keyframes abilityNotifIn {
-            0% { transform: translateX(-50%) translateY(50px); opacity: 0; }
-            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .ability-popup-overlay.ability-popup-out { animation: abilityPopupFadeOut 0.22s ease-in forwards; }
+        @keyframes abilityPopupFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes abilityPopupFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        .ability-popup-card {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            padding: 18px 28px 22px; border-radius: 22px; max-width: 320px; text-align: center;
+            animation: abilityPopupPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes abilityPopupPop {
+            0% { transform: scale(0.35) rotate(-5deg); opacity: 0; }
+            70% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); }
+        }
+        .ability-popup-header {
+            font-family: 'Oswald', sans-serif; font-weight: bold; letter-spacing: 3px; font-size: 15px;
+            border: 2px solid; border-radius: 20px; padding: 3px 16px; text-transform: uppercase;
+            text-shadow: 0 0 10px currentColor; animation: abilityHeaderPulse 1s ease-in-out infinite;
+        }
+        @keyframes abilityHeaderPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* Portret mare, recadrat: fără bara de nivel de jos, fără statsurile din dreapta — doar caracterul */
+        .ability-portrait {
+            width: 260px; height: 204px; border-radius: 14px; overflow: hidden;
+            margin: 4px 0; border: 2px solid #f1c40f;
+        }
+        .ability-portrait img {
+            width: 140%; max-width: 140%; height: 204px;
+            object-fit: cover; object-position: left 40%; display: block;
+        }
+        .ability-popup-name { color: #fff; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 3px #000; }
+        .ability-popup-move { color: #f1c40f; font-size: 17px; font-weight: bold; letter-spacing: 1px; }
+        .ability-popup-icon { margin-right: 6px; }
+        .ability-popup-bonus {
+            background: rgba(241,196,15,0.15); border: 1px solid #f1c40f; color: #ffe066;
+            font-size: 22px; font-weight: bold; padding: 4px 18px; border-radius: 8px; letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(241,196,15,0.6);
+        }
+        .ability-popup-desc { color: #ccc; font-size: 13px; font-style: italic; max-width: 280px; }
+        .ability-popup-tap { color: #777; font-size: 10px; letter-spacing: 2px; margin-top: 2px; }
+
+        /* CAMERA SHAKE — la victorie / explozii Survivor */
+        @keyframes cameraShake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            10% { transform: translate(-6px, -4px) rotate(-0.4deg); }
+            20% { transform: translate(6px, 4px) rotate(0.4deg); }
+            30% { transform: translate(-5px, 3px) rotate(-0.3deg); }
+            40% { transform: translate(5px, -3px) rotate(0.3deg); }
+            50% { transform: translate(-4px, 4px); }
+            60% { transform: translate(4px, -4px); }
+            70% { transform: translate(-3px, 2px); }
+            80% { transform: translate(3px, -2px); }
+            90% { transform: translate(-2px, 1px); }
+        }
+        body.camera-shake { animation: cameraShake 0.5s ease-in-out; }
+        body.camera-shake-big { animation: cameraShake 0.45s ease-in-out 2; }
+
+        /* PARTICULE / EXPLOZII COLORATE PE RARITATE */
+        .fx-particle {
+            position: fixed; top: 0; left: 0; width: 8px; height: 8px; border-radius: 50%;
+            pointer-events: none; z-index: 9997; margin: -4px 0 0 -4px;
+            box-shadow: 0 0 6px currentColor;
+            animation: fxParticleFly 1s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+        }
+        .fx-particle.confetti { border-radius: 2px; }
+        @keyframes fxParticleFly {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(var(--fx-x1), var(--fx-y1)) rotate(360deg) scale(0.3); opacity: 0; }
         }
