@@ -9,6 +9,79 @@ const DECK_SLOT_LAYOUT = [
     { type: 'S', label: 'SUPPORT', icon: '🛠️' }
 ];
 
+// --- SORTARE & PAGINARE COLECȚIE ---
+// Implicit: cele mai tari carduri (OVR) primele, mereu la pornirea jocului (nepersistat, resetat la reload).
+let collectionSort = { field: 'ovr', dir: 'desc' };
+let collectionPage = 0;
+const COLLECTION_PAGE_SIZE = 24;
+
+function getCardOvr(c) {
+    const s = getStats(c);
+    return (s.pow || 0) + (s.tgh || 0) + (s.spd || 0) + (s.cha || 0);
+}
+
+function setCollectionSort(field) {
+    if (collectionSort.field === field) {
+        collectionSort.dir = collectionSort.dir === 'desc' ? 'asc' : 'desc';
+    } else {
+        collectionSort.field = field;
+        collectionSort.dir = 'desc'; // implicit: cele mai tari/rare/nivel mare primele
+    }
+    collectionPage = 0;
+    renderDeck();
+}
+
+function sortCollectionCards(cards) {
+    const dirMul = collectionSort.dir === 'asc' ? 1 : -1;
+    return [...cards].sort((a, b) => {
+        let av, bv;
+        if (collectionSort.field === 'rarity') {
+            av = RARITIES.indexOf(getCardBase(a).rarity);
+            bv = RARITIES.indexOf(getCardBase(b).rarity);
+        } else if (collectionSort.field === 'level') {
+            av = a.level || 0;
+            bv = b.level || 0;
+        } else {
+            av = getCardOvr(a);
+            bv = getCardOvr(b);
+        }
+        if (av !== bv) return (av - bv) * dirMul;
+        // egalitate → departajare stabilă: OVR desc, apoi nume alfabetic
+        const ovrA = getCardOvr(a), ovrB = getCardOvr(b);
+        if (ovrA !== ovrB) return ovrB - ovrA;
+        return getCardBase(a).name.localeCompare(getCardBase(b).name);
+    });
+}
+
+function updateSortBarUI() {
+    document.querySelectorAll('#collection-sort-bar .sort-btn').forEach(btn => {
+        const isActive = btn.dataset.sort === collectionSort.field;
+        btn.classList.toggle('active', isActive);
+        const baseLabel = btn.dataset.sort.toUpperCase();
+        btn.innerText = isActive ? `${baseLabel} ${collectionSort.dir === 'desc' ? '▼' : '▲'}` : baseLabel;
+    });
+}
+
+function goCollectionPage(p) {
+    collectionPage = p;
+    renderDeck();
+}
+
+function renderPaginationControls(totalItems) {
+    const bar = document.getElementById('collection-pagination');
+    if (!bar) return;
+    const totalPages = Math.max(1, Math.ceil(totalItems / COLLECTION_PAGE_SIZE));
+    if (collectionPage >= totalPages) collectionPage = totalPages - 1;
+    if (collectionPage < 0) collectionPage = 0;
+
+    if (totalPages <= 1) { bar.innerHTML = ''; return; }
+    bar.innerHTML = `
+        <button class="page-btn" ${collectionPage === 0 ? 'disabled' : ''} onclick="goCollectionPage(${collectionPage - 1})">‹ PREV</button>
+        <span class="page-indicator">PAGE ${collectionPage + 1} / ${totalPages}</span>
+        <button class="page-btn" ${collectionPage === totalPages - 1 ? 'disabled' : ''} onclick="goCollectionPage(${collectionPage + 1})">NEXT ›</button>
+    `;
+}
+
 function renderDeck() {
             if (!deckEditMode) autoEquipDeck();
             document.getElementById('active-deck-grid').innerHTML = "";
@@ -52,10 +125,16 @@ function renderDeck() {
                 }
             });
 
-            // --- COLECȚIE: restul cărților care nu sunt echipate în deck ---
-            player.inventory.forEach(c => {
-                const inDeck = activeDeckUIDs.includes(c.uid);
-                if (inDeck) return;
+            // --- COLECȚIE: restul cărților care nu sunt echipate în deck, sortate + paginate ---
+            let collectionCards = player.inventory.filter(c => !activeDeckUIDs.includes(c.uid));
+            collectionCards = sortCollectionCards(collectionCards);
+            renderPaginationControls(collectionCards.length);
+            updateSortBarUI();
+
+            const pageStart = collectionPage * COLLECTION_PAGE_SIZE;
+            const pageCards = collectionCards.slice(pageStart, pageStart + COLLECTION_PAGE_SIZE);
+
+            pageCards.forEach(c => {
                 let s = getStats(c);
 
                 if (deckEditMode) {

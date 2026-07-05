@@ -226,6 +226,27 @@ const ABILITIES = {
             721: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Suplex City Survivor!' },
             722: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'Mr. WrestleMania!' },
             723: { name: "Spear",         stats: ['pow','spd'], icon: '⚡', desc: 'Rated-R Survivor!' },
+
+            // ABILITĂȚI LIPSĂ — Rare și peste au TOATE o abilitate, indiferent de stats
+            231: { name: "Shattered Dreams", stats: ['cha','tgh'], icon: '💫', desc: 'The Bizarre One!' },
+            233: { name: "Rack Attack 2.0", stats: ['cha','spd'], icon: '💎', desc: 'Fearless Nikki!' },
+            234: { name: "PTO",           stats: ['spd','cha'], icon: '⚡', desc: 'Paige Tap Out!' },
+            235: { name: "Sharpshooter",  stats: ['tgh','spd'], icon: '🔱', desc: 'Queen of Harts!' },
+            236: { name: "Moonsault",     stats: ['pow','cha'], icon: '🌙', desc: 'High-Flying Diva!' },
+            238: { name: "Slaughter Cannon", stats: ['pow','cha'], icon: '🎖️', desc: 'Real American Hero!' },
+            324: { name: "Naomi Glow",    stats: ['cha','spd'], icon: '✨', desc: 'Feel The Glow!' },
+            325: { name: "Rack Attack",   stats: ['pow','tgh'], icon: '💎', desc: 'Fearless Nikki!' },
+            426: { name: "Chokeslam",     stats: ['pow','tgh'], icon: '🤛', desc: 'The Eighth Wonder!' },
+            429: { name: "New Day Rocks", stats: ['spd','cha'], icon: '🎉', desc: 'Booty-Os Power!' },
+
+            // ABILITĂȚI COMMON/UNCOMMON — doar cele care exceleaza clar la un stat (≥5% peste al 2-lea)
+            9:   { name: "450 Splash",    stats: ['spd','pow'], icon: '🤸', desc: 'High-Flying!' },
+            10:  { name: "Cobra Strike",  stats: ['cha','spd'], icon: '🐍', desc: 'The Cobra!' },
+            22:  { name: "Punjabi Plunge", stats: ['tgh','pow'], icon: '🐘', desc: 'Giant Power!' },
+            23:  { name: "Banzai Drop",   stats: ['tgh','cha'], icon: '🍥', desc: 'Sumo Style!' },
+            24:  { name: "Virgil's Save", stats: ['spd','pow'], icon: '🛡️', desc: 'Loyal Assistant!' },
+            29:  { name: "Bizarre Mind Games", stats: ['cha','tgh'], icon: '🎭', desc: 'The Bizarre One!' },
+            30:  { name: "619",           stats: ['spd','tgh'], icon: '🎭', desc: 'Lucha Libre!' },
         };
 
         // TIER-URI ACTULIZATE CU + SI ++

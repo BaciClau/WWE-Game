@@ -131,11 +131,13 @@ function showAbilityPopup(evt, onDone) {
 }
 
 // Rulează popup-urile de abilitate unul câte unul (nu suprapuse), în ordinea activării.
-function queueAbilityPopups(events) {
-    if (!events || events.length === 0) return;
+// onAllDone se apelează după ce ULTIMUL popup s-a închis — folosit ca să "înghețe"
+// gameplay-ul (nu se continuă runda) cât timp mai sunt abilități de arătat.
+function queueAbilityPopups(events, onAllDone) {
+    if (!events || events.length === 0) { if (onAllDone) onAllDone(); return; }
     let i = 0;
     const next = () => {
-        if (i >= events.length) return;
+        if (i >= events.length) { if (onAllDone) onAllDone(); return; }
         showAbilityPopup(events[i++], next);
     };
     next();

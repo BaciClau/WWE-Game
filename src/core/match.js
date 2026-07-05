@@ -275,27 +275,32 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
 
-            // Arată popup-ul mare de abilitate activată (unul câte unul dacă sunt mai multe)
+            // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
+            // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să
+            // rămână "înghețat" cât timp se arată o abilitate activată.
+            const startClashSequence = () => {
+                arena.style.cursor = 'pointer';
+                arena.onclick = () => skipClash(pTot, oTot);
+
+                _clashTimer1 = setTimeout(() => {
+                    _clashTimer1 = null;
+                    let ap = document.getElementById('arena-player');
+                    let ao = document.getElementById('arena-opp');
+                    if (ap) ap.classList.add('anim-clash-left');
+                    if (ao) ao.classList.add('anim-clash-right');
+
+                    _clashTimer2 = setTimeout(() => {
+                        _clashTimer2 = null;
+                        skipClash(pTot, oTot);
+                    }, 800);
+                }, 600);
+            };
+
             if (abilityEvents.length > 0) {
-                setTimeout(() => queueAbilityPopups(abilityEvents), 700);
+                setTimeout(() => queueAbilityPopups(abilityEvents, startClashSequence), 700);
+            } else {
+                startClashSequence();
             }
-
-            // Click pe arena pentru skip animație clash
-            arena.style.cursor = 'pointer';
-            arena.onclick = () => skipClash(pTot, oTot);
-
-            _clashTimer1 = setTimeout(() => {
-                _clashTimer1 = null;
-                let ap = document.getElementById('arena-player');
-                let ao = document.getElementById('arena-opp');
-                if (ap) ap.classList.add('anim-clash-left');
-                if (ao) ao.classList.add('anim-clash-right');
-
-                _clashTimer2 = setTimeout(() => {
-                    _clashTimer2 = null;
-                    skipClash(pTot, oTot);
-                }, 800);
-            }, 600);
         }
 
         function endMatch(forfeit) {

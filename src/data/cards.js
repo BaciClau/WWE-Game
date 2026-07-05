@@ -9,7 +9,7 @@ const DB = [
             { id: 11, name: "AJ Lee", rarity: "Common", gender: "F", pow: 59, tgh: 60, spd: 69, cha: 70, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8701-8800_SuperCard-AJLee-01-Common-8742-216.webp" },
             { id: 12, name: "Natalya", rarity: "Common", gender: "F", pow: 65, tgh: 62, spd: 62, cha: 66, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8701-8800_SuperCard-Natalya-01-Common-8772-216.webp" },
             { id: 13, name: "Summer Rae", rarity: "Common", gender: "F", pow: 59, tgh: 56, spd: 68, cha: 54, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8701-8800_SuperCard-SummerRae-01-Common-8782-216.webp" },
-            { id: 20, name: "Steel Chair", rarity: "Common", gender: "S", pow: 10, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-Support-Chair-01-Common-9384-216.webp" },
+            { id: 20, name: "Steel Chair", rarity: "Common", gender: "S", pow: 7, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-Support-Chair-01-Common-9384-216.webp" },
             { id: 21, name: "Taunt", rarity: "Common", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 7, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Taunt-02-Uncommon-9468-216.webp" },
             { id: 31, name: "Ladder", rarity: "Common", gender: "S", pow: 0, tgh: 0, spd: 7, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-Support-Ladder-01-Common-9392-216.webp" },
             
@@ -44,8 +44,8 @@ const DB = [
             { id: 111, name: "Alicia Fox", rarity: "Uncommon", gender: "F", pow: 78, tgh: 80, spd: 85, cha: 82, img: "https://via.placeholder.com/150x222/27ae60/FFFFFF?text=Alicia+Fox" },
             { id: 112, name: "Layla", rarity: "Survivor", gender: "F", pow: 498, tgh: 534, spd: 544, cha: 617, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9201-9300_SuperCard-Layla-08-Survivor-9201-216.webp" },
             { id: 113, name: "Summer Rae", rarity: "Uncommon", gender: "F", pow: 65, tgh: 62, spd: 75, cha: 71, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8801-8900_SuperCard-SummerRae-02-Uncommon-8853-216.webp" },
-            { id: 120, name: "Trash Can", rarity: "Uncommon", gender: "S", pow: 0, tgh: 15, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-TrashCan-02-Uncommon-9476-216.webp" },
-            { id: 121, name: "Stop Sign", rarity: "Uncommon", gender: "S", pow: 15, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-StopSign-02-Uncommon-9460-216.webp" },
+            { id: 120, name: "Trash Can", rarity: "Uncommon", gender: "S", pow: 0, tgh: 10, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-TrashCan-02-Uncommon-9476-216.webp" },
+            { id: 121, name: "Stop Sign", rarity: "Uncommon", gender: "S", pow: 10, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-StopSign-02-Uncommon-9460-216.webp" },
 
             // === UNCOMMON (adăugat) ===
             { id: 108, name: "Bad News Barrett", rarity: "Uncommon", gender: "M", pow: 75, tgh: 72, spd: 65, cha: 72, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8801-8900_SuperCard-BadNewsBarrett-02-Uncommon-8806-216.webp" },
@@ -80,7 +80,7 @@ const DB = [
             { id: 211, name: "AJ Lee", rarity: "Rare", gender: "F", pow: 79, tgh: 81, spd: 92, cha: 94, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8801-8900_SuperCard-AJLee-03-Rare-8863-216.webp" },
             { id: 212, name: "Brie Bella", rarity: "Survivor", gender: "F", pow: 583, tgh: 591, spd: 589, cha: 632, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-BrieBella-08-Survivor-9364-216.webp" },
             { id: 213, name: "Naomi", rarity: "Survivor", gender: "F", pow: 517, tgh: 526, spd: 517, cha: 677, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9201-9300_SuperCard-Naomi-08-Survivor-9203-216.webp" },
-            { id: 220, name: "Table", rarity: "Rare", gender: "S", pow: 25, tgh: 25, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-Support-2x4-03-Rare-9371-216.webp" },
+            { id: 220, name: "Table", rarity: "Rare", gender: "S", pow: 15, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9301-9400_SuperCard-Support-2x4-03-Rare-9371-216.webp" },
 
             // === RARE (adăugat) ===
             { id: 209, name: "Batista", rarity: "Rare", gender: "M", pow: 94, tgh: 92, spd: 79, cha: 92, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8801-8900_SuperCard-Batista-03-Rare-8866-216.webp" },
@@ -141,7 +141,7 @@ const DB = [
             { id: 325, name: "Nikki Bella", rarity: "SuperRare", gender: "F", pow: 111, tgh: 105, spd: 113, cha: 125, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-NikkiBella-04-SuperRare-8975-216.webp" },
             { id: 326, name: "AJ Lee", rarity: "SuperRare", gender: "F", pow: 104, tgh: 106, spd: 121, cha: 123, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-AJLee-04-SuperRare-8938-216.webp" },
             { id: 327, name: "Brie Bella", rarity: "SuperRare", gender: "F", pow: 105, tgh: 108, spd: 124, cha: 116, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-BrieBella-04-SuperRare-8947-216.webp" },
-            { id: 328, name: "Million Dollar Man", rarity: "SuperRare", gender: "S", pow: 113, tgh: 111, spd: 100, cha: 118, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-TedDiBiase-04-SuperRare-8987-216.webp" },
+            { id: 328, name: "Trash Can", rarity: "SuperRare", gender: "S", pow: 11, tgh: 11, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-TedDiBiase-04-SuperRare-8987-216.webp" },
             
             { id: 401, name: "Daniel Bryan", rarity: "UltraRare", gender: "M", pow: 156, tgh: 165, spd: 163, cha: 173, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-DanielBryan-05-UltraRare-9017-216.webp" },
             { id: 402, name: "Edge", rarity: "UltraRare", gender: "M", pow: 154, tgh: 156, spd: 163, cha: 173, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-Edge-05-UltraRare-9021-216.webp" },
@@ -152,7 +152,7 @@ const DB = [
             { id: 407, name: "The Rock", rarity: "UltraRare", gender: "M", pow: 168, tgh: 165, spd: 154, cha: 192, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8901-9000_SuperCard-TheRock-05-UltraRare-8999-216.webp" },
             { id: 411, name: "AJ Lee", rarity: "UltraRare", gender: "F", pow: 144, tgh: 148, spd: 167, cha: 171, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-AJLee-05-UltraRare-9004-216.webp" },
             { id: 412, name: "Brie Bella", rarity: "UltraRare", gender: "F", pow: 146, tgh: 151, spd: 172, cha: 161, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-BrieBella-05-UltraRare-9011-216.webp" },
-            { id: 420, name: "Paul Heyman", rarity: "UltraRare", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 45, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-PaulHeyman-05-UltraRare-9441-216.webp" },
+            { id: 420, name: "Paul Heyman", rarity: "UltraRare", gender: "S", pow: 9, tgh: 0, spd: 0, cha: 9, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-PaulHeyman-05-UltraRare-9441-216.webp" },
             
             // === ULTRARARE (adăugat) ===
             { id: 408, name: "Daniel Bryan", rarity: "UltraRare", gender: "M", pow: 156, tgh: 165, spd: 163, cha: 173, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-DanielBryan-05-UltraRare-9017-216.webp" },
@@ -174,7 +174,7 @@ const DB = [
             { id: 427, name: "Ric Flair", rarity: "UltraRare", gender: "M", pow: 154, tgh: 160, spd: 141, cha: 192, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-RicFlair-05-UltraRare-9041-216.webp" },
             { id: 428, name: "Macho Man", rarity: "UltraRare", gender: "M", pow: 159, tgh: 161, spd: 167, cha: 192, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-RandySavage-05-UltraRare-9039-216.webp" },
             { id: 429, name: "Xavier Woods", rarity: "UltraRare", gender: "M", pow: 149, tgh: 144, spd: 173, cha: 173, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-XavierWoods-05-UltraRare-9003-216.webp" },
-            { id: 430, name: "Dusty Rhodes", rarity: "UltraRare", gender: "S", pow: 156, tgh: 154, spd: 138, cha: 163, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-DustyRhodes-05-UltraRare-9020-216.webp" },
+            { id: 430, name: "WWE Universe", rarity: "UltraRare", gender: "S", pow: 0, tgh: 0, spd: 0, cha: 30, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-DustyRhodes-05-UltraRare-9020-216.webp" },
             
             { id: 501, name: "Booker T", rarity: "Epic", gender: "M", pow: 240, tgh: 229, spd: 248, cha: 258, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-BookerT-06-Epic-9068-216.webp" },
             { id: 502, name: "Brock Lesnar", rarity: "Epic", gender: "M", pow: 261, tgh: 252, spd: 220, cha: 229, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-BrockLesnar-06-Epic-9071-216.webp" },
@@ -186,7 +186,7 @@ const DB = [
             { id: 511, name: "Cameron", rarity: "Epic", gender: "F", pow: 199, tgh: 205, spd: 242, cha: 232, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-Cameron-06-Epic-9072-216.webp" },
             { id: 512, name: "Naomi", rarity: "Epic", gender: "F", pow: 197, tgh: 201, spd: 234, cha: 258, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-Naomi-06-Epic-9083-216.webp" },
             { id: 513, name: "Natalya", rarity: "Epic", gender: "F", pow: 236, tgh: 225, spd: 225, cha: 240, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-Natalya-06-Epic-9084-216.webp" },
-            { id: 520, name: "Jimmy Hart", rarity: "Epic", gender: "S", pow: 0, tgh: 0, spd: 65, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-JimmyHart-06-Epic-9412-216.webp" },
+            { id: 520, name: "Jimmy Hart", rarity: "Epic", gender: "S", pow: 0, tgh: 0, spd: 45, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-JimmyHart-06-Epic-9412-216.webp" },
             
             // === EPIC (adăugat) ===
             { id: 508, name: "Triple H", rarity: "Epic", gender: "M", pow: 247, tgh: 246, spd: 201, cha: 272, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-TripleH-06-Epic-9099-216.webp" },
@@ -205,7 +205,7 @@ const DB = [
             { id: 525, name: "Roman Reigns", rarity: "Uncommon", gender: "M", pow: 76, tgh: 72, spd: 68, cha: 68, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_8801-8900_SuperCard-RomanReigns-02-Uncommon-8843-216.webp" },
             { id: 526, name: "Razor Ramon", rarity: "Epic", gender: "M", pow: 241, tgh: 236, spd: 239, cha: 258, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9001-9100_SuperCard-RazorRamon-06-Epic-9088-216.webp" },
             { id: 527, name: "Vader", rarity: "Epic", gender: "M", pow: 245, tgh: 265, spd: 254, cha: 203, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-Vader-06-Epic-Throwback-9114-216.webp" },
-            { id: 528, name: "Harley Race", rarity: "Epic", gender: "S", pow: 246, tgh: 241, spd: 221, cha: 250, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-HarleyRace-06-Epic-Throwback-9111-216.webp" },
+            { id: 528, name: "Second Wind", rarity: "Epic", gender: "S", pow: 19, tgh: 19, spd: 19, cha: 19, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-HarleyRace-06-Epic-Throwback-9111-216.webp" },
             
             { id: 601, name: "Bruno Sammartino", rarity: "Legendary", gender: "M", pow: 385, tgh: 396, spd: 383, cha: 414, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-BrunoSammartino-07-Legendary-9125-216.webp" },
             { id: 602, name: "Eddie Guerrero", rarity: "Legendary", gender: "M", pow: 374, tgh: 386, spd: 422, cha: 437, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-EddieGuerrero-07-Legendary-9131-216.webp" },
@@ -219,7 +219,7 @@ const DB = [
             { id: 611, name: "AJ Lee", rarity: "Legendary", gender: "F", pow: 350, tgh: 357, spd: 306, cha: 415, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-AJLee-07-Legendary-9118-216.webp" },
             { id: 612, name: "Brie Bella", rarity: "Legendary", gender: "F", pow: 357, tgh: 363, spd: 323, cha: 385, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-BrieBella-07-Legendary-9123-216.webp" },
             { id: 613, name: "Stephanie McMahon", rarity: "Legendary", gender: "F", pow: 352, tgh: 355, spd: 371, cha: 424, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-StephanieMcMahon-07-Legendary-9143-216.webp" },
-            { id: 620, name: "Zeb Colter", rarity: "Legendary", gender: "S", pow: 0, tgh: 85, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-PaulBearer-07-Legendary-9435-216.webp" },
+            { id: 620, name: "Stop Sign", rarity: "Legendary", gender: "S", pow: 0, tgh: 75, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-PaulBearer-07-Legendary-9435-216.webp" },
             
             // === LEGENDARY (adăugat) ===
             { id: 610, name: "Brock Lesnar", rarity: "Legendary", gender: "M", pow: 420, tgh: 402, spd: 353, cha: 368, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-BrockLesnar-07-Legendary-9124-216.webp" },
@@ -234,7 +234,7 @@ const DB = [
             { id: 623, name: "Natalya", rarity: "Legendary", gender: "F", pow: 384, tgh: 364, spd: 354, cha: 390, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-Natalya-07-Legendary-9137-216.webp" },
             { id: 624, name: "Seth Rollins", rarity: "Legendary", gender: "M", pow: 622, tgh: 615, spd: 635, cha: 663, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-SethRollins-07-Legendary-Fusion-9155-216.webp" },
             { id: 625, name: "Randy Orton", rarity: "Legendary", gender: "M", pow: 380, tgh: 400, spd: 376, cha: 391, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-RandyOrton-07-Legendary-9139-216.webp" },
-            { id: 626, name: "Big Boss Man", rarity: "Legendary", gender: "S", pow: 397, tgh: 445, spd: 306, cha: 391, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-BigBossMan-07-Legendary-Throwback-9156-216.webp" },
+            { id: 626, name: "Chair", rarity: "Legendary", gender: "S", pow: 75, tgh: 0, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-BigBossMan-07-Legendary-Throwback-9156-216.webp" },
             
             { id: 701, name: "Sting", rarity: "Survivor", gender: "M", pow: 645, tgh: 638, spd: 611, cha: 720, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9201-9300_SuperCard-Sting-08-Survivor-9221-216.webp" },
             { id: 702, name: "Roman Reigns", rarity: "Survivor", gender: "M", pow: 630, tgh: 602, spd: 564, cha: 564, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9201-9300_SuperCard-RomanReigns-08-Survivor-9213-216.webp" },
@@ -247,7 +247,7 @@ const DB = [
             { id: 711, name: "Eve", rarity: "Survivor", gender: "F", pow: 617, tgh: 587, spd: 587, cha: 624, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-Eve-08-Survivor-9194-216.webp" },
             { id: 712, name: "Nikki Bella", rarity: "Survivor", gender: "F", pow: 596, tgh: 579, spd: 652, cha: 669, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9201-9300_SuperCard-NikkiBella-08-Survivor-9205-216.webp" },
             { id: 713, name: "Emma", rarity: "Survivor", gender: "F", pow: 556, tgh: 549, spd: 517, cha: 654, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-Emma-08-Survivor-9192-216.webp" },
-            { id: 720, name: "Mr. Fuji", rarity: "Survivor", gender: "S", pow: 0, tgh: 120, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-MrFuji-08-Survivor-9425-216.webp" },
+            { id: 720, name: "Mr. Fuji", rarity: "Survivor", gender: "S", pow: 0, tgh: 100, spd: 0, cha: 0, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9401-9500_SuperCard-Support-Manager-MrFuji-08-Survivor-9425-216.webp" },
             
             // === SURVIVOR (adăugat) ===
             { id: 709, name: "Triple H", rarity: "Survivor", gender: "M", pow: 649, tgh: 647, spd: 526, cha: 714, img: "https://www.thesmackdownhotel.com/images/jch-optimize/ng/igallery_9101-9200_SuperCard-TripleH-08-Survivor-9172-216.webp" },

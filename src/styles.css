@@ -144,6 +144,33 @@
         }
         #game-notification { cursor: pointer; }
         .section-title { text-align: center; color: #f1c40f; border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;}
+
+        /* SORT BAR — colecție */
+        .sort-bar {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin: 15px 0 10px; flex-wrap: wrap;
+        }
+        .sort-bar-label { color: #888; font-family: Arial; font-size: 12px; letter-spacing: 1px; font-weight: bold; }
+        .sort-btn {
+            background: #1a1a1a; border: 2px solid #444; color: #ccc; font-family: Arial;
+            font-weight: bold; font-size: 12px; letter-spacing: 1px; padding: 6px 16px;
+            border-radius: 20px; cursor: pointer; transition: 0.2s;
+        }
+        .sort-btn:hover { border-color: #3498db; color: #fff; }
+        .sort-btn.active { background: linear-gradient(135deg, #f1c40f, #f39c12); border-color: #f1c40f; color: #000; box-shadow: 0 0 12px rgba(241,196,15,0.5); }
+
+        /* PAGINATION BAR — colecție */
+        .pagination-bar {
+            display: flex; align-items: center; justify-content: center; gap: 18px;
+            margin: 15px 0 5px; font-family: Arial;
+        }
+        .page-btn {
+            background: #1a1a1a; border: 2px solid #3498db; color: #fff; font-weight: bold;
+            font-size: 13px; padding: 8px 18px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        }
+        .page-btn:hover:not(:disabled) { background: #3498db; }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .page-indicator { color: #aaa; font-size: 13px; font-weight: bold; letter-spacing: 1px; }
         .card.deck-edit-in { box-shadow: 0 0 20px #2ecc71; border-color: #2ecc71 !important; }
         .card.deck-edit-out:hover { box-shadow: 0 0 15px #3498db; border-color: #3498db !important; }
         .card.deck-edit-full { opacity: 0.5; pointer-events: none; }
