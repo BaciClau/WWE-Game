@@ -408,3 +408,4 @@
             transform: translateY(2px);
             box-shadow: 0 3px 0 #7a1f0f, 0 6px 10px rgba(0,0,0,0.6);
         }
+        .pull-tap-hint { margin: 0; color: #777; font-size: 11px; letter-spacing: 2px; }
