@@ -1,10 +1,10 @@
-let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, pickBonus: 0 };
+let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0} };
 
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
             autoEquipDeck(); save();
             showScreen('match-screen');
-            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, pickBonus: oppData.pickBonus, aiMode: oppData.aiMode || 'normal' };
+            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal' };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
@@ -12,8 +12,8 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function nextRound() {
-            if(match.round > 3 || match.pScore === 2 || match.oScore === 2) return endMatch(false);
-            match.selected = []; match.activeSupportUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0}; 
+            if(match.round > 5 || match.pScore === 3 || match.oScore === 3) return endMatch(false);
+            match.selected = []; match.activeSupportUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('btn-confirm-play').style.display = 'none';
 
@@ -24,6 +24,19 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             if(availM.length >= 1) rules.push({ t: 'SINGLES', r: 1, g: 'M' });
             if(availM.length >= 2) rules.push({ t: 'TAG TEAM', r: 2, g: 'M' });
             if(availF.length >= 1) rules.push({ t: 'DIVAS', r: 1, g: 'F' });
+
+            // Best-of-5 draws from a fixed 6-card pool (4 Superstars + 2 Divas), and a Tag
+            // Team round spends 2 at once, so it's possible (if Tag Team gets picked often)
+            // to run out of fighting cards before round 5 or a 3-win decision. Rather than
+            // block Tag Team outright (which would make it near-impossible to ever draw
+            // given the pool size), just end the match cleanly here if that happens —
+            // whoever's ahead on rounds so far wins; a coin flip breaks a tied score.
+            if (rules.length === 0) {
+                if (match.pScore === match.oScore) {
+                    if (Math.random() < 0.5) match.pScore++; else match.oScore++;
+                }
+                return endMatch(false);
+            }
 
             let r = rules[Math.floor(Math.random() * rules.length)];
             let st = ['pow', 'tgh', 'spd', 'cha'][Math.floor(Math.random()*4)];
@@ -102,7 +115,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
         let _clashTimer1 = null, _clashTimer2 = null;
 
-        function skipClash(pTot, oTot) {
+        // forcedWinner ('p'|'o') breaks an exact tie on the active stat — rounds never draw
+        // anymore, so resolveRound() decides a tiebreak winner beforehand when pTot===oTot.
+        function skipClash(pTot, oTot, forcedWinner) {
             // Curăță timere rămase
             if (_clashTimer1) { clearTimeout(_clashTimer1); _clashTimer1 = null; }
             if (_clashTimer2) { clearTimeout(_clashTimer2); _clashTimer2 = null; }
@@ -111,7 +126,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             arena.onclick = null;
             arena.style.cursor = '';
 
-            if(pTot > oTot) {
+            const playerWins = forcedWinner ? forcedWinner === 'p' : pTot > oTot;
+
+            if (playerWins) {
                 match.pScore++;
                 cameraShake(false);
                 let arenaPlayer = document.getElementById('arena-player');
@@ -125,14 +142,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     document.getElementById('score-player').innerText = match.pScore;
                     match.round++; nextRound();
                 });
-            } else if(oTot > pTot) {
+            } else {
                 match.oScore++;
                 showNotification(`<span style="color:#e74c3c;">ROUND LOSS...</span><br>${pTot} lost to ${oTot}`, 1500, () => {
                     document.getElementById('score-opp').innerText = match.oScore;
                     match.round++; nextRound();
                 });
-            } else {
-                showNotification(`<span style="color:#f1c40f;">DRAW!</span><br>${pTot} vs ${oTot}`, 1500, () => { match.round++; nextRound(); });
             }
         }
 
@@ -219,21 +234,50 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     if (Math.random() < 0.33) {
                         // ABILITATE ACTIVATĂ! Bonus fix bazat pe raritate
                         const bonus = getAbilityBonus(cardStats, match.rule.stat);
-                        pTot += bonus;
-                        abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false });
-                        // Flash animatie + particule colorate pe raritate, pe carte in arena
-                        setTimeout(() => {
-                            let el = document.getElementById('card-'+cardStats.uid);
-                            if (el) {
-                                el.classList.add('ability-active-flash');
-                                burstAtElement(el, cardStats.rarity);
-                                setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
-                            }
-                        }, 700);
+                        // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
+                        // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
+                        if (bonus > 0) {
+                            pTot += bonus;
+                            abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false });
+                            // Flash animatie + particule colorate pe raritate, pe carte in arena
+                            setTimeout(() => {
+                                let el = document.getElementById('card-'+cardStats.uid);
+                                if (el) {
+                                    el.classList.add('ability-active-flash');
+                                    burstAtElement(el, cardStats.rarity);
+                                    setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
+                                }
+                            }, 700);
+                        }
                     }
                 }
             });
-            pTot += match.supportBonus[match.rule.stat] || 0;
+            // In a Tag Team round (2 cards per side), the support card backs up the whole
+            // team, so its bonus counts double instead of a flat single-card add.
+            const teamSupportMultiplier = match.rule.r === 2 ? 2 : 1;
+            const playerSupportBonus = (match.supportBonus[match.rule.stat] || 0) * teamSupportMultiplier;
+            pTot += playerSupportBonus;
+
+            // Support gets the same big popup treatment as an ability activation.
+            if (match.activeSupportUID && playerSupportBonus > 0) {
+                const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
+                if (supportCard) {
+                    const supportStats = getStats(supportCard);
+                    abilityEvents.push({
+                        cardStats: supportStats,
+                        ab: { icon: '🛠️', name: 'Support Boost', desc: `${supportStats.name} backs up the team!` },
+                        bonus: playerSupportBonus, statName: match.rule.stat, isAI: false, isSupport: true
+                    });
+                    setTimeout(() => {
+                        let el = document.getElementById('card-' + supportStats.uid);
+                        if (el) {
+                            el.classList.add('ability-active-flash');
+                            burstAtElement(el, supportStats.rarity);
+                            setTimeout(() => el.classList.remove('ability-active-flash'), 700);
+                        }
+                    }, 700);
+                }
+            }
 
             // ---- AI CARD SELECTION ----
             const activeStat = match.rule.stat;
@@ -248,39 +292,88 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 oTot += c[activeStat];
                 match.used.push(c.uid);
             });
-            oTot += aiPlay.supportBonus;
+            const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
+            oTot += aiSupportBonus;
+
+            if (aiPlay.support && aiSupportBonus > 0) {
+                abilityEvents.push({
+                    cardStats: aiPlay.support,
+                    ab: { icon: '🛠️', name: 'Support Boost', desc: `${aiPlay.support.name} backs up the team!` },
+                    bonus: aiSupportBonus, statName: activeStat, isAI: true, isSupport: true
+                });
+                setTimeout(() => {
+                    let el = document.getElementById('card-' + aiPlay.support.uid);
+                    if (el) {
+                        el.classList.add('ability-active-flash');
+                        burstAtElement(el, aiPlay.support.rarity);
+                        setTimeout(() => el.classList.remove('ability-active-flash'), 700);
+                    }
+                }, 700);
+            }
 
             oppP.forEach(c => {
                 const ab = ABILITIES[c.id];
                 if (ab && ab.stats.includes(activeStat) && Math.random() < aiPlay.abilityChance) {
                     const bonus = getAbilityBonus(c, activeStat);
-                    oTot += bonus;
-                    abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true });
-                    setTimeout(() => {
-                        let el = document.getElementById('card-'+c.uid);
-                        if (el) {
-                            el.classList.add('ability-active-flash');
-                            burstAtElement(el, c.rarity);
-                            setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
-                        }
-                    }, 700);
+                    // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
+                    // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
+                    if (bonus > 0) {
+                        oTot += bonus;
+                        abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true });
+                        setTimeout(() => {
+                            let el = document.getElementById('card-'+c.uid);
+                            if (el) {
+                                el.classList.add('ability-active-flash');
+                                burstAtElement(el, c.rarity);
+                                setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
+                            }
+                        }, 700);
+                    }
                 }
             });
+            // Cards whose stat actually got a bonus this round (ability or support) light up
+            // green on that stat, right there on the card, while it's in the arena. The
+            // support card itself never enters the arena, so a support bonus instead lights
+            // up every fighter it backed up this round (that's who's actually "in battle").
+            const boostedStatByUid = {};
+            abilityEvents.forEach(evt => { boostedStatByUid[evt.cardStats.uid] = evt.statName; });
+            if (playerSupportBonus > 0) {
+                match.selected.forEach(u => { boostedStatByUid[u] = match.rule.stat; });
+            }
+            if (aiSupportBonus > 0) {
+                oppP.forEach(c => { boostedStatByUid[c.uid] = activeStat; });
+            }
+
             let arena = document.getElementById('arena-area');
             arena.innerHTML = `
-                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat)).join('')}</div>
+                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', boostedStatByUid[u] || '')).join('')}</div>
                 <div class="vs-badge">VS</div>
-                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat)).join('')}</div>
+                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat, '', boostedStatByUid[c.uid] || '')).join('')}</div>
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
+
+            // Rounds never draw — if the active stat is exactly tied, break it with the
+            // combined total of all 4 stats on the cards in play, and a coin flip if even
+            // that's tied. Doesn't touch the displayed pTot/oTot, just who wins the round.
+            let forcedWinner = null;
+            if (pTot === oTot) {
+                const pAllStats = match.selected.reduce((s, u) => {
+                    const c = getStats(player.inventory.find(x => x.uid === u));
+                    return s + (c ? c.pow + c.tgh + c.spd + c.cha : 0);
+                }, 0);
+                const oAllStats = oppP.reduce((s, c) => s + c.pow + c.tgh + c.spd + c.cha, 0);
+                if (pAllStats > oAllStats) forcedWinner = 'p';
+                else if (oAllStats > pAllStats) forcedWinner = 'o';
+                else forcedWinner = Math.random() < 0.5 ? 'p' : 'o';
+            }
 
             // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
             // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să
             // rămână "înghețat" cât timp se arată o abilitate activată.
             const startClashSequence = () => {
                 arena.style.cursor = 'pointer';
-                arena.onclick = () => skipClash(pTot, oTot);
+                arena.onclick = () => skipClash(pTot, oTot, forcedWinner);
 
                 _clashTimer1 = setTimeout(() => {
                     _clashTimer1 = null;
@@ -291,7 +384,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
                     _clashTimer2 = setTimeout(() => {
                         _clashTimer2 = null;
-                        skipClash(pTot, oTot);
+                        skipClash(pTot, oTot, forcedWinner);
                     }, 800);
                 }, 600);
             };
@@ -308,24 +401,22 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
             if(forfeit) {
                 match.oScore = 3; match.pScore = 0;
-                player.winStreak = 0; save();
+                player.winStreak = 0; player.losses = (player.losses || 0) + 1; save();
                 let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
                 showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
 
             let w = match.pScore > match.oScore;
-            let picksWon = (match.pScore === 3) ? 3 : (w ? 2 : 1);
-
-            if (w && match.pickBonus > 0) {
-                picksWon += match.pickBonus; // Aplicam Pick Bonus pt victoriile pe Hard
-            }
+            // A clean 3-0 sweep earns a bonus pick (3 total); a normal win (3-1/3-2) is 2, a loss is 1.
+            let picksWon = w ? (match.oScore === 0 ? 3 : 2) : 1;
 
             let coinsWon = w ? 30 : 10;
             let streakMsgs = [];
             let freePackEarned = false;
 
             if (w) {
+                player.wins = (player.wins || 0) + 1;
                 player.winStreak = priorStreak + 1;
                 let streak = player.winStreak;
 
@@ -343,6 +434,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     streakMsgs.push(`🔥 ${streak}-Win Streak! +${STREAK_REWARDS.coinBonusPct}% coins`);
                 }
             } else {
+                player.losses = (player.losses || 0) + 1;
                 player.winStreak = 0;
             }
 

@@ -57,7 +57,7 @@ function chooseAiPlay(match) {
 }
 
 function chooseEasySupport(availableSupport) {
-    if (availableSupport.length === 0 || Math.random() >= 0.15) return null;
+    if (availableSupport.length === 0 || Math.random() >= 0.25) return null;
     return shuffleCards(availableSupport)[0];
 }
 
@@ -88,7 +88,7 @@ function chooseHardSupport(availableSupport, activeStat, aiBehind, round) {
     if (!bestSupport) return null;
 
     const supportValue = bestSupport[activeStat] || 0;
-    if (aiBehind || round === 3 || supportValue > 50) return bestSupport;
+    if (aiBehind || round === 3 || supportValue > 50 || Math.random() < 0.2) return bestSupport;
     return null;
 }
 

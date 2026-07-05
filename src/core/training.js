@@ -1,11 +1,4 @@
-function clearTradeSelection() {
-            tradeTarget = null;
-            tradeSacrifices = [];
-            updateTradeUI();
-            renderDeck();
-        }
-
-        function getSacrificeXpEnhanced(uid, targetCard) {
+function getSacrificeXpEnhanced(uid, targetCard) {
             const c = player.inventory.find(x => x.uid === uid);
             if (!c) return { xp: 0, levelBonus: 0, isNormalUpgrade: false };
             const base = getCardBase(c);
@@ -16,7 +9,7 @@ function clearTradeSelection() {
             if (base.gender === 'S') return { xp, levelBonus: 0, isNormalUpgrade: false };
 
             const isNormalUpgrade = c.upgradeType === 'normal';
-            // Dublu XP dacă sacrificiul e un Normal Upgrade
+            // Dublu XP dacă sacrificiul e un Normal Upgrade (Pro)
             if (isNormalUpgrade) xp *= 2;
 
             // Dacă sacrificiul are nivel mai mare decât 1, transferă o parte din XP acumulat
@@ -34,99 +27,6 @@ function clearTradeSelection() {
             return { xp, levelBonus, isNormalUpgrade };
         }
 
-        function updateTradeUI() {
-            const status = document.getElementById('trade-status');
-            const btnTrade = document.getElementById('btn-trade');
-            const btnNorm = document.getElementById('btn-promote-normal');
-            const btnPerf = document.getElementById('btn-promote-perfect');
-            const btnClear = document.getElementById('btn-clear-trade');
-            if (!status) return;
-
-            btnTrade.style.display = 'none';
-            btnNorm.style.display = 'none';
-            btnPerf.style.display = 'none';
-            btnClear.style.display = tradeTarget ? 'inline-flex' : 'none';
-
-            if (!tradeTarget) {
-                status.innerHTML = 'Tap a card from your collection as the <strong>target</strong> for trade. You can also use Support cards as fodder!';
-                return;
-            }
-
-            const target = player.inventory.find(c => c.uid === tradeTarget);
-            if (!target) { clearTradeSelection(); return; }
-            const base = getCardBase(target);
-            if (base.gender === 'S') {
-                status.innerHTML = 'Support cards cannot be upgraded (but they can be used as fodder for others).';
-                return;
-            }
-
-            const effMax = getEffectiveMax(target);
-            const effLv = getEffectiveLevel(target);
-            const xpNeed = getXpNeeded(target);
-
-            let pendingXP = 0;
-            let bonusXP = 0;
-            let hasNormalUpgradeFodder = false;
-            tradeSacrifices.filter(u => u !== tradeTarget).forEach(u => {
-                const info = getSacrificeXpEnhanced(u, target);
-                pendingXP += info.xp;
-                bonusXP += info.levelBonus;
-                if (info.isNormalUpgrade) hasNormalUpgradeFodder = true;
-            });
-            const pending = pendingXP + bonusXP;
-
-            if (canPromote(target)) {
-                status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — choose <strong>Normal Upgrade</strong> or <strong>Perfect ★</strong>.`;
-                btnNorm.style.display = 'inline-flex';
-                btnPerf.style.display = 'inline-flex';
-                if (pending > 0) btnTrade.style.display = 'inline-flex';
-                return;
-            }
-
-            if (effLv >= effMax) {
-                status.innerHTML = `<strong>${base.name}</strong> is at max level (${effMax}).`;
-                return;
-            }
-
-            let xpDesc = `+${pendingXP} XP`;
-            if (bonusXP > 0) xpDesc += ` <span style="color:#f1c40f">+${bonusXP} XP level bonus</span>`;
-            if (hasNormalUpgradeFodder) xpDesc += ` <span style="color:#e040fb">(2× from Normal Upgrade!)</span>`;
-            status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — XP: <strong>${target.xp}/${xpNeed}</strong> | fodder: <strong>${xpDesc}</strong> = <strong style="color:#2ecc71">${pending} XP total</strong>`;
-            if (pending > 0) btnTrade.style.display = 'inline-flex';
-        }
-
-        function selectTradeCard(uid) {
-            const card = player.inventory.find(c => c.uid === uid);
-            if (!card) return;
-            const base = getCardBase(card);
-
-            // Support cards can ONLY be fodder, never target
-            if (base.gender === 'S') {
-                if (!tradeTarget) return; // no target set — ignoring
-                if (tradeSacrifices.includes(uid)) {
-                    tradeSacrifices = tradeSacrifices.filter(x => x !== uid);
-                } else {
-                    tradeSacrifices.push(uid);
-                }
-                updateTradeUI();
-                renderDeck();
-                return;
-            }
-
-            if (tradeTarget === uid) {
-                tradeTarget = null;
-                tradeSacrifices = [];
-            } else if (!tradeTarget) {
-                tradeTarget = uid;
-            } else if (tradeSacrifices.includes(uid)) {
-                tradeSacrifices = tradeSacrifices.filter(x => x !== uid);
-            } else if (uid !== tradeTarget) {
-                tradeSacrifices.push(uid);
-            }
-            updateTradeUI();
-            renderDeck();
-        }
-
         function consumeSacrifices() {
             tradeSacrifices.filter(u => u !== tradeTarget).forEach(uid => {
                 player.inventory = player.inventory.filter(c => c.uid !== uid);
@@ -137,9 +37,164 @@ function clearTradeSelection() {
             tradeSacrifices = [];
         }
 
-        function feedSacrifices() {
+        // --- CARD FOCUS POPUP: Train / Lock / Favorite ---
+
+        function isCardEquipped(uid) {
+            return player.deck.M.includes(uid) || player.deck.F.includes(uid) || player.deck.S.includes(uid);
+        }
+
+        function openCardFocus(uid) {
+            const card = player.inventory.find(c => c.uid === uid);
+            if (!card) return;
+            tradeTarget = uid;
+            tradeSacrifices = [];
+
+            document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(card));
+            document.getElementById('card-focus-menu').style.display = 'flex';
+            document.getElementById('card-focus-train').style.display = 'none';
+            updateFocusMenuButtons();
+
+            document.getElementById('card-focus-modal').style.display = 'flex';
+        }
+
+        function closeCardFocus(event) {
+            if (event && event.target && event.target.id !== 'card-focus-modal') return;
+            document.getElementById('card-focus-modal').style.display = 'none';
+            tradeTarget = null;
+            tradeSacrifices = [];
+            renderDeck();
+        }
+
+        function updateFocusMenuButtons() {
+            const card = player.inventory.find(c => c.uid === tradeTarget);
+            if (!card) return;
+            const lockBtn = document.getElementById('focus-lock-btn');
+            const favBtn = document.getElementById('focus-fav-btn');
+            lockBtn.innerText = card.locked ? '🔓 UNLOCK' : '🔒 LOCK';
+            lockBtn.classList.toggle('active', !!card.locked);
+            const isFav = player.favoriteUid === card.uid;
+            favBtn.innerText = isFav ? '💔 UNFAVORITE' : '❤️ FAVORITE';
+            favBtn.classList.toggle('active', isFav);
+        }
+
+        function focusToggleLock() {
+            const card = player.inventory.find(c => c.uid === tradeTarget);
+            if (!card) return;
+            card.locked = !card.locked;
+            document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(card));
+            updateFocusMenuButtons();
+            save(false);
+        }
+
+        function focusToggleFavorite() {
+            const card = player.inventory.find(c => c.uid === tradeTarget);
+            if (!card) return;
+            player.favoriteUid = (player.favoriteUid === card.uid) ? null : card.uid;
+            updateFocusMenuButtons();
+            save(false);
+            updateUI();
+        }
+
+        function focusBackToMenu() {
+            const card = player.inventory.find(c => c.uid === tradeTarget);
+            if (!card) return;
+            tradeSacrifices = [];
+            document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(card));
+            document.getElementById('card-focus-menu').style.display = 'flex';
+            document.getElementById('card-focus-train').style.display = 'none';
+            updateFocusMenuButtons();
+        }
+
+        function focusStartTrain() {
+            const card = player.inventory.find(c => c.uid === tradeTarget);
+            if (!card) return;
+            document.getElementById('card-focus-menu').style.display = 'none';
+            document.getElementById('card-focus-train').style.display = 'flex';
+            renderFocusFodderGrid();
+            updateFocusTrainStatus();
+        }
+
+        function renderFocusFodderGrid() {
+            const grid = document.getElementById('focus-fodder-grid');
+            grid.innerHTML = '';
+            const fodderCards = player.inventory.filter(c => c.uid !== tradeTarget && !c.locked && !isCardEquipped(c.uid));
+            fodderCards.forEach(c => {
+                const s = getStats(c);
+                const extra = tradeSacrifices.includes(c.uid) ? 'trade-sacrifice' : '';
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = renderHTMLCard(s, false, '', extra);
+                wrapper.firstElementChild.onclick = () => toggleFocusFodder(c.uid);
+                wrapper.firstElementChild.style.cursor = 'pointer';
+                grid.appendChild(wrapper.firstElementChild);
+            });
+        }
+
+        function toggleFocusFodder(uid) {
+            if (tradeSacrifices.includes(uid)) {
+                tradeSacrifices = tradeSacrifices.filter(u => u !== uid);
+            } else {
+                tradeSacrifices.push(uid);
+            }
+            renderFocusFodderGrid();
+            updateFocusTrainStatus();
+        }
+
+        function updateFocusTrainStatus() {
+            const status = document.getElementById('focus-train-status');
+            const btnFeed = document.getElementById('focus-btn-feed');
+            const btnPro = document.getElementById('focus-btn-pro');
+            const btnPerfectPro = document.getElementById('focus-btn-perfect-pro');
+
+            btnFeed.style.display = 'none';
+            btnPro.style.display = 'none';
+            btnPerfectPro.style.display = 'none';
+
             const target = player.inventory.find(c => c.uid === tradeTarget);
-            const sacs = tradeSacrifices.filter(u => u !== tradeTarget);
+            if (!target) return;
+            const base = getCardBase(target);
+            if (base.gender === 'S') {
+                status.innerHTML = 'Support cards cannot be trained (but they can be used as fodder for others).';
+                return;
+            }
+
+            const effMax = getEffectiveMax(target);
+            const effLv = getEffectiveLevel(target);
+            const xpNeed = getXpNeeded(target);
+
+            let pendingXP = 0;
+            let bonusXP = 0;
+            let hasNormalUpgradeFodder = false;
+            tradeSacrifices.forEach(u => {
+                const info = getSacrificeXpEnhanced(u, target);
+                pendingXP += info.xp;
+                bonusXP += info.levelBonus;
+                if (info.isNormalUpgrade) hasNormalUpgradeFodder = true;
+            });
+            const pending = pendingXP + bonusXP;
+
+            if (canPromote(target)) {
+                status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — choose <strong>Pro</strong> or <strong>Perfect Pro ★</strong>.`;
+                btnPro.style.display = 'inline-flex';
+                btnPerfectPro.style.display = 'inline-flex';
+                if (pending > 0) btnFeed.style.display = 'inline-flex';
+                return;
+            }
+
+            if (effLv >= effMax) {
+                status.innerHTML = `<strong>${base.name}</strong> is at max level (${effMax}).`;
+                return;
+            }
+
+            let xpDesc = `+${pendingXP} XP`;
+            if (bonusXP > 0) xpDesc += ` <span style="color:#f1c40f">+${bonusXP} XP level bonus</span>`;
+            if (hasNormalUpgradeFodder) xpDesc += ` <span style="color:#e040fb">(2× from Pro fodder!)</span>`;
+            status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — XP: <strong>${target.xp}/${xpNeed}</strong> | fodder: <strong>${xpDesc}</strong> = <strong style="color:#2ecc71">${pending} XP total</strong>`;
+            if (pending > 0) btnFeed.style.display = 'inline-flex';
+        }
+
+        function focusFeedSacrifices() {
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            const sacs = tradeSacrifices.slice();
             if (!target || sacs.length === 0) return;
 
             let baseXP = 0, bonusXP = 0;
@@ -156,27 +211,33 @@ function clearTradeSelection() {
             const levels = processLevelUps(target);
 
             let msg = `+${baseXP} XP added!`;
-            if (hasNormalUpgradeFodder) msg += `<br><span style="color:#e040fb">🔮 2× XP from Normal Upgrade!</span>`;
+            if (hasNormalUpgradeFodder) msg += `<br><span style="color:#e040fb">🔮 2× XP from Pro fodder!</span>`;
             if (bonusXP > 0) msg += `<br><span style="color:#f1c40f">+${bonusXP} XP level fodder bonus</span>`;
             if (levels > 0) msg += `<br>⬆️ ${getCardBase(target).name} → LVL ${getEffectiveLevel(target)}`;
             showNotification(msg, 2000);
 
-            if (canPromote(target)) tradeTarget = null;
-            autoEquipDeck(); save(); renderDeck();
+            autoEquipDeck(); save();
+            document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(target));
+            if (canPromote(target)) {
+                focusBackToMenu();
+            } else {
+                renderFocusFodderGrid();
+                updateFocusTrainStatus();
+            }
         }
 
-        function promoteNormal() {
+        function focusPromoteNormal() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
             target.upgradeType = 'normal';
             target.maxLvl = UPGRADE.NORMAL_MAX;
             processLevelUps(target);
-            showNotification(`⬆️ UPGRADE NORMAL!<br>${getCardBase(target).name} can now reach LVL 15.`, 2500);
-            tradeTarget = null;
-            autoEquipDeck(); save(); renderDeck();
+            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} can now reach LVL 15.`, 2500);
+            autoEquipDeck(); save();
+            focusBackToMenu();
         }
 
-        function promotePerfect() {
+        function focusPromotePerfect() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
             target.upgradeType = 'perfect';
@@ -184,7 +245,7 @@ function clearTradeSelection() {
             target.level = 0;
             target.xp = 0;
             target.maxLvl = UPGRADE.BASE_MAX;
-            showNotification(`★ UPGRADE PERFECT!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL 20!`, 2500);
-            tradeTarget = null;
-            autoEquipDeck(); save(); renderDeck();
+            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL 20!`, 2500);
+            autoEquipDeck(); save();
+            focusBackToMenu();
         }

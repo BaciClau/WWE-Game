@@ -1,4 +1,33 @@
 function updateUI() {
+            const favCard = player.favoriteUid ? player.inventory.find(c => c.uid === player.favoriteUid) : null;
+            const profileImg = document.getElementById('profile-img');
+            const profilePlaceholder = document.getElementById('profile-img-placeholder');
+            if (favCard) {
+                profileImg.src = getCardBase(favCard).img;
+                profileImg.style.display = 'block';
+                profilePlaceholder.style.display = 'none';
+            } else {
+                profileImg.style.display = 'none';
+                profilePlaceholder.style.display = 'flex';
+            }
+            document.getElementById('profile-name').innerText = player.nickname || '';
+
+            const hubImg = document.getElementById('hub-photo-img');
+            const hubPlaceholder = document.getElementById('hub-photo-placeholder');
+            const hubName = document.getElementById('hub-photo-name');
+            if (hubImg && favCard) {
+                hubImg.src = getCardBase(favCard).img;
+                hubImg.style.display = 'block';
+                hubPlaceholder.style.display = 'none';
+                hubName.innerText = getCardBase(favCard).name;
+            } else if (hubImg) {
+                hubImg.style.display = 'none';
+                hubPlaceholder.style.display = 'flex';
+                hubName.innerText = 'NO FAVORITE SET';
+            }
+            if (document.getElementById('hub-wins')) document.getElementById('hub-wins').innerText = player.wins || 0;
+            if (document.getElementById('hub-losses')) document.getElementById('hub-losses').innerText = player.losses || 0;
+
             document.getElementById('coins-display').innerText = player.coins;
             document.getElementById('picks-display').innerText = player.picks;
             document.getElementById('draft-picks').innerText = player.picks;
@@ -12,18 +41,32 @@ function updateUI() {
             document.getElementById('tier-bar').style.width = tierInfo.pct + '%';
             document.getElementById('tier-bar').style.background = `linear-gradient(90deg, ${tierInfo.color}, #fff)`;
             document.getElementById('tier-numbers-display').innerText = `${tierInfo.current} / ${tierInfo.next}`;
+
+            if (tierInfo.name !== player.lastTierName) {
+                const tierNames = TIERS.map(t => t.name);
+                const oldIdx = tierNames.indexOf(player.lastTierName);
+                const newIdx = tierNames.indexOf(tierInfo.name);
+                if (newIdx > oldIdx) {
+                    player.guaranteedPickRarity = tierInfo.base;
+                    showNotification(`🎉 RANK UP! You reached <strong>${tierInfo.name}</strong>!<br>Your next Draft pick is guaranteed a <strong>${tierInfo.base}</strong> card!`, 3000);
+                }
+                player.lastTierName = tierInfo.name;
+                save(false);
+            }
         }
 
         function showScreen(id) { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById(id).classList.add('active'); 
             if (id !== 'deck-screen') {
-                clearTradeSelection();
+                tradeTarget = null;
+                tradeSacrifices = [];
+                document.getElementById('card-focus-modal').style.display = 'none';
                 if (deckEditMode) cancelDeckEdit();
             }
         }
 
-        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="") {
+        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="") {
             let lvlLabel = stats.effectiveLvl ?? stats.lvl;
             let maxLabel = stats.effectiveMax ?? stats.maxLvl;
             if (stats.lvl === '?') {
@@ -83,15 +126,16 @@ function updateUI() {
             }
 
             return `
-                <div class="card rarity-${stats.rarity} ${extraClass}" onclick="${selectable ? `selectTradeCard('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
+                <div class="card rarity-${stats.rarity} ${extraClass}" onclick="${selectable ? `openCardFocus('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
+                    ${stats.locked ? '<div class="lock-badge">🔒</div>' : ''}
                     ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
                     <img src="${stats.img}">
                     <div class="card-name-plate">${stats.name}</div>
                     <div class="card-stats">
-                        <div class="stat ${highlight==='pow'?'stat-highlight':''}">${stats.pow>0?'POW: '+stats.pow:''}</div>
-                        <div class="stat ${highlight==='tgh'?'stat-highlight':''}">${stats.tgh>0?'TGH: '+stats.tgh:''}</div>
-                        <div class="stat ${highlight==='spd'?'stat-highlight':''}">${stats.spd>0?'SPD: '+stats.spd:''}</div>
-                        <div class="stat ${highlight==='cha'?'stat-highlight':''}">${stats.cha>0?'CHA: '+stats.cha:''}</div>
+                        <div class="stat ${boosted==='pow'?'stat-boosted':(highlight==='pow'?'stat-highlight':'')}">${stats.pow>0?'POW: '+stats.pow:''}</div>
+                        <div class="stat ${boosted==='tgh'?'stat-boosted':(highlight==='tgh'?'stat-highlight':'')}">${stats.tgh>0?'TGH: '+stats.tgh:''}</div>
+                        <div class="stat ${boosted==='spd'?'stat-boosted':(highlight==='spd'?'stat-highlight':'')}">${stats.spd>0?'SPD: '+stats.spd:''}</div>
+                        <div class="stat ${boosted==='cha'?'stat-boosted':(highlight==='cha'?'stat-highlight':'')}">${stats.cha>0?'CHA: '+stats.cha:''}</div>
                     </div>
                     ${abilityHTML}
                     ${stats.gender !== 'S' ? `

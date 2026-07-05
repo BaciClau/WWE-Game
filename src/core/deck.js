@@ -6,7 +6,7 @@ function autoEquipDeck(force = false) {
                 player.deck.F = player.deck.F.filter(uid => player.inventory.some(c => c.uid === uid));
                 player.deck.S = player.deck.S.filter(uid => player.inventory.some(c => c.uid === uid));
                 // Dacă deck-ul manual a rămas fără suficiente cărți, completează automat
-                if (player.deck.M.length < 4 || player.deck.F.length < 1) {
+                if (player.deck.M.length < 4 || player.deck.F.length < 2) {
                     _fillMissingDeckSlots();
                 }
                 return;
@@ -22,10 +22,10 @@ function autoEquipDeck(force = false) {
             });
             
             while(sortedM.length < 4) { addCard(1); sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M'); }
-            if(sortedF.length < 1) { addCard(11); sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F'); }
+            while(sortedF.length < 2) { addCard(11); sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F'); }
 
             player.deck.M = sortedM.slice(0, 4).map(c => c.uid);
-            player.deck.F = sortedF.length > 0 ? [sortedF[0].uid] : [];
+            player.deck.F = sortedF.slice(0, 2).map(c => c.uid);
             player.deck.S = sortedS.length > 0 ? [sortedS[0].uid] : [];
         }
 
@@ -40,11 +40,13 @@ function autoEquipDeck(force = false) {
                 }
                 while (player.deck.M.length < 4) { addCard(1); let c = player.inventory[player.inventory.length-1]; player.deck.M.push(c.uid); inDeck.add(c.uid); }
             }
-            if (player.deck.F.length < 1) {
+            if (player.deck.F.length < 2) {
                 let extra = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F' && !inDeck.has(c.uid))
                     .sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); });
-                if (extra.length > 0) { player.deck.F.push(extra[0].uid); }
-                else { addCard(11); let c = player.inventory[player.inventory.length-1]; player.deck.F.push(c.uid); }
+                while (player.deck.F.length < 2 && extra.length > 0) {
+                    let c = extra.shift(); player.deck.F.push(c.uid); inDeck.add(c.uid);
+                }
+                while (player.deck.F.length < 2) { addCard(11); let c = player.inventory[player.inventory.length-1]; player.deck.F.push(c.uid); inDeck.add(c.uid); }
             }
         }
 
@@ -63,7 +65,7 @@ function autoEquipDeck(force = false) {
                 document.getElementById('btn-save-deck').style.display = 'inline-flex';
                 document.getElementById('btn-cancel-deck').style.display = 'inline-flex';
                 document.getElementById('deck-edit-info').style.display = 'block';
-                document.getElementById('deck-mode-label').innerText = 'MANUAL EDIT — 4 M, 1 F, 1 SUPP';
+                document.getElementById('deck-mode-label').innerText = 'MANUAL EDIT — 4 M, 2 F, 1 SUPP';
                 document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITING...';
                 renderDeck();
             }
@@ -76,14 +78,14 @@ function autoEquipDeck(force = false) {
             document.getElementById('btn-save-deck').style.display = 'none';
             document.getElementById('btn-cancel-deck').style.display = 'none';
             document.getElementById('deck-edit-info').style.display = 'none';
-            document.getElementById('deck-mode-label').innerText = 'Top cards: 4 M, 1 F, 1 SUPP';
-            document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITEAZĂ DECK';
+            document.getElementById('deck-mode-label').innerText = 'Top cards: 4 M, 2 F, 1 SUPP';
+            document.getElementById('btn-edit-deck').innerHTML = '✏️ EDIT DECK';
             renderDeck();
         }
 
         function saveDeckEdit() {
             if (deckEditDraft.M.length !== 4) return showNotification('❌ You need exactly 4 Male cards in the deck!', 1500);
-            if (deckEditDraft.F.length !== 1) return showNotification('❌ You need exactly 1 Female card in the deck!', 1500);
+            if (deckEditDraft.F.length !== 2) return showNotification('❌ You need exactly 2 Female cards in the deck!', 1500);
             // Support e opțional
             player.deck.M = [...deckEditDraft.M];
             player.deck.F = [...deckEditDraft.F];
@@ -109,7 +111,7 @@ function autoEquipDeck(force = false) {
             const g = getCardBase(card).gender;
 
             const slot = g === 'M' ? 'M' : g === 'F' ? 'F' : 'S';
-            const limit = slot === 'M' ? 4 : 1;
+            const limit = slot === 'M' ? 4 : slot === 'F' ? 2 : 1;
             const inDeck = deckEditDraft[slot].includes(uid);
 
             if (inDeck) {
@@ -128,12 +130,12 @@ function autoEquipDeck(force = false) {
         function updateDeckSlotsInfo() {
             const m = deckEditDraft.M.length, f = deckEditDraft.F.length, s = deckEditDraft.S.length;
             const el = document.getElementById('deck-slots-info');
-            if (el) el.innerHTML = `M: <span style="color:${m===4?'#2ecc71':'#e74c3c'}">${m}/4</span>  F: <span style="color:${f===1?'#2ecc71':'#e74c3c'}">${f}/1</span>  SUPP: <span style="color:${s<=1?'#2ecc71':'#f1c40f'}">${s}/1</span>`;
+            if (el) el.innerHTML = `M: <span style="color:${m===4?'#2ecc71':'#e74c3c'}">${m}/4</span>  F: <span style="color:${f===2?'#2ecc71':'#e74c3c'}">${f}/2</span>  SUPP: <span style="color:${s<=1?'#2ecc71':'#f1c40f'}">${s}/1</span>`;
         }
 
         function calculateDeckTier() {
             let m = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,4);
-            let f = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,1);
+            let f = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,2);
             let s = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,1);
 
             let totalStats = 0;

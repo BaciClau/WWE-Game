@@ -93,7 +93,10 @@ function showAbilityPopup(evt, onDone) {
     const rarity = evt.cardStats.rarity;
     const glowColor = (RARITY_FX_COLORS[rarity] || RARITY_FX_COLORS.Common)[0];
     const isAI = !!evt.isAI;
-    const sideLabel = isAI ? '⚠️ OPPONENT ABILITY!' : '⚡ ABILITY ACTIVATED!';
+    const isSupport = !!evt.isSupport;
+    const sideLabel = isSupport
+        ? (isAI ? '⚠️ OPPONENT SUPPORT!' : '🛠️ SUPPORT ACTIVATED!')
+        : (isAI ? '⚠️ OPPONENT ABILITY!' : '⚡ ABILITY ACTIVATED!');
     const sideColor = isAI ? '#e74c3c' : '#2ecc71';
 
     const el = document.createElement('div');

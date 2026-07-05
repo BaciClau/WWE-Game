@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null };
         window.currentOpponents = [];
         let tradeTarget = null;
         let tradeSacrifices = [];
@@ -53,6 +53,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
             if (!card.upgradeType) card.upgradeType = null;
             if (!card.phase) card.phase = 1;
             if (!card.maxLvl) card.maxLvl = getMaxLevel(card);
+            if (card.locked === undefined) card.locked = false;
             return card;
         }
 
@@ -63,8 +64,8 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
             return shuffled.slice(0, count).map(c => c.id);
         }
 
-        function freshStart() {
-            player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false };
+        function freshStart(nickname) {
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -72,9 +73,32 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
             ];
             starterIds.forEach(id => addCard(id));
             autoEquipDeck();
+            // Baseline for the rank-up guarantee — set BEFORE generateBoard()/save() below,
+            // since save() triggers updateUI(), which would otherwise see lastTierName still
+            // null and mistake the starting tier for a "rank up".
+            player.lastTierName = calculateDeckTier().name;
             generateBoard();
             localStorage.setItem('sc_version', GAME_VERSION);
             save(false);
+        }
+
+        function promptNickname(callback) {
+            const modal = document.getElementById('nickname-modal');
+            const input = document.getElementById('nickname-input');
+            const confirmBtn = document.getElementById('nickname-confirm-btn');
+            input.value = '';
+            modal.style.display = 'flex';
+            function submit() {
+                const name = input.value.trim().slice(0, 16) || 'Superstar';
+                modal.style.display = 'none';
+                confirmBtn.removeEventListener('click', submit);
+                input.removeEventListener('keydown', onKey);
+                callback(name);
+            }
+            function onKey(e) { if (e.key === 'Enter') submit(); }
+            confirmBtn.addEventListener('click', submit);
+            input.addEventListener('keydown', onKey);
+            setTimeout(() => input.focus(), 50);
         }
 
         function initGame() {
@@ -82,8 +106,10 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
                 localStorage.removeItem('sc2014_v010');
                 localStorage.removeItem('sc2014_v90');
                 localStorage.removeItem(SAVE_KEY);
-                freshStart();
-                updateUI();
+                promptNickname(function(name) {
+                    freshStart(name);
+                    updateUI();
+                });
                 return;
             }
             let saved = localStorage.getItem(SAVE_KEY);
@@ -91,9 +117,28 @@ let player = { coins: 0, picks: 0, winStreak: 0, inventory: [], deck: { M: [], F
                 player = JSON.parse(saved);
                 player.inventory = (player.inventory || []).map(migrateCard);
                 if (player.winStreak === undefined) player.winStreak = 0;
+                if (player.favoriteUid === undefined) player.favoriteUid = null;
+                if (player.wins === undefined) player.wins = 0;
+                if (player.losses === undefined) player.losses = 0;
+                if (player.guaranteedPickRarity === undefined) player.guaranteedPickRarity = null;
+                // Baseline to the CURRENT tier for old saves — don't retroactively grant a
+                // guarantee for progress the player already made before this feature existed.
+                if (player.lastTierName === undefined || player.lastTierName === null) player.lastTierName = calculateDeckTier().name;
+                if (!player.nickname) {
+                    promptNickname(function(name) {
+                        player.nickname = name;
+                        save(false);
+                        updateUI();
+                    });
+                    return;
+                }
                 save(false);
             } else {
-                freshStart();
+                promptNickname(function(name) {
+                    freshStart(name);
+                    updateUI();
+                });
+                return;
             }
             updateUI();
         }

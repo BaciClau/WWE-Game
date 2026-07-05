@@ -66,13 +66,13 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
         function addCard(id) {
             let base = DB.find(c => c.id === id);
             if(!base) return;
-            player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1 });
+            player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1, locked: false });
         }
 
         function getStats(card) {
             let base = getCardBase(card);
             if(!base) return null;
-            if(base.gender === 'S') return { ...base, uid: card.uid, lvl: 1, maxLvl: 1, xp: 0, xpNeeded: 0, upgradeType: null, phase: 1, effectiveLvl: 1, effectiveMax: 1 };
+            if(base.gender === 'S') return { ...base, uid: card.uid, lvl: 1, maxLvl: 1, xp: 0, xpNeeded: 0, upgradeType: null, phase: 1, effectiveLvl: 1, effectiveMax: 1, locked: !!card.locked };
             let multi = getStatMultiplier(card);
             return {
                 ...base, uid: card.uid,
@@ -85,6 +85,7 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
                 upgradeType: card.upgradeType,
                 phase: card.phase,
                 perfect: isPerfectCard(card),
+                locked: !!card.locked,
                 pow: Math.floor(base.pow * multi), tgh: Math.floor(base.tgh * multi),
                 spd: Math.floor(base.spd * multi), cha: Math.floor(base.cha * multi)
             };

@@ -1,16 +1,16 @@
 const ABILITIES = {
             // COMMON Male
-            1:  { name: "Rose's Rush",    stats: ['spd','cha'], icon: '🌹', desc: 'Explozie de Carisma!' },
-            2:  { name: "Bo-Lieve!",      stats: ['cha','spd'], icon: '✨', desc: 'Inspira publicul!' },
-            3:  { name: "Gut Check",      stats: ['pow','tgh'], icon: '💪', desc: 'Putere bruta!' },
+            1:  { name: "Rose's Rush",    stats: ['spd','cha'], icon: '🌹', desc: 'Charisma Explosion!' },
+            2:  { name: "Bo-Lieve!",      stats: ['cha','spd'], icon: '✨', desc: 'Inspire the crowd!' },
+            3:  { name: "Gut Check",      stats: ['pow','tgh'], icon: '💪', desc: 'Raw power!' },
             4:  { name: "Slater Slider",  stats: ['spd','cha'], icon: '🎸', desc: 'Lightning Move!' },
             5:  { name: "What's Up!",     stats: ['cha','spd'], icon: '🎤', desc: 'Crowd Pop!' },
-            6:  { name: "Titus Bomb",     stats: ['pow','tgh'], icon: '💥', desc: 'Impact devastator!' },
+            6:  { name: "Titus Bomb",     stats: ['pow','tgh'], icon: '💥', desc: 'Devastating impact!' },
             7:  { name: "Broski Boot",    stats: ['spd','cha'], icon: '👟', desc: 'Fan Favorite!' },
             // COMMON Female
             11: { name: "Diva Dash",      stats: ['spd','cha'], icon: '💃', desc: 'Diva Energy!' },
-            12: { name: "All Red Rage",   stats: ['cha','spd'], icon: '❤️', desc: 'Carisma de foc!' },
-            13: { name: "Rosa Spin",      stats: ['spd','cha'], icon: '🌹', desc: 'Dans Distractiv!' },
+            12: { name: "All Red Rage",   stats: ['cha','spd'], icon: '❤️', desc: 'Fiery charisma!' },
+            13: { name: "Rosa Spin",      stats: ['spd','cha'], icon: '🌹', desc: 'Fun Dance!' },
             // UNCOMMON Male
             101: { name: "Big Ending",    stats: ['pow','tgh'], icon: '🏋️', desc: 'Finisher Power!' },
             102: { name: "Killswitch",    stats: ['spd','cha'], icon: '⚡', desc: 'Quick Strike!' },
@@ -19,7 +19,7 @@ const ABILITIES = {
             105: { name: "Hall of Pain",  stats: ['pow','tgh'], icon: '😤', desc: 'Unstoppable Force!' },
             106: { name: "619",           stats: ['spd','cha'], icon: '🎭', desc: 'Lucha Libre!' },
             107: { name: "Shell Shocked", stats: ['pow','tgh'], icon: '🦖', desc: 'FEED. ME. MORE!' },
-            111: { name: "Foxy Kick",     stats: ['spd','pow'], icon: '🦊', desc: 'Viteza Diva!' },
+            111: { name: "Foxy Kick",     stats: ['spd','pow'], icon: '🦊', desc: 'Diva Speed!' },
             112: { name: "Lay-Cool",      stats: ['cha','spd'], icon: '😎', desc: 'The It Factor!' },
             113: { name: "Summer Spin",   stats: ['cha','spd'], icon: '☀️', desc: 'Summertime Fun!' },
             // RARE Male
@@ -93,7 +93,7 @@ const ABILITIES = {
             712: { name: "Rack Attack II", stats: ['pow','tgh'], icon: '💎', desc: 'Fearless!' },
             713: { name: "Emma Dance",    stats: ['cha','spd'], icon: '🦋', desc: 'Emmalution!' },
 
-            // ABILITĂȚI COMMON noi
+            // New COMMON abilities
             8:  { name: "Last Dance",     stats: ['cha','spd'], icon: '🕺', desc: 'Fandango!' },
             15: { name: "Uso Splash",     stats: ['pow','spd'], icon: '🌊', desc: 'The Usos!' },
             16: { name: "Uso Splash",     stats: ['pow','spd'], icon: '🌊', desc: 'The Usos!' },
@@ -104,7 +104,7 @@ const ABILITIES = {
             27: { name: "Five Star Frog Splash", stats: ['spd','cha'], icon: '🐸', desc: 'RVD!' },
             28: { name: "Superman Punch", stats: ['pow','spd'], icon: '👊', desc: 'The Shield!' },
 
-            // ABILITĂȚI UNCOMMON noi
+            // New UNCOMMON abilities
             108: { name: "Bull Hammer",   stats: ['pow','tgh'], icon: '🔨', desc: 'Bad News!' },
             109: { name: "Ankle Lock",    stats: ['tgh','pow'], icon: '🔒', desc: 'Real American!' },
             110: { name: "Sister Abigail",stats: ['pow','cha'], icon: '🕯️', desc: 'Follow The Buzzards!' },
@@ -125,7 +125,7 @@ const ABILITIES = {
             131: { name: "Rack Attack",   stats: ['pow','tgh'], icon: '💎', desc: 'Fearless Nikki!' },
             132: { name: "Ram-Paige",     stats: ['spd','pow'], icon: '⚡', desc: 'Anti-Diva!' },
 
-            // ABILITĂȚI RARE noi
+            // New RARE abilities
             209: { name: "Batista Bomb",  stats: ['pow','tgh'], icon: '💣', desc: 'Batista Bomb!' },
             210: { name: "Sister Abigail",stats: ['pow','cha'], icon: '🕯️', desc: 'Eater of Worlds!' },
             214: { name: "Bull Hammer",   stats: ['pow','tgh'], icon: '🔨', desc: 'Barrett!' },
@@ -147,7 +147,7 @@ const ABILITIES = {
             232: { name: "World\'s Strongest Slam", stats: ['pow','tgh'], icon: '💪', desc: 'World\'s Strongest Man!' },
             237: { name: "Perfect Plex",  stats: ['tgh','cha'], icon: '🎯', desc: 'Mr. Perfect!' },
 
-            // ABILITĂȚI SUPERRARE noi
+            // New SUPERRARE abilities
             309: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Cerebral Assassin!' },
             310: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Apex Predator!' },
             314: { name: "Chokeslam",     stats: ['pow','tgh'], icon: '🤛', desc: 'Andre the Giant!' },
@@ -163,7 +163,7 @@ const ABILITIES = {
             326: { name: "Black Widow",   stats: ['spd','cha'], icon: '🕷️', desc: 'Pipebomb!' },
             327: { name: "Bella Buster",  stats: ['pow','cha'], icon: '💎', desc: 'Bella Power!' },
 
-            // ABILITĂȚI ULTRARARE noi
+            // New ULTRARARE abilities
             408: { name: "YES! Lock",     stats: ['tgh','spd'], icon: '🐐', desc: 'YES! YES! YES!' },
             409: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Suplex City!' },
             410: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'DX King of Kings!' },
@@ -182,7 +182,7 @@ const ABILITIES = {
             427: { name: "Figure Four",   stats: ['cha','tgh'], icon: '💎', desc: 'WOOOOO!' },
             428: { name: "Elbow of Doom", stats: ['pow','cha'], icon: '💥', desc: 'OH YEAH!' },
 
-            // ABILITĂȚI EPIC noi
+            // New EPIC abilities
             508: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Game!' },
             509: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'The Shield!' },
             510: { name: "Curb Stomp",    stats: ['spd','pow'], icon: '🦅', desc: 'Seth Freakin Rollins!' },
@@ -200,7 +200,7 @@ const ABILITIES = {
             526: { name: "Razor\'s Edge",  stats: ['pow','cha'], icon: '💈', desc: 'Bad Guy!' },
             527: { name: "Vader Bomb",    stats: ['pow','tgh'], icon: '🧱', desc: 'Vader Time!' },
 
-            // ABILITĂȚI LEGENDARY noi
+            // New LEGENDARY abilities
             610: { name: "F-5",           stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Incarnate!' },
             614: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'The Cerebral Assassin!' },
             615: { name: "Dirty Deeds",   stats: ['pow','spd'], icon: '😜', desc: 'Lunatic Fringe!' },
@@ -214,7 +214,7 @@ const ABILITIES = {
             624: { name: "Phoenix Stomp", stats: ['spd','pow'], icon: '🔥', desc: 'Monday Night Messiah!' },
             625: { name: "RKO",           stats: ['spd','pow'], icon: '🐢', desc: 'Apex Predator!' },
 
-            // ABILITĂȚI SURVIVOR noi
+            // New SURVIVOR abilities
             709: { name: "Pedigree",      stats: ['pow','tgh'], icon: '👑', desc: 'King of Kings!' },
             710: { name: "Last Ride",     stats: ['pow','tgh'], icon: '💀', desc: 'The Phenom!' },
             714: { name: "Black Widow",   stats: ['spd','cha'], icon: '🕷️', desc: 'Queen of Crazy!' },
@@ -227,7 +227,7 @@ const ABILITIES = {
             722: { name: "Sweet Chin Music", stats: ['spd','cha'], icon: '👟', desc: 'Mr. WrestleMania!' },
             723: { name: "Spear",         stats: ['pow','spd'], icon: '⚡', desc: 'Rated-R Survivor!' },
 
-            // ABILITĂȚI LIPSĂ — Rare și peste au TOATE o abilitate, indiferent de stats
+            // Missing abilities — Rare and above ALL have an ability, regardless of stats
             231: { name: "Shattered Dreams", stats: ['cha','tgh'], icon: '💫', desc: 'The Bizarre One!' },
             233: { name: "Rack Attack 2.0", stats: ['cha','spd'], icon: '💎', desc: 'Fearless Nikki!' },
             234: { name: "PTO",           stats: ['spd','cha'], icon: '⚡', desc: 'Paige Tap Out!' },
@@ -239,7 +239,7 @@ const ABILITIES = {
             426: { name: "Chokeslam",     stats: ['pow','tgh'], icon: '🤛', desc: 'The Eighth Wonder!' },
             429: { name: "New Day Rocks", stats: ['spd','cha'], icon: '🎉', desc: 'Booty-Os Power!' },
 
-            // ABILITĂȚI COMMON/UNCOMMON — doar cele care exceleaza clar la un stat (≥5% peste al 2-lea)
+            // COMMON/UNCOMMON abilities — only for cards that clearly excel at one stat (>=5% over the 2nd)
             9:   { name: "450 Splash",    stats: ['spd','pow'], icon: '🤸', desc: 'High-Flying!' },
             10:  { name: "Cobra Strike",  stats: ['cha','spd'], icon: '🐍', desc: 'The Cobra!' },
             22:  { name: "Punjabi Plunge", stats: ['tgh','pow'], icon: '🐘', desc: 'Giant Power!' },
@@ -249,4 +249,4 @@ const ABILITIES = {
             30:  { name: "619",           stats: ['spd','tgh'], icon: '🎭', desc: 'Lucha Libre!' },
         };
 
-        // TIER-URI ACTULIZATE CU + SI ++
+        // TIERS UPDATED WITH + AND ++

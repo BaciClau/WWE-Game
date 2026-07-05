@@ -1,10 +1,11 @@
 // Ordinea fixă a sloturilor din Active Deck, mereu de la stânga la dreapta:
-// 4x SUPERSTAR (M), 1x DIVA (F), 1x SUPPORT (S) — indiferent dacă slotul e ocupat sau nu.
+// 4x SUPERSTAR (M), 2x DIVA (F), 1x SUPPORT (S) — indiferent dacă slotul e ocupat sau nu.
 const DECK_SLOT_LAYOUT = [
     { type: 'M', label: 'SUPERSTAR', icon: '🤼' },
     { type: 'M', label: 'SUPERSTAR', icon: '🤼' },
     { type: 'M', label: 'SUPERSTAR', icon: '🤼' },
     { type: 'M', label: 'SUPERSTAR', icon: '🤼' },
+    { type: 'F', label: 'DIVA', icon: '👑' },
     { type: 'F', label: 'DIVA', icon: '👑' },
     { type: 'S', label: 'SUPPORT', icon: '🛠️' }
 ];
@@ -94,9 +95,9 @@ function renderDeck() {
 
             // --- ACTIVE DECK: sloturi fixe, mereu în aceeași ordine ---
             const deckGrid = document.getElementById('active-deck-grid');
-            let mSeen = 0;
+            let mSeen = 0, fSeen = 0;
             DECK_SLOT_LAYOUT.forEach(def => {
-                const posInType = def.type === 'M' ? mSeen++ : 0;
+                const posInType = def.type === 'M' ? mSeen++ : def.type === 'F' ? fSeen++ : 0;
                 const uid = deckSource[def.type][posInType];
                 const card = uid ? player.inventory.find(c => c.uid === uid) : null;
 
@@ -109,8 +110,7 @@ function renderDeck() {
                         wrapper.onclick = () => toggleDeckCard(card.uid);
                         wrapper.style.cursor = 'pointer';
                     } else {
-                        let extra = tradeTarget === card.uid ? 'trade-target' : '';
-                        wrapper.innerHTML = renderHTMLCard(s, true, '', extra);
+                        wrapper.innerHTML = renderHTMLCard(s, true, '');
                     }
                     deckGrid.appendChild(wrapper);
                 } else {
@@ -141,7 +141,7 @@ function renderDeck() {
                     let extra = 'deck-edit-out';
                     const g = getCardBase(c).gender;
                     const slot = g === 'M' ? 'M' : g === 'F' ? 'F' : 'S';
-                    const limit = slot === 'M' ? 4 : 1;
+                    const limit = slot === 'M' ? 4 : slot === 'F' ? 2 : 1;
                     const slotFull = deckEditDraft[slot].length >= limit;
                     if (slotFull && g !== 'S') extra += ' deck-edit-full'; // lock doar M/F dacă slot plin
 
@@ -152,15 +152,11 @@ function renderDeck() {
                     wrapper.style.cursor = 'pointer';
                     document.getElementById('collection-grid').appendChild(wrapper);
                 } else {
-                    let extra = '';
-                    if (tradeTarget === c.uid) extra = 'trade-target';
-                    else if (tradeSacrifices.includes(c.uid)) extra = 'trade-sacrifice';
                     let wrapper = document.createElement('div');
-                    wrapper.innerHTML = renderHTMLCard(s, true, '', extra);
+                    wrapper.innerHTML = renderHTMLCard(s, true, '');
                     document.getElementById('collection-grid').appendChild(wrapper);
                 }
             });
-            if (!deckEditMode) updateTradeUI();
         }
 
         // --- MATCHMAKING: 4 opponents with varied difficulty ---

@@ -23,13 +23,22 @@ function renderDraftBoard() {
 
             let isReset = (i === player.resetIdx);
             let pulledId = 1;
-            
+
+            // A tier rank-up guarantees the very next pick is a card from the new tier's
+            // rarity, regardless of which tile is clicked — consumed after this one pull.
+            let guaranteedRarity = player.guaranteedPickRarity;
+
             let tInfo = calculateDeckTier();
             let baseRarities = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'Epic', 'Legendary', 'Survivor'];
             let pBase = tInfo.base;
             let bIdx = baseRarities.indexOf(pBase);
-            
-            if(isReset) {
+
+            if (guaranteedRarity) {
+                player.guaranteedPickRarity = null;
+                let pool = DB.filter(c => c.rarity === guaranteedRarity);
+                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare');
+                pulledId = pool[Math.floor(Math.random() * pool.length)].id;
+            } else if(isReset) {
                 let isPlus = tInfo.name.includes('+');
                 let isPlusPlus = tInfo.name.includes('++');
                 let dropRarity = pBase; 
@@ -76,8 +85,8 @@ function renderDraftBoard() {
             
             let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
             document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);
-            document.getElementById('pull-title').innerText = isReset ? "BOARD RESET! " + s.rarity.toUpperCase() + " CARD!" : "YOU PULLED A CARD!";
-            document.getElementById('pull-title').style.color = isReset ? "#f1c40f" : "#fff";
+            document.getElementById('pull-title').innerText = guaranteedRarity ? "RANK-UP GUARANTEE! " + s.rarity.toUpperCase() + " CARD!" : (isReset ? "BOARD RESET! " + s.rarity.toUpperCase() + " CARD!" : "YOU PULLED A CARD!");
+            document.getElementById('pull-title').style.color = guaranteedRarity ? "#2ecc71" : (isReset ? "#f1c40f" : "#fff");
             document.getElementById('pull-modal').style.display = "flex";
             if(isReset) generateBoard();
         }
