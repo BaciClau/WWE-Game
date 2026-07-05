@@ -66,7 +66,14 @@
         .rarity-Survivor { border-color: #e74c3c; background: linear-gradient(135deg, #c0392b, #641e16); box-shadow: 0 0 25px #e74c3c;}
         .rarity-Support { border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
 
-        .card img { width: 100%; height: 124px; object-fit: cover; border-bottom: 2px solid #000; }
+        .card img {
+            width: 100%;
+            height: 142px;
+            object-fit: cover;
+            object-position: center top;
+            border-bottom: 2px solid #000;
+            flex-shrink: 0;
+        }
         .card-name-plate { 
             background: linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0.6)); 
             border-top: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3);
@@ -150,6 +157,66 @@
             margin-top: 12px;
         }
         #game-notification { cursor: pointer; }
+        .pull-modal-content {
+            background: radial-gradient(circle, #222, #000);
+            width: min(88vw, 340px);
+            padding: 30px 22px 28px;
+            border-radius: 20px;
+            border: 2px solid #f1c40f;
+            text-align: center;
+            animation: popIn 0.4s ease-out;
+            box-shadow: 0 0 50px rgba(241, 196, 15, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        #pull-title {
+            margin: 0 0 18px;
+            color: #fff;
+            letter-spacing: 2px;
+            line-height: 1.15;
+            font-size: 22px;
+            text-align: center;
+            max-width: 100%;
+        }
+        #pull-card-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 170px;
+            height: 305px;
+            margin: 0 auto 18px;
+        }
+        #pull-card-container .card {
+            flex: 0 0 auto;
+            pointer-events: none;
+        }
+        #pull-card-container .card:hover {
+            transform: none;
+        }
+        .pull-continue-btn {
+            min-width: 150px;
+            padding: 10px 20px !important;
+            font-size: 20px !important;
+            line-height: 1.1;
+            border-radius: 8px;
+            flex-direction: row;
+        }
+        @media (max-height: 620px) {
+            .pull-modal-content {
+                padding: 18px 18px;
+            }
+            #pull-title {
+                font-size: 19px;
+                margin-bottom: 10px;
+            }
+            #pull-card-container {
+                height: 295px;
+                margin-bottom: 10px;
+            }
+        }
         .section-title { text-align: center; color: #f1c40f; border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;}
         .card.deck-edit-in { box-shadow: 0 0 20px #2ecc71; border-color: #2ecc71 !important; }
         .card.deck-edit-out:hover { box-shadow: 0 0 15px #3498db; border-color: #3498db !important; }
@@ -425,10 +492,10 @@
     </div>
 
     <div id="pull-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-        <div style="background: radial-gradient(circle, #222, #000); padding: 40px; border-radius: 20px; border: 2px solid #f1c40f; text-align: center; animation: popIn 0.4s ease-out; box-shadow: 0 0 50px rgba(241, 196, 15, 0.3);">
-            <h2 id="pull-title" style="margin-top:0; color:#fff; letter-spacing: 2px;">YOU PULLED A NEW CARD!</h2>
-            <div id="pull-card-container" style="display:flex; justify-content:center; margin: 20px 0; transform: scale(1.3);"></div>
-            <button class="menu-btn btn-play" style="margin: 30px auto 0;" onclick="closePullModal()">CONTINUE</button>
+        <div class="pull-modal-content">
+            <h2 id="pull-title">YOU PULLED A NEW CARD!</h2>
+            <div id="pull-card-container"></div>
+            <button class="menu-btn btn-play pull-continue-btn" style="margin: 0 auto;" onclick="closePullModal()">CONTINUE</button>
         </div>
     </div>
 
