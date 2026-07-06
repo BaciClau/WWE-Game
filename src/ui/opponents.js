@@ -115,7 +115,10 @@ function getTierForPower(totalPower) {
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'Epic', 'Legendary', 'Survivor'];
 
         // Draws a random 4M+2F+1S lineup for a given rarity and computes what level/upgrade
-        // multiplier the M+F cards would need to hit targetPower.
+        // multiplier the M+F cards would need to hit targetPower, plus what power actually
+        // results once that multiplier is rounded to a real, achievable level (level can't
+        // go below 1, so a rarity whose level-1 floor already exceeds the target will
+        // overshoot — that overshoot is exactly what actualPower reports).
         function draftAttempt(rarity, targetPower) {
             let poolM = DB.filter(c => c.gender === 'M' && c.rarity === rarity);
             let poolF = DB.filter(c => c.gender === 'F' && c.rarity === rarity);
@@ -136,8 +139,11 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
             // are subtracted from the target before solving for the M/F cards' level.
             const supportSum = sCard.pow + sCard.tgh + sCard.spd + sCard.cha;
             const multiplier = (targetPower - supportSum) / baseSum;
+            const lvlInfo = multiplierToLevel(multiplier);
+            const actualMultiplier = getStatMultiplier({ level: lvlInfo.level, upgradeType: lvlInfo.upgradeType, phase: lvlInfo.phase });
+            const actualPower = baseSum * actualMultiplier + supportSum;
 
-            return { mCards, fCards, sCard, multiplier };
+            return { mCards, fCards, sCard, lvlInfo, actualPower };
         }
 
         // Builds an enemy team using real cards at a real, achievable level/upgrade state
@@ -145,30 +151,30 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
         // stats — so the whole deck looks like another buildable roster, just aimed at
         // roughly the target power, not a hand-tuned/impossible lineup.
         //
-        // Rarity is searched from highest to lowest, picking the first one whose level-1
-        // floor doesn't already overshoot the target power. Without this search, a fixed
-        // "pick rarity from target power" lookup can land on a rarity whose weakest
-        // possible (level 1, no upgrade) lineup is already stronger than the target — and
-        // since level can't go below 1, that overshoots the intended power noticeably
-        // (was landing ~125% instead of the intended ~100%).
+        // Every rarity is tried, and whichever one's actually-achievable result (after
+        // rounding to a real level) lands closest to the target power wins. A simpler
+        // "first rarity above some tolerance" search was tried before, but any tolerance
+        // loose enough to reliably find a match also let the result overshoot by as much
+        // as the tolerance itself (e.g. an 0.85 tolerance could floor to level 1 and land
+        // ~18% over target) — trying all 8 and picking the closest has no such gap.
         function createDeckForPower(targetPower) {
-            let chosen = null;
-            for (let i = RARITY_ORDER.length - 1; i >= 0; i--) {
+            let best = null;
+            let bestDiff = Infinity;
+            for (let i = 0; i < RARITY_ORDER.length; i++) {
                 const attempt = draftAttempt(RARITY_ORDER[i], targetPower);
-                if (attempt.multiplier >= 0.85) {
-                    chosen = attempt;
-                    break;
+                const diff = Math.abs(attempt.actualPower - targetPower);
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    best = attempt;
                 }
             }
-            if (!chosen) chosen = draftAttempt('Common', targetPower);
 
-            const lvlInfo = multiplierToLevel(chosen.multiplier);
-            const levelableCards = [...chosen.mCards, ...chosen.fCards];
+            const levelableCards = [...best.mCards, ...best.fCards];
             const built = levelableCards.map((c, i) => {
-                const cardObj = { id: c.id, uid: 'o_'+i, level: lvlInfo.level, xp: 0, upgradeType: lvlInfo.upgradeType, phase: lvlInfo.phase, locked: false };
+                const cardObj = { id: c.id, uid: 'o_'+i, level: best.lvlInfo.level, xp: 0, upgradeType: best.lvlInfo.upgradeType, phase: best.lvlInfo.phase, locked: false };
                 return getStats(cardObj);
             });
-            const supportBuilt = getStats({ id: chosen.sCard.id, uid: 'o_6', level: 1, xp: 0, upgradeType: null, phase: 1, locked: false });
+            const supportBuilt = getStats({ id: best.sCard.id, uid: 'o_6', level: 1, xp: 0, upgradeType: null, phase: 1, locked: false });
 
             return [...built, supportBuilt];
         }

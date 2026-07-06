@@ -94,7 +94,10 @@ function showAbilityPopup(evt, onDone) {
     const glowColor = (RARITY_FX_COLORS[rarity] || RARITY_FX_COLORS.Common)[0];
     const isAI = !!evt.isAI;
     const isSupport = !!evt.isSupport;
-    const sideLabel = isSupport
+    const isCombined = !!evt.isCombined;
+    const sideLabel = isCombined
+        ? (isAI ? '⚠️ OPPONENT COMBO!' : '💥 COMBINED BOOST!')
+        : isSupport
         ? (isAI ? '⚠️ OPPONENT SUPPORT!' : '🛠️ SUPPORT ACTIVATED!')
         : (isAI ? '⚠️ OPPONENT ABILITY!' : '⚡ ABILITY ACTIVATED!');
     const sideColor = isAI ? '#e74c3c' : '#2ecc71';

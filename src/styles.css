@@ -15,10 +15,12 @@
             background: radial-gradient(circle at top, var(--wwe-red-dark) 0%, #000000 70%);
             color: white; margin: 0; padding: 0; user-select: none; min-height: 100vh;
             overflow-x: hidden;
+            display: flex; flex-direction: column;
         }
 
         header {
             display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
             background: linear-gradient(180deg, #1a0000, #000);
             padding: 12px 40px; border-bottom: 3px solid var(--wwe-red);
             box-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 2px 12px rgba(192,57,43,0.35);
@@ -75,32 +77,32 @@
 
         #main-menu.screen.active {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: calc(100vh - 130px);
+            flex: 1; min-height: 0;
         }
 
-        /* PREMIUM HOME HUB */
-        .hub-container { max-width: 520px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+        /* PREMIUM HOME HUB (large) */
+        .hub-container { max-width: 680px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
 
         .hub-logo-banner {
-            display: flex; height: 100px; border-radius: 10px; overflow: hidden;
-            border: 2px solid var(--wwe-gold); box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            display: flex; height: 140px; border-radius: 14px; overflow: hidden;
+            border: 3px solid var(--wwe-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
         .hub-logo-side {
-            flex: 0 0 42%; background: linear-gradient(135deg, #111, #000);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            clip-path: polygon(0 0, 100% 0, 82% 100%, 0 100%);
+            flex: 0 0 52%; background: linear-gradient(135deg, #111, #000);
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
         }
-        .hub-logo-icon { width: 50px; height: 70px; position: relative; flex-shrink: 0; }
+        .hub-logo-icon { width: 66px; height: 94px; position: relative; flex-shrink: 0; }
         .hub-logo-icon .stack-card {
-            position: absolute; top: 5px; width: 38px; height: 58px; border-radius: 6px;
-            border: 2px solid #fff; background: linear-gradient(135deg, #333, #000);
+            position: absolute; top: 6px; width: 52px; height: 78px; border-radius: 8px;
+            border: 3px solid #fff; background: linear-gradient(135deg, #333, #000);
         }
-        .hub-logo-icon .stack-card:nth-child(1) { transform: rotate(-14deg); left: -8px; }
-        .hub-logo-icon .stack-card:nth-child(2) { transform: rotate(0deg); left: 4px; z-index: 1; background: linear-gradient(135deg, var(--wwe-red), var(--wwe-black)); }
-        .hub-logo-icon .stack-card:nth-child(3) { transform: rotate(14deg); left: 12px; }
+        .hub-logo-icon .stack-card:nth-child(1) { transform: rotate(-14deg); left: -10px; }
+        .hub-logo-icon .stack-card:nth-child(2) { transform: rotate(0deg); left: 6px; z-index: 1; background: linear-gradient(135deg, var(--wwe-red), var(--wwe-black)); }
+        .hub-logo-icon .stack-card:nth-child(3) { transform: rotate(14deg); left: 16px; }
         .hub-logo-text {
-            font-size: 19px; font-weight: bold; color: var(--wwe-red-bright); text-shadow: 1px 1px 2px #000;
-            line-height: 1.05; letter-spacing: 1px;
+            font-size: 22px; font-weight: bold; color: var(--wwe-red-bright); text-shadow: 2px 2px 3px #000;
+            line-height: 1.05; letter-spacing: 0.5px; white-space: nowrap;
         }
         .hub-photo-side {
             flex: 1; position: relative; overflow: hidden;
@@ -110,41 +112,41 @@
         .hub-photo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .hub-photo-placeholder {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 40px; opacity: 0.5;
+            font-size: 54px; opacity: 0.5;
         }
         .hub-photo-belt {
-            position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 5px;
-            background: var(--wwe-gold); border: 2px solid #fff; transform: rotate(45deg); z-index: 2;
+            position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 7px;
+            background: var(--wwe-gold); border: 3px solid #fff; transform: rotate(45deg); z-index: 2;
         }
         .hub-photo-name {
-            position: relative; z-index: 2; color: #fff; font-weight: bold; font-size: 13px;
-            background: rgba(0,0,0,0.6); padding: 3px 10px; letter-spacing: 1px; white-space: nowrap;
+            position: relative; z-index: 2; color: #fff; font-weight: bold; font-size: 16px;
+            background: rgba(0,0,0,0.6); padding: 5px 14px; letter-spacing: 1px; white-space: nowrap;
         }
 
         .hub-exhibition-banner {
-            display: block; width: 100%; border: none; cursor: pointer; border-radius: 12px;
-            padding: 20px 22px; text-align: left; font-family: inherit;
+            display: block; width: 100%; border: none; cursor: pointer; border-radius: 14px;
+            padding: 26px 28px; text-align: left; font-family: inherit;
             background: repeating-linear-gradient(135deg, #2a0000, #2a0000 12px, #180000 12px, #180000 24px);
-            border: 2px solid var(--wwe-gold); box-shadow: 0 6px 15px rgba(0,0,0,0.6); transition: all 0.2s;
+            border: 3px solid var(--wwe-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.6); transition: all 0.2s;
         }
         .hub-exhibition-banner:hover { transform: translateY(-3px); border-color: #fff; }
-        .hub-exhibition-title { font-size: 32px; font-weight: bold; color: #fff; letter-spacing: 2px; text-shadow: 2px 2px 4px #000; }
-        .hub-exhibition-record { font-size: 15px; color: var(--wwe-gold); font-weight: bold; margin-top: 6px; letter-spacing: 1px; font-family: Arial; }
+        .hub-exhibition-title { font-size: 42px; font-weight: bold; color: #fff; letter-spacing: 2px; text-shadow: 2px 2px 4px #000; }
+        .hub-exhibition-record { font-size: 19px; color: var(--wwe-gold); font-weight: bold; margin-top: 8px; letter-spacing: 1px; font-family: Arial; }
 
-        .hub-actions-row { display: flex; gap: 14px; }
+        .hub-actions-row { display: flex; gap: 18px; }
         .hub-action-btn {
-            flex: 1; background: var(--wwe-black); color: #fff; border: 2px solid var(--wwe-red);
-            border-radius: 10px; padding: 18px 10px; font-family: inherit; font-weight: bold;
-            font-size: 17px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.2s;
+            flex: 1; background: var(--wwe-black); color: #fff; border: 3px solid var(--wwe-red);
+            border-radius: 12px; padding: 24px 14px; font-family: inherit; font-weight: bold;
+            font-size: 22px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.5); transition: all 0.2s;
         }
         .hub-action-btn:hover { border-color: var(--wwe-gold); transform: translateY(-2px); }
         .hub-action-btn.full { width: 100%; }
 
         .hub-reset-btn {
             align-self: center; margin-top: 4px; background: transparent; color: var(--wwe-red-bright);
-            border: 1px solid var(--wwe-red-bright); border-radius: 8px; padding: 8px 18px; font-family: inherit;
-            font-weight: bold; font-size: 12px; letter-spacing: 1px; cursor: pointer;
+            border: 2px solid var(--wwe-red-bright); border-radius: 8px; padding: 10px 24px; font-family: inherit;
+            font-weight: bold; font-size: 15px; letter-spacing: 1px; cursor: pointer;
         }
         .hub-reset-btn:hover { background: rgba(231,76,60,0.15); }
 
@@ -564,6 +566,10 @@
         .card-focus-box {
             position: relative; display: flex; flex-direction: column; align-items: center;
             gap: 18px; padding: 20px; max-width: 92vw;
+            /* Auto margin centers it vertically when it fits; once content is taller than
+               the viewport (the Train view), auto margins collapse to 0 and it falls back
+               to top-anchored + scrollable instead of being stuck top-pinned always. */
+            margin: auto 0;
         }
         .card-focus-card-wrap {
             display: flex; justify-content: center; align-items: center;

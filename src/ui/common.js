@@ -66,7 +66,7 @@ function updateUI() {
             }
         }
 
-        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="") {
+        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="", boostedAmount=0) {
             let lvlLabel = stats.effectiveLvl ?? stats.lvl;
             let maxLabel = stats.effectiveMax ?? stats.maxLvl;
             if (stats.lvl === '?') {
@@ -132,10 +132,10 @@ function updateUI() {
                     <img src="${stats.img}">
                     <div class="card-name-plate">${stats.name}</div>
                     <div class="card-stats">
-                        <div class="stat ${boosted==='pow'?'stat-boosted':(highlight==='pow'?'stat-highlight':'')}">${stats.pow>0?'POW: '+stats.pow:''}</div>
-                        <div class="stat ${boosted==='tgh'?'stat-boosted':(highlight==='tgh'?'stat-highlight':'')}">${stats.tgh>0?'TGH: '+stats.tgh:''}</div>
-                        <div class="stat ${boosted==='spd'?'stat-boosted':(highlight==='spd'?'stat-highlight':'')}">${stats.spd>0?'SPD: '+stats.spd:''}</div>
-                        <div class="stat ${boosted==='cha'?'stat-boosted':(highlight==='cha'?'stat-highlight':'')}">${stats.cha>0?'CHA: '+stats.cha:''}</div>
+                        <div class="stat ${boosted==='pow'?'stat-boosted':(highlight==='pow'?'stat-highlight':'')}">${stats.pow>0?'POW: '+(boosted==='pow'?stats.pow+boostedAmount:stats.pow):''}</div>
+                        <div class="stat ${boosted==='tgh'?'stat-boosted':(highlight==='tgh'?'stat-highlight':'')}">${stats.tgh>0?'TGH: '+(boosted==='tgh'?stats.tgh+boostedAmount:stats.tgh):''}</div>
+                        <div class="stat ${boosted==='spd'?'stat-boosted':(highlight==='spd'?'stat-highlight':'')}">${stats.spd>0?'SPD: '+(boosted==='spd'?stats.spd+boostedAmount:stats.spd):''}</div>
+                        <div class="stat ${boosted==='cha'?'stat-boosted':(highlight==='cha'?'stat-highlight':'')}">${stats.cha>0?'CHA: '+(boosted==='cha'?stats.cha+boostedAmount:stats.cha):''}</div>
                     </div>
                     ${abilityHTML}
                     ${stats.gender !== 'S' ? `

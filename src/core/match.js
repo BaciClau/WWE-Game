@@ -220,6 +220,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         function resolveRound() {
             let pTot = 0, oTot = 0;
             let abilityEvents = [];
+            // Per-card extra bonus (ability and/or support) actually landed this round, so
+            // the arena card can show its real boosted number in green — not just a color
+            // change, and not a separate popup — everything that applies to a card adds up
+            // into the one number shown on it.
+            const playerCardBonus = {};
+            const aiCardBonus = {};
 
             match.selected.forEach(u => {
                 let cardObj = player.inventory.find(c=>c.uid===u);
@@ -238,6 +244,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                         if (bonus > 0) {
                             pTot += bonus;
+                            playerCardBonus[u] = (playerCardBonus[u] || 0) + bonus;
                             abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false });
                             // Flash animatie + particule colorate pe raritate, pe carte in arena
                             setTimeout(() => {
@@ -258,7 +265,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             const playerSupportBonus = (match.supportBonus[match.rule.stat] || 0) * teamSupportMultiplier;
             pTot += playerSupportBonus;
 
-            // Support gets the same big popup treatment as an ability activation.
+            // Support gets the same big popup treatment as an ability activation, and its
+            // bonus adds onto every fighter it backed up this round (same card can also
+            // carry an ability bonus on top — both add into the one number shown on it).
+            if (playerSupportBonus > 0) {
+                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + playerSupportBonus; });
+            }
             if (match.activeSupportUID && playerSupportBonus > 0) {
                 const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
                 if (supportCard) {
@@ -294,6 +306,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             });
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
+            if (aiSupportBonus > 0) {
+                oppP.forEach(c => { aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + aiSupportBonus; });
+            }
 
             if (aiPlay.support && aiSupportBonus > 0) {
                 abilityEvents.push({
@@ -319,6 +334,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                     if (bonus > 0) {
                         oTot += bonus;
+                        aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + bonus;
                         abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true });
                         setTimeout(() => {
                             let el = document.getElementById('card-'+c.uid);
@@ -331,24 +347,15 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     }
                 }
             });
-            // Cards whose stat actually got a bonus this round (ability or support) light up
-            // green on that stat, right there on the card, while it's in the arena. The
-            // support card itself never enters the arena, so a support bonus instead lights
-            // up every fighter it backed up this round (that's who's actually "in battle").
-            const boostedStatByUid = {};
-            abilityEvents.forEach(evt => { boostedStatByUid[evt.cardStats.uid] = evt.statName; });
-            if (playerSupportBonus > 0) {
-                match.selected.forEach(u => { boostedStatByUid[u] = match.rule.stat; });
-            }
-            if (aiSupportBonus > 0) {
-                oppP.forEach(c => { boostedStatByUid[c.uid] = activeStat; });
-            }
 
+            // Cards whose stat actually got boosted this round (ability and/or support —
+            // both add together into one total per card) show their real new number in
+            // green right there on the card, instead of just a color change.
             let arena = document.getElementById('arena-area');
             arena.innerHTML = `
-                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', boostedStatByUid[u] || '')).join('')}</div>
+                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', playerCardBonus[u] ? match.rule.stat : '', playerCardBonus[u] || 0)).join('')}</div>
                 <div class="vs-badge">VS</div>
-                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat, '', boostedStatByUid[c.uid] || '')).join('')}</div>
+                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat, '', aiCardBonus[c.uid] ? activeStat : '', aiCardBonus[c.uid] || 0)).join('')}</div>
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
