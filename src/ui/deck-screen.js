@@ -159,4 +159,131 @@ function renderDeck() {
             });
         }
 
+        // --- CARD LIST (MY CARDS) — browse-one-at-a-time viewer, no deck editing here.
+        // Deck editing lives only in deck-edit-screen, opened from the Exhibition button. ---
+        let cardListIndex = 0;
+        let cardListFilter = null; // null = "NONE", else a rarity name, or 'Support'
+        const CARD_LIST_FILTERS = [null, 'Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'Epic', 'Legendary', 'Survivor', 'Support'];
+        const CARD_LIST_RARITY_SWATCHES = [
+            ['Survivor', 'SURVIVOR', '#000000'],
+            ['Legendary', 'LEGENDARY', '#ffcc00'],
+            ['Epic', 'EPIC', '#9b59b6'],
+            ['UltraRare', 'ULTRA RARE', '#7d3cff'],
+            ['SuperRare', 'SUPER RARE', '#3498db'],
+            ['Rare', 'RARE', '#00bcd4'],
+            ['Uncommon', 'UNCOMMON', '#2ecc71'],
+            ['Common', 'COMMON', '#ffffff'],
+            ['Support', 'SUPPORT', '#e74c3c'],
+        ];
+
+        function getCardListCards() {
+            let cards = [...player.inventory];
+            if (cardListFilter === 'Support') cards = cards.filter(c => getCardBase(c).gender === 'S');
+            else if (cardListFilter) cards = cards.filter(c => getCardBase(c).rarity === cardListFilter && getCardBase(c).gender !== 'S');
+            return sortCollectionCards(cards);
+        }
+
+        function getCurrentCardListCard() {
+            return getCardListCards()[cardListIndex] || null;
+        }
+
+        function cycleCardListSort() {
+            const fields = ['ovr', 'rarity', 'level'];
+            const i = fields.indexOf(collectionSort.field);
+            collectionSort.field = fields[(i + 1) % fields.length];
+            collectionSort.dir = 'desc';
+            cardListIndex = 0;
+            renderCardList();
+        }
+
+        function cycleCardListFilter() {
+            const i = CARD_LIST_FILTERS.indexOf(cardListFilter);
+            cardListFilter = CARD_LIST_FILTERS[(i + 1) % CARD_LIST_FILTERS.length];
+            cardListIndex = 0;
+            renderCardList();
+        }
+
+        function cardListNav(dir) {
+            const cards = getCardListCards();
+            cardListIndex = Math.max(0, Math.min(cards.length - 1, cardListIndex + dir));
+            renderCardList();
+        }
+
+        function renderCardList() {
+            const cards = getCardListCards();
+            if (cardListIndex >= cards.length) cardListIndex = Math.max(0, cards.length - 1);
+
+            const focusWrap = document.getElementById('cl-focus-wrap');
+            focusWrap.innerHTML = cards.length
+                ? renderHTMLCard(getStats(cards[cardListIndex]))
+                : '<div style="color:#aaa; font-family:Arial; padding:40px; text-align:center;">No cards match this filter.</div>';
+
+            const sortBtn = document.getElementById('cl-sort-btn');
+            if (sortBtn) sortBtn.innerText = `SORT BY ${collectionSort.field === 'ovr' ? 'RATING' : collectionSort.field.toUpperCase()}`;
+            const filterBtn = document.getElementById('cl-filter-btn');
+            if (filterBtn) filterBtn.innerText = `FILTER BY ${cardListFilter ? cardListFilter.toUpperCase() : 'NONE'}`;
+
+            const upBtn = document.getElementById('cl-nav-up');
+            const downBtn = document.getElementById('cl-nav-down');
+            if (upBtn) upBtn.disabled = cardListIndex <= 0;
+            if (downBtn) downBtn.disabled = cardListIndex >= cards.length - 1;
+
+            const counts = {};
+            player.inventory.forEach(c => {
+                const base = getCardBase(c);
+                const key = base.gender === 'S' ? 'Support' : base.rarity;
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            const totalsEl = document.getElementById('cl-totals');
+            if (totalsEl) {
+                totalsEl.innerHTML = `
+                    <div class="cl-totals-head">CARD TOTALS: ${player.inventory.length}/${DB.length}</div>
+                    ${CARD_LIST_RARITY_SWATCHES.map(([key, label, color]) => `
+                        <div class="cl-totals-row">
+                            <span class="cl-totals-dot" style="background:${color};"></span>${label}: ${counts[key] || 0}
+                        </div>
+                    `).join('')}
+                `;
+            }
+        }
+
+        function cardListTrain() {
+            const c = getCurrentCardListCard();
+            if (!c) return;
+            openCardFocus(c.uid);
+            focusStartTrain();
+        }
+
+        // "Combine" (feeding fodder into a card / promoting it to Pro or Perfect Pro) is the
+        // same underlying mechanic as Train in this game — there's no separate system to
+        // split it into, so both menu items open the same training panel.
+        function cardListCombine() {
+            cardListTrain();
+        }
+
+        function cardListSetChamp() {
+            const c = getCurrentCardListCard();
+            if (!c) return;
+            player.favoriteUid = (player.favoriteUid === c.uid) ? null : c.uid;
+            save(false);
+            updateUI();
+            showNotification(player.favoriteUid === c.uid
+                ? `👑 ${getCardBase(c).name} set as your Champ!`
+                : `${getCardBase(c).name} is no longer your Champ.`, 1400);
+        }
+
+        function cardListDelete() {
+            const c = getCurrentCardListCard();
+            if (!c) return;
+            if (c.locked) return showNotification('🔒 Unlock this card before deleting it.', 1500);
+            const inDeck = player.deck.M.includes(c.uid) || player.deck.F.includes(c.uid) || player.deck.S.includes(c.uid);
+            if (inDeck) return showNotification('⚠️ Remove this card from your deck (Exhibition → Change Cards) before deleting it.', 2000);
+            if (!confirm(`Delete ${getCardBase(c).name} permanently? This cannot be undone.`)) return;
+            player.inventory = player.inventory.filter(x => x.uid !== c.uid);
+            if (player.favoriteUid === c.uid) { player.favoriteUid = null; updateUI(); }
+            save();
+            renderCardList();
+            showNotification('🗑️ Card deleted.', 1200);
+        }
+
         // --- MATCHMAKING: 4 opponents with varied difficulty ---

@@ -62,7 +62,9 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             document.getElementById('card-focus-modal').style.display = 'none';
             tradeTarget = null;
             tradeSacrifices = [];
-            renderDeck();
+            const cardListScreen = document.getElementById('card-list-screen');
+            if (cardListScreen && cardListScreen.classList.contains('active')) renderCardList();
+            else renderDeck();
         }
 
         function updateFocusMenuButtons() {

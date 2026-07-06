@@ -85,20 +85,23 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 let isSupportCard = s.gender === 'S';
                 let isActiveGender = s.gender === match.rule.g;
                 let isSupportActivated = (match.activeSupportUID === u);
-                
+                let isManagerActivated = (match.activeManagerUID === u);
+                let isAnySupportActiveThisRound = !!match.activeSupportUID || !!match.activeManagerUID;
+
                 let div = document.createElement('div');
                 div.innerHTML = renderHTMLCard(s, false, match.rule.stat);
                 let cardEl = div.children[0];
-                
-                if (isU && !isSupportActivated) {
+
+                if (isU && !isSupportActivated && !isManagerActivated) {
                     // Carte deja folosita in rundele anterioare
                     cardEl.classList.add('used');
-                } else if (isSupportActivated) {
-                    // Support activat — contur verde
+                } else if (isSupportActivated || isManagerActivated) {
+                    // Support activat — contur verde (poate fi declickat inapoi)
                     cardEl.classList.add('support-active');
                 } else if (isSupportCard) {
-                    // Support disponibil — pulsatie verde
-                    cardEl.classList.add('support-ready');
+                    // Support disponibil — pulsatie verde (doar daca nu e deja alt support activ)
+                    if (!isAnySupportActiveThisRound) cardEl.classList.add('support-ready');
+                    else cardEl.classList.add('battle-inactive');
                 } else if (isS) {
                     // Carte selectata
                     cardEl.style.cssText = "transform: translateY(-15px); border-color: #3498db !important; box-shadow: 0 10px 30px rgba(52, 152, 219, 0.8) !important;";
@@ -106,9 +109,27 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     // Carte de gen gresit — intunecata
                     cardEl.classList.add('battle-inactive');
                 }
-                
+
                 // Onclick handlers
-                if (isSupportCard && !isU && !isSupportActivated) {
+                if (isSupportActivated) {
+                    // Click din nou pe support-ul deja activ = deselectare (inainte sa rezolvi runda)
+                    div.onclick = () => {
+                        match.used = match.used.filter(x => x !== u);
+                        match.activeSupportUID = null;
+                        match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
+                        document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
+                        renderHand();
+                    };
+                } else if (isManagerActivated) {
+                    // Click din nou pe manager-ul deja activ = anuleaza buff-ul permanent adaugat
+                    div.onclick = () => {
+                        match.used = match.used.filter(x => x !== u);
+                        ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] -= s[k]; });
+                        match.activeManagerUID = null;
+                        document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
+                        renderHand();
+                    };
+                } else if (isSupportCard && !isU && !isAnySupportActiveThisRound) {
                     div.onclick = () => {
                         const isManager = !!DB.find(x => x.id === cardObj.id).manager;
                         if (isManager) {
@@ -117,14 +138,15 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                             // buffs the player's ENTIRE deck for the rest of THIS match only
                             // (never the opponent, never carried past the match).
                             match.used.push(u);
+                            match.activeManagerUID = u;
                             ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] += s[k]; });
                             const added = ['pow','tgh','spd','cha'].filter(k => s[k] > 0).map(k => `+${s[k]} ${k.toUpperCase()}`).join(', ');
-                            document.getElementById('support-status').innerHTML = `<span style="color:#f1c40f">🎙️ ${s.name} SIGNED! ${added} to your whole roster for the rest of the match!</span>`;
+                            document.getElementById('support-status').innerHTML = `<span style="color:#f1c40f">🎙️ ${s.name} SIGNED! ${added} to your whole roster for the rest of the match! (tap again to undo)</span>`;
                             showNotification(`🎙️ MANAGER SIGNED!<br>${s.name} boosts your ENTIRE roster: ${added} for the rest of the match!`, 2400);
                         } else {
                             match.activeSupportUID = u; match.used.push(u);
                             match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
-                            document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}!</span>`;
+                            document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}! (tap again to undo)</span>`;
                         }
                         renderHand();
                     };

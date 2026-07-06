@@ -35,10 +35,25 @@
         }
         .header-icon-btn:hover { transform: translateY(-2px) scale(1.05); border-color: #fff; }
 
-        .my-record {
-            text-align: center; font-size: 20px; font-weight: bold; letter-spacing: 1px;
-            color: #fff; margin-bottom: 16px; text-shadow: 0 0 8px rgba(192,57,43,0.6);
+        /* EXHIBITION / OPPONENT SELECT — dramatic dark-red backdrop, current-deck strip,
+           and edit-deck / ladder-rewards row above the opponent list. */
+        #opp-select-screen {
+            background: radial-gradient(ellipse at center, rgba(140,0,0,0.32) 0%, rgba(25,0,0,0.85) 55%, #000 100%);
+            border-radius: 18px;
         }
+        .opp-top-bar { display: flex; align-items: center; gap: 14px; max-width: 700px; margin: 0 auto 12px; }
+        .opp-deck-strip { flex: 1; display: flex; gap: 6px; overflow-x: auto; padding: 4px; }
+        .opp-deck-thumb {
+            width: 42px; height: 58px; flex-shrink: 0; border-radius: 6px; overflow: hidden;
+            border: 2px solid var(--rc, #888); background: #000; box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+        }
+        .opp-deck-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+        .opp-record { flex-shrink: 0; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; color: #fff; text-shadow: 0 0 8px rgba(192,57,43,0.6); }
+
+        .opp-actions-row { display: flex; gap: 12px; max-width: 700px; margin: 0 auto 20px; }
+        .opp-half-btn { height: 60px; font-size: 15px; padding: 0 30px; }
+        .opp-half-btn .dash-btn-icon { font-size: 26px; }
+
         .opponents-list { display: flex; flex-direction: column; gap: 14px; max-width: 700px; margin: 0 auto; }
         .opponent-row {
             display: flex; align-items: center; gap: 18px; cursor: pointer;
@@ -76,85 +91,95 @@
         .screen.active { display: block; animation: fadeIn 0.4s ease; }
 
         #main-menu.screen.active {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             flex: 1; min-height: 0;
         }
 
-        /* PREMIUM HOME HUB (large) */
-        .hub-container { max-width: 680px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+        /* DASHBOARD — WWE SuperCard mobile-app-style profile/home screen */
+        .dash-container { max-width: 500px; width: 100%; margin: 0 auto; padding: 8px 16px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
 
-        .hub-logo-banner {
-            display: flex; height: 140px; border-radius: 14px; overflow: hidden;
-            border: 3px solid var(--wwe-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        .dash-username-box { align-self: flex-end; }
+        .dash-username { color: #fff; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; text-shadow: 1px 1px 3px #000; }
+
+        /* 2014-style SuperCard: art fills the whole card (dark-left/transparent-right
+           gradient over it so the logo stays legible), the name bar runs the full width along
+           the bottom. The champ photo keeps its exact same size/position/offset (still drawn
+           bigger than the box, same as before) — only overflow:hidden is added so it gets
+           clipped at the card's own border instead of spilling past it. */
+        .dash-card {
+            position: relative; width: 95%; align-self: center; height: 200px;
+            border-radius: 4px; overflow: hidden;
+            border: 4px solid var(--wwe-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            background:
+                linear-gradient(90deg, rgba(10,0,0,0.92) 35%, rgba(10,0,0,0.1) 92%),
+                linear-gradient(135deg, #1a0000, #000);
+            background-size: cover; background-position: center; transition: background-image 0.3s;
         }
-        .hub-logo-side {
-            flex: 0 0 52%; background: linear-gradient(135deg, #111, #000);
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
+        .dash-card-logo {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 46%; z-index: 2; pointer-events: none;
+            display: flex; align-items: center; justify-content: center; gap: 14px;
         }
-        .hub-logo-icon { width: 66px; height: 94px; position: relative; flex-shrink: 0; }
+        .hub-logo-icon { width: 96px; height: 138px; position: relative; flex-shrink: 0; margin-left: 24px; }
         .hub-logo-icon .stack-card {
-            position: absolute; top: 6px; width: 52px; height: 78px; border-radius: 8px;
+            position: absolute; top: 9px; width: 76px; height: 115px; border-radius: 11px;
             border: 3px solid #fff; background: linear-gradient(135deg, #333, #000);
         }
-        .hub-logo-icon .stack-card:nth-child(1) { transform: rotate(-14deg); left: -10px; }
-        .hub-logo-icon .stack-card:nth-child(2) { transform: rotate(0deg); left: 6px; z-index: 1; background: linear-gradient(135deg, var(--wwe-red), var(--wwe-black)); }
-        .hub-logo-icon .stack-card:nth-child(3) { transform: rotate(14deg); left: 16px; }
+        .hub-logo-icon .stack-card:nth-child(1) { transform: rotate(-14deg); left: -14px; }
+        .hub-logo-icon .stack-card:nth-child(2) { transform: rotate(0deg); left: 9px; z-index: 1; background: linear-gradient(135deg, var(--wwe-red), var(--wwe-black)); }
+        .hub-logo-icon .stack-card:nth-child(3) { transform: rotate(14deg); left: 23px; }
         .hub-logo-text {
-            font-size: 22px; font-weight: bold; color: var(--wwe-red-bright); text-shadow: 2px 2px 3px #000;
+            font-size: 38px; font-weight: bold; font-style: italic; color: var(--wwe-red-bright); text-shadow: 2px 2px 3px #000;
             line-height: 1.05; letter-spacing: 0.5px; white-space: nowrap;
         }
-        .hub-photo-side {
-            flex: 1; position: relative; overflow: hidden;
-            background: linear-gradient(135deg, var(--wwe-red-dark), #000);
-            display: flex; align-items: flex-end; justify-content: flex-end;
+        .hub-photo-img {
+            position: absolute; z-index: 3; right: -16px; bottom: 0; top: -14px;
+            width: auto; height: 118%; max-width: none;
+            object-fit: contain; object-position: bottom right; background: transparent;
         }
-        .hub-photo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .hub-photo-placeholder {
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 54px; opacity: 0.5;
+            position: absolute; z-index: 2; right: 34px; top: 50%; transform: translateY(-50%);
+            font-size: 70px; opacity: 0.5;
         }
-        .hub-photo-name {
-            position: relative; z-index: 2; color: #fff; font-weight: bold; font-size: 16px;
-            background: rgba(0,0,0,0.6); padding: 5px 14px; letter-spacing: 1px; white-space: nowrap;
+        .dash-card-name {
+            position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+            color: #fff; font-weight: bold; font-size: 20px; text-transform: uppercase;
+            background: rgba(0,0,0,0.75); padding: 8px 16px; letter-spacing: 1px; text-align: right;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
-        .hub-exhibition-banner {
-            display: block; width: 100%; border: none; cursor: pointer; border-radius: 14px;
-            padding: 26px 28px; text-align: left; font-family: inherit;
-            background: repeating-linear-gradient(135deg, #2a0000, #2a0000 12px, #180000 12px, #180000 24px);
+        .dash-exhibition {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 120px; border: none; cursor: pointer; border-radius: 14px;
+            font-family: inherit; text-align: center;
+            background:
+                linear-gradient(0deg, rgba(10,0,0,0.88), rgba(20,0,0,0.35) 55%, rgba(20,0,0,0.55)),
+                url('assets/images/carti/Exhibition.jpg');
+            background-size: cover, cover;
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
             border: 3px solid var(--wwe-gold); box-shadow: 0 8px 20px rgba(0,0,0,0.6); transition: all 0.2s;
         }
-        .hub-exhibition-banner:hover { transform: translateY(-3px); border-color: #fff; }
-        .hub-exhibition-title { font-size: 42px; font-weight: bold; color: #fff; letter-spacing: 2px; text-shadow: 2px 2px 4px #000; }
-        .hub-exhibition-record { font-size: 19px; color: var(--wwe-gold); font-weight: bold; margin-top: 8px; letter-spacing: 1px; font-family: Arial; }
+        .dash-exhibition:hover { transform: translateY(-2px); border-color: #fff; }
+        .dash-exhibition-title { font-size: 40px; font-weight: 900; color: #fff; letter-spacing: 2px; text-shadow: 2px 2px 6px #000, 0 0 20px rgba(255,204,0,0.4); }
+        .dash-exhibition-record { font-size: 15px; color: var(--wwe-gold); font-weight: bold; margin-top: 6px; letter-spacing: 1px; font-family: Arial; }
 
-        .hub-actions-row { display: flex; gap: 14px; }
-        .hub-action-btn {
-            flex: 1; position: relative; background: var(--wwe-red);
-            color: #fff; border: none; padding: 28px 14px; font-family: inherit; font-weight: bold;
-            font-size: 22px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
-            transition: background 0.2s, transform 0.2s;
-            clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.6));
+        .dash-btn {
+            position: relative; width: 100%; height: 80px; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 60px; background: #000; color: #fff; border: 3px solid var(--wwe-red); border-radius: 10px;
+            font-family: inherit; font-weight: bold; font-size: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+            cursor: pointer; transition: all 0.2s;
         }
-        .hub-action-btn::before {
-            content: ""; position: absolute; inset: 3px;
-            clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
-            background: linear-gradient(160deg, #1a1a1a, #000);
+        .dash-btn-icon {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            font-size: 34px; flex-shrink: 0;
         }
-        .hub-action-btn span { position: relative; z-index: 1; }
-        .hub-action-btn:hover { background: var(--wwe-gold); transform: translateY(-2px); filter: drop-shadow(0 7px 14px rgba(0,0,0,0.7)); }
-        .hub-action-btn.full {
-            width: 100%;
-            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
-        }
-        .hub-action-btn.full::before {
-            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
-        }
-        .hub-action-btn.full::before {
-            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
-        }
+        .dash-btn.dash-btn-reverse .dash-btn-icon { left: auto; right: 20px; }
+        .dash-btn:hover { border-color: var(--wwe-gold); background: #1a1a1a; transform: translateY(-2px); }
+        .dash-btn-row { display: flex; gap: 8px; }
+        .dash-btn.half { width: auto; flex: 1; font-size: 15px; padding: 0 40px; }
+        .dash-btn.half .dash-btn-icon { font-size: 28px; left: 12px; }
+        .dash-btn.half.dash-btn-reverse .dash-btn-icon { left: auto; right: 12px; }
 
         .hub-reset-btn {
             align-self: center; margin-top: 4px; background: transparent; color: var(--wwe-red-bright);
@@ -355,6 +380,44 @@
         .page-btn:hover:not(:disabled) { background: var(--wwe-red); }
         .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
         .page-indicator { color: #aaa; font-size: 13px; font-weight: bold; letter-spacing: 1px; }
+
+        /* CARD LIST (MY CARDS) — browse-one-at-a-time viewer */
+        .cl-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 10px; }
+        .cl-totals {
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(241,196,15,0.4); border-radius: 10px;
+            padding: 10px 16px; font-family: Arial; font-size: 12px; min-width: 190px;
+        }
+        .cl-totals-head { color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .cl-totals-row { display: flex; align-items: center; gap: 6px; color: #ddd; padding: 1px 0; }
+        .cl-totals-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); flex-shrink: 0; }
+
+        .cl-title { text-align: center; font-size: 38px; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px #000; letter-spacing: 2px; margin: 4px 0 18px; }
+
+        .cl-sort-filter-row { display: flex; gap: 12px; max-width: 700px; margin: 0 auto 24px; }
+        .cl-sf-btn {
+            flex: 1; background: #000; color: #fff; border: 2px solid var(--wwe-red); border-radius: 8px;
+            padding: 12px; font-family: inherit; font-weight: bold; font-size: 14px; letter-spacing: 0.5px;
+            text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+        }
+        .cl-sf-btn:hover { border-color: var(--wwe-gold); background: #1a1a1a; }
+
+        .cl-body { display: flex; gap: 30px; max-width: 700px; margin: 0 auto; align-items: center; }
+        /* .cl-focus-wrap is visually scaled up 1.6x via transform, which doesn't grow its
+           layout box — the card actually renders well beyond that box's edges. The nav
+           arrows used to sit right at the (unscaled) box edge, i.e. almost touching the real
+           (scaled) card. The wrap's own top/bottom margin plus this gap need to clear that
+           overflow, not just the box, for the arrows to feel separated from the card. */
+        .cl-nav-col { display: flex; flex-direction: column; align-items: center; gap: 50px; flex-shrink: 0; }
+        .cl-nav-arrow {
+            width: 70px; height: 44px; background: #000; color: #fff; border: 2px solid var(--wwe-red);
+            border-radius: 8px; font-size: 20px; cursor: pointer; transition: all 0.2s;
+        }
+        .cl-nav-arrow:hover:not(:disabled) { border-color: var(--wwe-gold); background: #1a1a1a; }
+        .cl-nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+        .cl-focus-wrap { transform: scale(1.6); margin: 90px 30px; }
+
+        .cl-menu-col { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
         .card.deck-edit-in { box-shadow: 0 0 20px #2ecc71; border-color: #2ecc71 !important; }
         .card.deck-edit-out:hover { box-shadow: 0 0 15px var(--wwe-gold); border-color: var(--wwe-gold) !important; }
         .card.deck-edit-full { opacity: 0.5; pointer-events: none; }
@@ -579,22 +642,6 @@
             font-family: Arial; outline: none;
         }
         .nickname-input:focus { border-color: var(--wwe-red); }
-
-        /* HEADER PROFILE BOX (photo + nickname) */
-        .profile-box {
-            display: flex; align-items: center; gap: 8px;
-            background: #1a1a1a; border: 1px solid var(--wwe-red); border-radius: 10px;
-            padding: 5px 14px 5px 5px;
-        }
-        .profile-photo-wrap {
-            width: 40px; height: 40px; border-radius: 8px; overflow: hidden;
-            border: 2px solid #f1c40f; box-shadow: 0 0 8px rgba(241,196,15,0.4);
-            display: flex; align-items: center; justify-content: center;
-            background: #000; flex-shrink: 0;
-        }
-        .profile-img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-img-placeholder { font-size: 20px; }
-        #profile-name { font-size: 15px; color: var(--wwe-gold); font-family: Arial; font-weight: bold; }
 
         /* CARD FOCUS MODAL (Train / Lock / Favorite) */
         #card-focus-modal { align-items: flex-start; overflow-y: auto; padding: 30px 0; }

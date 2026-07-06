@@ -23,8 +23,21 @@ function generateOpponentWL(aiMode) {
     return { wins, losses };
 }
 
+function renderOppSelectDeckStrip() {
+    const strip = document.getElementById('opp-deck-strip');
+    if (!strip) return;
+    const uids = [...player.deck.M, ...player.deck.F, ...player.deck.S];
+    strip.innerHTML = uids.map(uid => {
+        const card = player.inventory.find(c => c.uid === uid);
+        if (!card) return '';
+        const base = getCardBase(card);
+        return `<div class="opp-deck-thumb rarity-${base.rarity}"><img src="${base.img}" onload="fitCardImage(this)"></div>`;
+    }).join('');
+}
+
 function showOpponentSelect() {
             autoEquipDeck();
+            renderOppSelectDeckStrip();
             let myPower = calculateDeckTier().current;
 
             // 4 brackets de dificultate ascunsa — influenteaza doar puterea/AI-ul real, niciodata afisate.
