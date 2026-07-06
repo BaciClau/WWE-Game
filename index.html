@@ -14,9 +14,6 @@
 
     <header>
         <button class="header-icon-btn" onclick="showScreen('main-menu')" title="Back">←</button>
-        <div style="font-size: 26px; text-shadow: 2px 2px #000; display:flex; align-items:center; gap:10px;">
-            🔥 SUPERCARD
-        </div>
         <div class="badge">
             <span style="color:gold;">💰 <span id="coins-display">0</span></span>
             <span style="color:#e74c3c;">🎴 Picks: <span id="picks-display">0</span></span>
@@ -48,9 +45,11 @@
                     </div>
                     <div class="hub-logo-text">SUPER<br>CARD</div>
                 </div>
-                <img id="hub-photo-img" class="hub-photo-img" style="display:none;">
-                <span id="hub-photo-placeholder" class="hub-photo-placeholder">👤</span>
-                <div class="dash-card-name" id="hub-photo-name">NO FAVORITE SET</div>
+                <div class="dash-card-photo-clip">
+                    <img id="hub-photo-img" class="hub-photo-img" style="display:none;">
+                    <span id="hub-photo-placeholder" class="hub-photo-placeholder">👤</span>
+                    <div class="dash-card-name" id="hub-photo-name">NO FAVORITE SET</div>
+                </div>
             </div>
 
             <button class="dash-exhibition" onclick="showOpponentSelect()">
@@ -61,10 +60,10 @@
             <button class="dash-btn" onclick="showScreen('card-list-screen'); renderCardList()">
                 <span class="dash-btn-icon">🃏</span><span>MY CARDS</span>
             </button>
-            <button class="dash-btn dash-btn-reverse" onclick="showScreen('store-screen')">
+            <button class="dash-btn dash-btn-reverse" onclick="showScreen('store-screen'); renderStoreScreen()">
                 <span class="dash-btn-icon">🛒</span><span>GET CARDS</span>
             </button>
-            <button class="dash-btn" onclick="showScreen('draft-board-screen'); renderDraftBoard()">
+            <button class="dash-btn" onclick="showScreen('card-catalog-screen'); enterCardCatalog();">
                 <span class="dash-btn-icon">📖</span><span>CARD CATALOG</span>
             </button>
             <button class="dash-btn dash-btn-reverse" onclick="showNotification('🚧 Coming soon!', 1500)">
@@ -74,7 +73,7 @@
                 <button class="dash-btn half" onclick="showNotification('🚧 Coming soon!', 1500)">
                     <span class="dash-btn-icon">📅</span><span>LOGIN BONUS</span>
                 </button>
-                <button class="dash-btn dash-btn-reverse half" onclick="showNotification('🚧 Coming soon!', 1500)">
+                <button class="dash-btn dash-btn-reverse half" onclick="showScreen('draft-board-screen'); enterDraftBoard()">
                     <span class="dash-btn-icon">📰</span><span>BULLETIN BOARD</span>
                 </button>
             </div>
@@ -158,7 +157,7 @@
                 <button class="dash-btn" onclick="cardListCombine()"><span class="dash-btn-icon">🔮</span><span>COMBINE</span></button>
                 <button class="dash-btn" onclick="cardListSetChamp()"><span class="dash-btn-icon">👑</span><span>SET AS CHAMP</span></button>
                 <button class="dash-btn" onclick="cardListDelete()"><span class="dash-btn-icon">🗑️</span><span>DELETE</span></button>
-                <button class="dash-btn" onclick="showScreen('draft-board-screen'); renderDraftBoard()"><span class="dash-btn-icon">📖</span><span>CATALOG</span></button>
+                <button class="dash-btn" onclick="showScreen('draft-board-screen'); enterDraftBoard()"><span class="dash-btn-icon">📖</span><span>CATALOG</span></button>
             </div>
         </div>
     </div>
@@ -195,35 +194,19 @@
     </div>
 
     <div id="store-screen" class="screen">
-        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 20px;" onclick="showScreen('main-menu')">⬅️ MENU</button>
-        <h2 class="section-title">CARD PACK SHOP</h2>
-        
-        <div class="card-container" style="gap: 25px;">
-            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#95a5a6;" onclick="buyPack(100, ['Common', 'Uncommon'])">
-                <span style="font-size: 60px;">📦</span>
-                <h3>BASIC PACK</h3>
-                <p style="color: gold; font-size: 24px; margin: 10px 0;">100 💰</p>
-                <small style="color:#aaa; text-align:center;">Chance for Uncommon</small>
-            </div>
-            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#00bcd4; box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);" onclick="buyPack(500, ['Rare', 'SuperRare'])">
-                <span style="font-size: 60px;">💎</span>
-                <h3 style="color: #00bcd4;">SUPER PACK</h3>
-                <p style="color: gold; font-size: 24px; margin: 10px 0;">500 💰</p>
-                <small style="color:#aaa; text-align:center;">Guaranteed Rare+</small>
-            </div>
-            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#e040fb; box-shadow: 0 0 20px rgba(224, 64, 251, 0.4);" onclick="buyPack(1500, ['UltraRare', 'Epic'])">
-                <span style="font-size: 60px;">⚡</span>
-                <h3 style="color: #e040fb;">ULTRA PACK</h3>
-                <p style="color: gold; font-size: 24px; margin: 10px 0;">1500 💰</p>
-                <small style="color:#aaa; text-align:center;">Ultra Rare / Epic</small>
-            </div>
-            <div class="card" style="width:200px; height:auto; padding:20px; align-items:center; border-color:#e74c3c; box-shadow: 0 0 30px rgba(231, 76, 60, 0.6);" onclick="buyPack(4000, ['Legendary', 'Survivor'])">
-                <span style="font-size: 60px;">👑</span>
-                <h3 style="color: #e74c3c;">SURVIVOR PACK</h3>
-                <p style="color: gold; font-size: 24px; margin: 10px 0;">4000 💰</p>
-                <small style="color:#aaa; text-align:center;">Legendary or Survivor!</small>
-            </div>
-        </div>
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 12px;" onclick="showScreen('main-menu')">⬅️ MENU</button>
+        <h2 class="store-title">GET CARDS</h2>
+        <div class="store-coins">💰 COINS: <span id="store-coins-display">0</span></div>
+        <div class="store-pack-list" id="store-pack-list"></div>
+    </div>
+
+    <div id="card-catalog-screen" class="screen">
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 12px;" onclick="showScreen('main-menu')">⬅️ MENU</button>
+        <h2 class="catalog-title">CATALOG</h2>
+        <div class="catalog-rarity-label" id="catalog-rarity-label">COMMON</div>
+        <div class="catalog-count" id="catalog-count"></div>
+        <div class="catalog-filter-row" id="catalog-filter-row"></div>
+        <div class="catalog-grid" id="catalog-grid"></div>
     </div>
 
     <div id="nickname-modal" class="pull-modal-overlay">
@@ -264,6 +247,16 @@
         </div>
     </div>
 
+    <div id="pack-reveal-modal" class="pull-modal-overlay">
+        <div class="pull-modal-box">
+            <h2 class="pull-title">PACK OPENED!</h2>
+            <div id="pack-reveal-counter" class="pack-reveal-counter"></div>
+            <div id="pack-reveal-container" class="pack-reveal-container"></div>
+            <button id="pack-reveal-next-btn" class="menu-btn btn-play pull-continue-btn" style="display:none;" onclick="packRevealNext()">NEXT ➜</button>
+            <button id="pack-reveal-collect-btn" class="menu-btn btn-play pull-continue-btn" style="display:none;">COLLECT ALL</button>
+        </div>
+    </div>
+
         <script src="src/data/cards.js"></script>
     <script src="src/data/abilities.js"></script>
     <script src="src/core/config.js"></script>
@@ -278,6 +271,8 @@
     <script src="src/core/ai.js"></script>
     <script src="src/core/match.js"></script>
     <script src="src/ui/draft-shop.js"></script>
+    <script src="src/ui/store-screen.js"></script>
+    <script src="src/ui/catalog-screen.js"></script>
     <script src="src/main.js"></script>
 </body>
 </html>

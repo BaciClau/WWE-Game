@@ -4,6 +4,15 @@ function generateBoard() {
     save();
 }
 
+// Cards pulled since the player last entered the draft board — shown as a summary (same
+// grid + COLLECT ALL used by the pack shop) once they run out of picks.
+let _draftSessionPulls = [];
+
+function enterDraftBoard() {
+    _draftSessionPulls = [];
+    renderDraftBoard();
+}
+
 function renderDraftBoard() {
     updateUI();
     let g = document.getElementById('draft-board-grid');
@@ -82,7 +91,8 @@ function renderDraftBoard() {
             }
             
             addCard(pulledId); save(); renderDraftBoard();
-            
+            _draftSessionPulls.push(pulledId);
+
             let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
             document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);
             document.getElementById('pull-title').innerText = guaranteedRarity ? "RANK-UP GUARANTEE! " + s.rarity.toUpperCase() + " CARD!" : (isReset ? "BOARD RESET! " + s.rarity.toUpperCase() + " CARD!" : "YOU PULLED A CARD!");
@@ -94,19 +104,25 @@ function renderDraftBoard() {
         function closePullModal() {
             document.getElementById('pull-modal').style.display = "none";
             renderDraftBoard();
-            if(player.picks === 0) {
-                setTimeout(() => { showNotification("Returning to Main Menu...", 1500, () => { showScreen('main-menu'); }); }, 500);
+            if (player.picks === 0 && _draftSessionPulls.length > 0) {
+                const pulls = [..._draftSessionPulls];
+                _draftSessionPulls = [];
+                setTimeout(() => {
+                    showCardSummaryModal(pulls, 'DRAFT SUMMARY', () => showScreen('main-menu'));
+                }, 500);
             }
         }
 
-        function buyPack(cost, rarityArray) {
-            if(player.coins < cost) return showNotification("❌ Insufficient funds! Play more Exhibition.", 2000);
-            player.coins -= cost; 
+        // buyPack() now lives in src/ui/store-screen.js (WWE SuperCard-style pack shop).
+        // This one stays here: the win-streak reward (STREAK_REWARDS.freePackEvery, granted
+        // from match.js) hands out one free card from a fixed rarity pool — no coins, no
+        // shop UI — so it keeps its own small helper instead of going through the paid packs.
+        function grantBonusPack(rarityArray) {
             let pool = DB.filter(c => rarityArray.includes(c.rarity));
             let cardId = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)].id : 1;
-            addCard(cardId); save(); 
+            addCard(cardId); save();
             let s = getStats({uid:'preview', id: cardId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
             document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);
-            document.getElementById('pull-title').innerText = "PACK OPENED!";
+            document.getElementById('pull-title').innerText = "FREE PACK!";
             document.getElementById('pull-modal').style.display = "flex";
         }

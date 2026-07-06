@@ -507,7 +507,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 celebrateMatchWin();
                 showNotification(`🎉 YOU WON THE MATCH! 🎉<br>You received ${picksWon} Draft picks.${streakHtml}`, streakMsgs.length ? 4000 : 3000, () => {
                     showScreen('draft-board-screen'); renderDraftBoard();
-                    if (freePackEarned) buyPack(0, STREAK_REWARDS.freePackRarities);
+                    if (freePackEarned) grantBonusPack(STREAK_REWARDS.freePackRarities);
                 });
             } else {
                 showNotification(`💀 YOU LOST THE MATCH... 💀<br>You received 1 consolation pick.${lossResetNote}`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
