@@ -249,8 +249,8 @@ function updateUI() {
                         <div class="card-rarity-label">${stats.rarity}</div>
                         <div class="card-name-v2">${stats.name}</div>
                     </div>
-                    <div class="card-body-v2">
-                        <div class="card-image-col-v2">
+                    <div class="card-body-v2 ${isSupport ? 'card-body-support-v2' : ''}">
+                        <div class="card-image-col-v2 ${isSupport ? 'card-image-col-support-v2' : ''}">
                             <img src="${stats.img}" onload="fitCardImage(this)">
                             ${isSupport ? '' : `<div class="card-score-v2">${lvlText}</div>`}
                         </div>
