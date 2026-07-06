@@ -109,7 +109,7 @@ function showAbilityPopup(evt, onDone) {
         <div class="ability-popup-card rarity-${rarity}" style="box-shadow: 0 0 55px ${glowColor}, 0 20px 60px rgba(0,0,0,0.85);">
             <div class="ability-popup-header" style="color:${sideColor}; border-color:${sideColor};">${sideLabel}</div>
             <div class="ability-portrait" style="border-color:${glowColor}; box-shadow: 0 0 25px ${glowColor} inset;">
-                <img src="${evt.cardStats.img}">
+                <img src="${evt.cardStats.img}" onload="fitCardImage(this)">
             </div>
             <div class="ability-popup-name">${evt.cardStats.name}</div>
             <div class="ability-popup-move"><span class="ability-popup-icon">${evt.ab.icon}</span>${evt.ab.name}</div>

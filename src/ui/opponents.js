@@ -83,25 +83,19 @@ function showOpponentSelect() {
         }
 
         // Given a target stat multiplier, find the level/upgrade combo that a real player
-        // card could actually have (level 1-10 base, 11-15 Pro, or 0-10 Perfect Pro phase 2)
-        // that produces that same multiplier via the real getStatMultiplier() formula.
-        function multiplierToLevel(m) {
-            const G = UPGRADE.GROWTH;
-            const maxBase = 1 + 9 * G.base;
-            if (m <= maxBase) {
-                let lv = 1 + (m - 1) / G.base;
-                lv = Math.max(1, Math.min(10, Math.round(lv)));
+        // card of this rarity could actually have (level 1-baseMax = no upgrade,
+        // baseMax-proMax = Pro) that produces that same multiplier via the real
+        // getStatMultiplier() formula (inverted).
+        function multiplierToLevel(rarity, m) {
+            const baseMax = LEVEL_CAPS[rarity] || UPGRADE.BASE_MAX;
+            const proMax = PRO_LEVEL_CAPS[rarity] || (baseMax + 5);
+            let lv = (m - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1);
+            if (lv <= baseMax) {
+                lv = Math.max(1, Math.min(baseMax, Math.round(lv)));
                 return { level: lv, upgradeType: null, phase: 1 };
             }
-            const maxNormal = maxBase + 5 * G.normal;
-            if (m <= maxNormal) {
-                let lv = 10 + (m - maxBase) / G.normal;
-                lv = Math.max(11, Math.min(15, Math.round(lv)));
-                return { level: lv, upgradeType: 'normal', phase: 1 };
-            }
-            let lv = (m - maxBase) / G.perfectP2;
-            lv = Math.max(0, Math.min(10, Math.round(lv)));
-            return { level: lv, upgradeType: 'perfect', phase: 2 };
+            lv = Math.max(baseMax, Math.min(proMax, Math.round(lv)));
+            return { level: lv, upgradeType: 'normal', phase: 1 };
         }
 
         // Same tier lookup as calculateDeckTier(), but for an arbitrary stat total instead of
@@ -139,8 +133,8 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
             // are subtracted from the target before solving for the M/F cards' level.
             const supportSum = sCard.pow + sCard.tgh + sCard.spd + sCard.cha;
             const multiplier = (targetPower - supportSum) / baseSum;
-            const lvlInfo = multiplierToLevel(multiplier);
-            const actualMultiplier = getStatMultiplier({ level: lvlInfo.level, upgradeType: lvlInfo.upgradeType, phase: lvlInfo.phase });
+            const lvlInfo = multiplierToLevel(rarity, multiplier);
+            const actualMultiplier = getStatMultiplier({ id: mCards[0].id, level: lvlInfo.level, upgradeType: lvlInfo.upgradeType, phase: lvlInfo.phase });
             const actualPower = baseSum * actualMultiplier + supportSum;
 
             return { mCards, fCards, sCard, lvlInfo, actualPower };

@@ -66,82 +66,187 @@ function updateUI() {
             }
         }
 
-        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="", boostedAmount=0) {
-            let lvlLabel = stats.effectiveLvl ?? stats.lvl;
-            let maxLabel = stats.effectiveMax ?? stats.maxLvl;
-            if (stats.lvl === '?') {
-                lvlLabel = '?';
-                maxLabel = '?';
-            } else if (stats.perfect && stats.phase === 2) {
-                lvlLabel = `★${stats.lvl}`;
-                maxLabel = `${stats.effectiveLvl}/20`;
-            }
-            const xpMax = stats.xpNeeded || 0;
-            const xpPct = (stats.gender === 'S' || stats.lvl === '?' || xpMax === 0) ? 100 : Math.min(100, ((stats.xp || 0) / xpMax) * 100);
-            const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">◆</div>' : '';
-            
-            // Abilitate specială pentru cărțile non-Support, non-Common
-            let abilityHTML = '';
-            if (stats.gender !== 'S' && stats.rarity !== 'Common') {
-                const ab = ABILITIES[stats.id];
-                if (ab) {
-                    const s1 = ab.stats[0].toUpperCase();
-                    const s2 = ab.stats[1].toUpperCase();
-                    // Bonus fix afișat pe carte per raritate
-                    let badgesHTML = '';
-                    const rarity = stats.rarity;
-                    if (rarity === 'Uncommon') {
-                        // +10 la un singur stat (primul)
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +10</span>`;
-                    } else if (rarity === 'Rare') {
-                        // +15 la stat-ul principal
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +15</span>`;
-                    } else if (rarity === 'SuperRare') {
-                        // Verificăm dacă exceleaza considerabil
-                        const statVals = { pow: stats.pow, tgh: stats.tgh, spd: stats.spd, cha: stats.cha };
-                        const vals = Object.entries(statVals).filter(([k]) => statVals[k] > 0).sort((a, b) => b[1] - a[1]);
-                        const topStat = vals.length > 0 ? vals[0][0] : null;
-                        const topVal = vals.length > 0 ? vals[0][1] : 0;
-                        const secondVal = vals.length > 1 ? vals[1][1] : 0;
-                        const excels = topStat && (secondVal === 0 || (topVal - secondVal) / secondVal >= 0.05);
-                        if (excels && ab.stats.includes(topStat)) {
-                            badgesHTML = `<span class="ability-stat-badge">${topStat.toUpperCase()} +20</span>`;
-                        } else {
-                            badgesHTML = `<span class="ability-stat-badge">${s1} +11</span><span class="ability-stat-badge">${s2} +11</span>`;
-                        }
-                    } else if (rarity === 'UltraRare') {
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +17</span><span class="ability-stat-badge">${s2} +17</span>`;
-                    } else if (rarity === 'Epic') {
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +25</span><span class="ability-stat-badge">${s2} +25</span>`;
-                    } else if (rarity === 'Legendary') {
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +42</span><span class="ability-stat-badge">${s2} +42</span>`;
-                    } else if (rarity === 'Survivor') {
-                        badgesHTML = `<span class="ability-stat-badge">${s1} +55</span><span class="ability-stat-badge">${s2} +55</span>`;
-                    }
-                    abilityHTML = `<div class="card-ability">
-                        <span class="ability-name"><span class="ability-icon-small">${ab.icon}</span>${ab.name}</span>
-                        <div class="ability-stats-row">${badgesHTML}</div>
-                    </div>`;
+        // Several of the newly-added card photos aren't actually cut out — they carry a
+        // flat grey/white studio-backdrop color (sometimes even a baked-in checkerboard —
+        // a "transparency preview" grid saved as real, opaque pixels by mistake) instead of
+        // real alpha, and often a lot of empty margin around the wrestler too. This keys the
+        // backdrop color(s) out (sampled from the image's own border), crops tightly to
+        // whatever's left (the actual subject, plus a little padding), and caches the result
+        // — so every photo ends up sized to its real content instead of an arbitrary canvas,
+        // which is what let small/padded photos get zoomed into just a face.
+        // Image container is a fixed height on every card (CSS), always object-fit:cover —
+        // no per-image contain/width branching, so no card's box ever resizes based on
+        // what photo happens to be in it.
+        const _bgRemovedCache = {};
+        function fitCardImage(img) {
+            if (!img.naturalWidth || !img.naturalHeight) return;
+            if (img.dataset.cardFitted) return;
+
+            const src = img.currentSrc || img.src;
+            if (_bgRemovedCache[src]) { img.dataset.cardFitted = '1'; img.src = _bgRemovedCache[src]; return; }
+            try {
+                const nw = img.naturalWidth, nh = img.naturalHeight;
+                const scale = Math.min(1, 400 / Math.max(nw, nh));
+                const w = Math.max(1, Math.round(nw * scale)), h = Math.max(1, Math.round(nh * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+
+                const idx = (y,x) => (y*w+x)*4;
+                let bgColors = [];
+                if (data[idx(0,0)+3] >= 10) {
+                    // Bucket every border pixel's color and key out whichever ones show up
+                    // often enough — a flat backdrop is basically one bucket, a baked-in
+                    // checkerboard splits across a couple of close-but-distinct grey/white ones.
+                    const buckets = new Map();
+                    const addSample = (i) => {
+                        const key = (data[i]>>4)+','+(data[i+1]>>4)+','+(data[i+2]>>4);
+                        const e = buckets.get(key);
+                        if (e) e.count++; else buckets.set(key, { count: 1, r: data[i], g: data[i+1], b: data[i+2] });
+                    };
+                    for (let x = 0; x < w; x++) { addSample(idx(0,x)); addSample(idx(h-1,x)); }
+                    for (let y = 0; y < h; y++) { addSample(idx(y,0)); addSample(idx(y,w-1)); }
+                    const sorted = Array.from(buckets.values()).sort((a,b) => b.count - a.count);
+                    const total = sorted.reduce((s,e) => s+e.count, 0);
+                    bgColors = sorted.filter(e => e.count > total * 0.08).slice(0, 6);
                 }
+
+                const tolerance = 26;
+                let minX=w, maxX=-1, minY=h, maxY=-1;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const p = idx(y,x);
+                        let isBg = data[p+3] < 10;
+                        if (!isBg) {
+                            for (const bgc of bgColors) {
+                                const dr = data[p]-bgc.r, dg = data[p+1]-bgc.g, db = data[p+2]-bgc.b;
+                                if (Math.sqrt(dr*dr + dg*dg + db*db) < tolerance) { isBg = true; break; }
+                            }
+                        }
+                        if (isBg) { data[p+3] = 0; }
+                        else { if (x<minX) minX=x; if (x>maxX) maxX=x; if (y<minY) minY=y; if (y>maxY) maxY=y; }
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+
+                let outCanvas = canvas;
+                if (maxX >= minX && maxY >= minY) {
+                    // Crop to the actual subject (plus a small margin) instead of the full,
+                    // often padding-heavy canvas — this is what makes a tiny/close-up-looking
+                    // source photo end up "maxed out" to fill the card like the rest.
+                    const padX = Math.round((maxX-minX) * 0.04) + 2, padY = Math.round((maxY-minY) * 0.04) + 2;
+                    const cx0 = Math.max(0, minX-padX), cy0 = Math.max(0, minY-padY);
+                    const cx1 = Math.min(w-1, maxX+padX), cy1 = Math.min(h-1, maxY+padY);
+                    const cw = cx1-cx0+1, ch = cy1-cy0+1;
+                    if (cw > 0 && ch > 0 && (cw < w || ch < h)) {
+                        const cropped = document.createElement('canvas');
+                        cropped.width = cw; cropped.height = ch;
+                        cropped.getContext('2d').drawImage(canvas, cx0, cy0, cw, ch, 0, 0, cw, ch);
+                        outCanvas = cropped;
+                    }
+                }
+
+                const dataUrl = outCanvas.toDataURL('image/png');
+                _bgRemovedCache[src] = dataUrl;
+                img.dataset.cardFitted = '1';
+                img.src = dataUrl;
+            } catch (e) { /* cross-origin image — leave it as-is */ }
+        }
+
+        // Numele abilității + bonusul fix afișat pe carte, per raritate (aceeași logică
+        // folosită și în match.js pentru calculul real — aici doar pentru afișare).
+        function getAbilityInfo(stats) {
+            const ab = ABILITIES[stats.id];
+            if (!ab || stats.rarity === 'Common') return null;
+            const s1 = ab.stats[0].toUpperCase();
+            const s2 = ab.stats[1].toUpperCase();
+            const rarity = stats.rarity;
+            let bonus = null;
+            if (rarity === 'Uncommon') bonus = `${s1} +10`;
+            else if (rarity === 'Rare') bonus = `${s1} +15`;
+            else if (rarity === 'SuperRare') {
+                const statVals = { pow: stats.pow, tgh: stats.tgh, spd: stats.spd, cha: stats.cha };
+                const vals = Object.entries(statVals).filter(([k]) => statVals[k] > 0).sort((a, b) => b[1] - a[1]);
+                const topStat = vals.length > 0 ? vals[0][0] : null;
+                const topVal = vals.length > 0 ? vals[0][1] : 0;
+                const secondVal = vals.length > 1 ? vals[1][1] : 0;
+                const excels = topStat && (secondVal === 0 || (topVal - secondVal) / secondVal >= 0.05);
+                bonus = (excels && ab.stats.includes(topStat)) ? `${topStat.toUpperCase()} +20` : `${s1} +11, ${s2} +11`;
             }
+            else if (rarity === 'UltraRare') bonus = `${s1} +17, ${s2} +17`;
+            else if (rarity === 'Epic') bonus = `${s1} +25, ${s2} +25`;
+            else if (rarity === 'Legendary') bonus = `${s1} +42, ${s2} +42`;
+            else if (rarity === 'Survivor') bonus = `${s1} +55, ${s2} +55`;
+            if (!bonus) return null;
+            return { name: ab.name, bonus };
+        }
+
+        // Ce oferă un support card (obiect/acțiune sau manager) — folosit în locul
+        // abilității pe footer-ul cărții.
+        function getSupportEffectText(stats) {
+            const parts = [];
+            ['pow','tgh','spd','cha'].forEach(k => { if (stats[k] > 0) parts.push(`${k.toUpperCase()} +${stats[k]}`); });
+            return parts.length ? parts.join(', ') : 'NA';
+        }
+
+        function statBlock(label, key, stats, boosted, boostedAmount, highlight) {
+            const isBoosted = boosted === key;
+            const isHighlight = !isBoosted && highlight === key;
+            const val = isBoosted ? stats[key] + boostedAmount : stats[key];
+            return `
+                <div class="stat-v2 ${isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : '')}">
+                    <div class="stat-v2-label">${label}</div>
+                    <div class="stat-v2-value">${val}</div>
+                </div>`;
+        }
+
+        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="", boostedAmount=0) {
+            const isSupport = stats.gender === 'S';
+            let lvlText = '';
+            if (!isSupport) {
+                let lvlLabel = stats.effectiveLvl ?? stats.lvl;
+                let maxLabel = stats.effectiveMax ?? stats.maxLvl;
+                if (stats.lvl === '?') { lvlLabel = '?'; maxLabel = '?'; }
+                else if (stats.perfect && stats.phase === 2) { lvlLabel = `★${stats.lvl}`; maxLabel = `${stats.effectiveLvl}/${stats.effectiveMax}`; }
+                lvlText = stats.lvl === '?' ? 'SCALAT' : `${lvlLabel}/${maxLabel}`;
+            }
+            const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">◆</div>' : '';
+
+            const abilityInfo = isSupport ? null : getAbilityInfo(stats);
+            const footerName = isSupport ? 'SUPPORT BONUS' : (abilityInfo ? abilityInfo.name : 'NA');
+            const footerBonus = isSupport ? getSupportEffectText(stats) : (abilityInfo ? abilityInfo.bonus : '');
+
+            const statsColHTML = isSupport ? '' : `
+                <div class="card-stats-col-v2">
+                    ${statBlock('POW', 'pow', stats, boosted, boostedAmount, highlight)}
+                    ${statBlock('TGH', 'tgh', stats, boosted, boostedAmount, highlight)}
+                    ${statBlock('SPD', 'spd', stats, boosted, boostedAmount, highlight)}
+                    ${statBlock('CHA', 'cha', stats, boosted, boostedAmount, highlight)}
+                </div>`;
 
             return `
                 <div class="card rarity-${stats.rarity} ${extraClass}" onclick="${selectable ? `openCardFocus('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
                     ${stats.locked ? '<div class="lock-badge">🔒</div>' : ''}
                     ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
-                    <img src="${stats.img}">
-                    <div class="card-name-plate">${stats.name}</div>
-                    <div class="card-stats">
-                        <div class="stat ${boosted==='pow'?'stat-boosted':(highlight==='pow'?'stat-highlight':'')}">${stats.pow>0?'POW: '+(boosted==='pow'?stats.pow+boostedAmount:stats.pow):''}</div>
-                        <div class="stat ${boosted==='tgh'?'stat-boosted':(highlight==='tgh'?'stat-highlight':'')}">${stats.tgh>0?'TGH: '+(boosted==='tgh'?stats.tgh+boostedAmount:stats.tgh):''}</div>
-                        <div class="stat ${boosted==='spd'?'stat-boosted':(highlight==='spd'?'stat-highlight':'')}">${stats.spd>0?'SPD: '+(boosted==='spd'?stats.spd+boostedAmount:stats.spd):''}</div>
-                        <div class="stat ${boosted==='cha'?'stat-boosted':(highlight==='cha'?'stat-highlight':'')}">${stats.cha>0?'CHA: '+(boosted==='cha'?stats.cha+boostedAmount:stats.cha):''}</div>
+                    <div class="card-header-v2">
+                        <div class="card-rarity-label">${stats.rarity}</div>
+                        <div class="card-name-v2">${stats.name}</div>
                     </div>
-                    ${abilityHTML}
-                    ${stats.gender !== 'S' ? `
-                    <div class="card-footer"><span>LVL ${lvlLabel}</span><span>MAX ${maxLabel}</span></div>
-                    <div class="xp-bar"><div class="xp-fill" style="width:${xpPct}%"></div></div>
-                    <div class="xp-text">${stats.lvl==='?'?'SCALAT LA PUTEREA TA':((stats.xp||0)+' / '+(xpMax||'MAX')+' XP')}</div>` : '<div style="text-align:center;color:#bbb;font-size:12px;margin-top:5px; font-weight:bold;">SUPPORT</div>'}
+                    <div class="card-body-v2">
+                        <div class="card-image-col-v2">
+                            <img src="${stats.img}" onload="fitCardImage(this)">
+                            <div class="card-diamond-v2"></div>
+                            ${isSupport ? '' : `<div class="card-score-v2">${lvlText}</div>`}
+                        </div>
+                        ${statsColHTML}
+                    </div>
+                    <div class="card-ability-footer">
+                        <div class="ability-footer-name-v2">${footerName}</div>
+                        ${footerBonus ? `<div class="ability-footer-bonus-v2">${footerBonus}</div>` : ''}
+                    </div>
                 </div>
             `;
         }

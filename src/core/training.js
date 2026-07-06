@@ -229,10 +229,11 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         function focusPromoteNormal() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
+            const proMax = getProMaxLevel(target);
             target.upgradeType = 'normal';
-            target.maxLvl = UPGRADE.NORMAL_MAX;
+            target.maxLvl = proMax;
             processLevelUps(target);
-            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} can now reach LVL 15.`, 2500);
+            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} can now reach LVL ${proMax}.`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();
         }
@@ -240,12 +241,13 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         function focusPromotePerfect() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
+            const proMax = getProMaxLevel(target);
             target.upgradeType = 'perfect';
             target.phase = 2;
             target.level = 0;
             target.xp = 0;
-            target.maxLvl = UPGRADE.BASE_MAX;
-            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL 20!`, 2500);
+            target.maxLvl = getBaseMaxLevel(target);
+            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL ${proMax}!`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();
         }

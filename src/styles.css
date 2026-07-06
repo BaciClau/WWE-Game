@@ -133,15 +133,32 @@
         .hub-exhibition-title { font-size: 42px; font-weight: bold; color: #fff; letter-spacing: 2px; text-shadow: 2px 2px 4px #000; }
         .hub-exhibition-record { font-size: 19px; color: var(--wwe-gold); font-weight: bold; margin-top: 8px; letter-spacing: 1px; font-family: Arial; }
 
-        .hub-actions-row { display: flex; gap: 18px; }
+        .hub-actions-row { display: flex; gap: 14px; }
         .hub-action-btn {
-            flex: 1; background: var(--wwe-black); color: #fff; border: 3px solid var(--wwe-red);
-            border-radius: 12px; padding: 24px 14px; font-family: inherit; font-weight: bold;
+            flex: 1; position: relative; background: var(--wwe-red);
+            color: #fff; border: none; padding: 28px 14px; font-family: inherit; font-weight: bold;
             font-size: 22px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.5); transition: all 0.2s;
+            transition: background 0.2s, transform 0.2s;
+            clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.6));
         }
-        .hub-action-btn:hover { border-color: var(--wwe-gold); transform: translateY(-2px); }
-        .hub-action-btn.full { width: 100%; }
+        .hub-action-btn::before {
+            content: ""; position: absolute; inset: 3px;
+            clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
+            background: linear-gradient(160deg, #1a1a1a, #000);
+        }
+        .hub-action-btn span { position: relative; z-index: 1; }
+        .hub-action-btn:hover { background: var(--wwe-gold); transform: translateY(-2px); filter: drop-shadow(0 7px 14px rgba(0,0,0,0.7)); }
+        .hub-action-btn.full {
+            width: 100%;
+            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+        }
+        .hub-action-btn.full::before {
+            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+        }
+        .hub-action-btn.full::before {
+            clip-path: polygon(6% 0%, 94% 0%, 100% 50%, 94% 100%, 6% 100%, 0% 50%);
+        }
 
         .hub-reset-btn {
             align-self: center; margin-top: 4px; background: transparent; color: var(--wwe-red-bright);
@@ -164,47 +181,86 @@
         .btn-danger { background: linear-gradient(135deg, var(--wwe-red-bright), #6e1414); border-color: #fff; font-size: 15px; padding: 11px 22px;}
         
         .card-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 15px; }
-        .card { 
-            width: 158px; height: 295px; background: #111; border-radius: 12px; 
+        .card {
+            width: 172px; border-radius: 10px;
             position: relative; cursor: pointer; display: flex; flex-direction: column;
             box-shadow: 0 6px 15px rgba(0,0,0,0.8); overflow: hidden; border: 3px solid #fff;
-            transition: transform 0.2s;
+            transition: transform 0.2s; isolation: isolate;
         }
         .card:hover { transform: scale(1.06); z-index: 10; }
         .card.used { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
-        
-        .rarity-Common { border-color: #95a5a6; background: linear-gradient(135deg, #7f8c8d, #2c3e50); box-shadow: 0 0 5px #95a5a6; }
-        .rarity-Uncommon { border-color: #2ecc71; background: linear-gradient(135deg, #27ae60, #145a32); box-shadow: 0 0 8px #2ecc71;}
-        .rarity-Rare { border-color: #3498db; background: linear-gradient(135deg, #2980b9, #154360); box-shadow: 0 0 10px #3498db;}
-        .rarity-SuperRare { border-color: #00bcd4; background: linear-gradient(135deg, #0097a7, #004d40); box-shadow: 0 0 12px #00bcd4;}
-        .rarity-UltraRare { border-color: #e040fb; background: linear-gradient(135deg, #d500f9, #4a148c); box-shadow: 0 0 15px #e040fb;}
-        .rarity-Epic { border-color: #9b59b6; background: linear-gradient(135deg, #8e44ad, #4a235a); box-shadow: 0 0 15px #9b59b6;}
-        .rarity-Legendary { border-color: #f1c40f; background: linear-gradient(135deg, #f39c12, #784212); box-shadow: 0 0 20px #f1c40f;}
-        .rarity-Survivor { border-color: #e74c3c; background: linear-gradient(135deg, #c0392b, #641e16); box-shadow: 0 0 25px #e74c3c;}
-        .rarity-Support { border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
 
-        .card img { width: 140%; max-width: 140%; height: 124px; object-fit: cover; object-position: left 40%; border-bottom: 2px solid #000; }
-        .card-name-plate { 
-            background: linear-gradient(to right, rgba(0,0,0,1), rgba(0,0,0,0.6)); 
-            border-top: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3);
-            text-align: center; font-size: 12px; font-weight: bold; padding: 4px 5px;
-            position: relative; z-index: 2; margin-top: -15px; text-shadow: 1px 1px 2px #000;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        /* Hexagon-tile overlay, shared by every rarity — pure CSS, no image asset. */
+        .card::before {
+            content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+            background-image:
+                linear-gradient(30deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(150deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(30deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(150deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(60deg, rgba(255,255,255,0.07) 25%, transparent 25.5%, transparent 75%, rgba(255,255,255,0.07) 75%, rgba(255,255,255,0.07)),
+                linear-gradient(60deg, rgba(255,255,255,0.07) 25%, transparent 25.5%, transparent 75%, rgba(255,255,255,0.07) 75%, rgba(255,255,255,0.07));
+            background-size: 22px 38px;
+            background-position: 0 0, 0 0, 11px 19px, 11px 19px, 0 0, 11px 19px;
         }
-        
-        .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 4px 6px; font-size: 11px; font-family: 'Arial', sans-serif;}
-        .stat { background: rgba(0,0,0,0.8); padding: 3px 2px; border-radius: 4px; text-align: center; border: 1px solid rgba(255,255,255,0.15);}
-        .stat-highlight { color: #fff; background: #e67e22; font-weight: bold; border-color: #f1c40f; transform: scale(1.05); }
-        .stat-boosted { color: #fff; background: #219150; font-weight: bold; border-color: #2ecc71; transform: scale(1.08); box-shadow: 0 0 10px rgba(46,204,113,0.7); }
-        
+        .card > * { position: relative; z-index: 1; }
+
+        .rarity-Common     { --rc: #888888; border-color: #888888; background: linear-gradient(135deg, #444444, #1e1e1e); }
+        .rarity-Uncommon   { --rc: #00aa00; border-color: #00aa00; background: linear-gradient(135deg, #1a4a1a, #0c1f0c); box-shadow: 0 0 8px #00aa00; }
+        .rarity-Rare       { --rc: #0088ff; border-color: #0088ff; background: linear-gradient(135deg, #0a1a4a, #050d24); box-shadow: 0 0 10px #0088ff; }
+        .rarity-SuperRare  { --rc: #2244ff; border-color: #2244ff; background: linear-gradient(135deg, #0a0a55, #050528); box-shadow: 0 0 12px #2244ff; }
+        .rarity-UltraRare  { --rc: #9900cc; border-color: #9900cc; background: linear-gradient(135deg, #350055, #1a002a); box-shadow: 0 0 15px #9900cc; }
+        .rarity-Epic       { --rc: #cc7700; border-color: #cc7700; background: linear-gradient(135deg, #4a2500, #241200); box-shadow: 0 0 15px #cc7700; }
+        .rarity-Legendary  { --rc: #ffcc00; border-color: #ffcc00; background: linear-gradient(135deg, #554400, #2a2200); box-shadow: 0 0 22px #ffcc00; }
+        .rarity-Survivor   { --rc: #cc0000; border-color: #cc0000; background: linear-gradient(135deg, #660000, #300000); box-shadow: 0 0 22px #cc0000; }
+        .rarity-Support    { --rc: #bdc3c7; border-color: #bdc3c7; background: repeating-linear-gradient(45deg, #333, #333 10px, #111 10px, #111 20px); }
+
+        .card-header-v2 { padding: 5px 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .card-rarity-label {
+            font-size: 9px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;
+            color: #ffffff; text-shadow: 1px 1px 2px #000;
+        }
+        .card-name-v2 {
+            font-size: 14px; font-weight: 800; font-style: italic; color: #fff;
+            text-shadow: 1px 1px 2px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .card-body-v2 { display: flex; }
+        .card-image-col-v2 {
+            position: relative; width: 60%; height: 160px; flex-shrink: 0;
+            overflow: hidden; background: #000; border-right: 1px solid rgba(255,255,255,0.2);
+        }
+        .card-image-col-v2 img { width: 140%; max-width: none; height: 100%; object-fit: cover; object-position: top center; display: block; }
+        .card-diamond-v2 {
+            position: absolute; left: 8px; top: 50%; width: 20px; height: 20px;
+            transform: translateY(-50%) rotate(45deg); background: var(--rc);
+            border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 8px var(--rc); z-index: 2;
+        }
+        .card-score-v2 {
+            position: absolute; left: 6px; bottom: 6px; z-index: 2;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--rc); border-radius: 4px;
+            padding: 2px 6px; font-size: 11px; font-weight: bold; color: #fff;
+        }
+
+        .card-stats-col-v2 { width: 40%; height: 160px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; padding: 4px 2px; font-family: Arial, sans-serif; box-sizing: border-box; }
+        .stat-v2 { text-align: center; border-radius: 4px; padding: 2px 4px; }
+        .stat-v2-label { font-size: 9px; color: #ffffff; font-weight: bold; letter-spacing: 0.5px; }
+        .stat-v2-value { font-size: 17px; color: #ffffff; font-weight: bold; line-height: 1.15; }
+        /* Text stays pure white everywhere on the card — battle highlight/boost states are
+           shown with a background tint + glow on the stat block instead of colored text. */
+        .stat-highlight { background: rgba(230,126,34,0.45); box-shadow: 0 0 6px rgba(241,196,15,0.6); }
+        .stat-boosted { background: rgba(46,204,113,0.45); box-shadow: 0 0 8px rgba(46,204,113,0.8); }
+
         .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
         .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; left: 4px; right: auto; }
         .card.trade-sacrifice { box-shadow: 0 0 25px #e74c3c; border-color: #e74c3c !important; }
-        
-        .card-footer { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 6px; color: #bbb; }
-        .xp-bar { height: 6px; background: #000; margin: 3px 6px 0; border-radius: 3px; border: 1px solid #444; position: relative;}
-        .xp-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); width: 0%; }
-        .xp-text { text-align: center; font-size: 9px; color: #fff; font-family: Arial; margin-top: 1px; font-weight: bold;}
+
+        .card-ability-footer {
+            text-align: center; padding: 4px 6px 6px; border-top: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.35); min-height: 30px; box-sizing: border-box;
+        }
+        .ability-footer-name-v2 { font-size: 11px; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 2px #000; line-height: 1.2; }
+        .ability-footer-bonus-v2 { font-size: 10px; color: #ffffff; margin-top: 2px; }
 
         .match-arena {
             background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), radial-gradient(circle, #2a2a2a, #000);
@@ -330,28 +386,7 @@
         .deck-slot-sub { font-size: 10px; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase; }
 
         /* ABILITĂȚI SPECIALE PE CARTE */
-        .card-ability {
-            background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(25,20,5,0.95));
-            border-top: 1px solid rgba(255,200,0,0.35);
-            padding: 4px 6px 5px; text-align: center;
-            flex-shrink: 0;
-        }
-        .ability-name { 
-            display: block; color: #f1c40f; font-size: 10px; font-weight: bold; 
-            font-family: 'Oswald', sans-serif; letter-spacing: 0.5px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            line-height: 1.3;
-        }
-        .ability-stats-row {
-            display: flex; justify-content: center; gap: 4px; margin-top: 3px;
-        }
-        .ability-stat-badge {
-            background: rgba(241,196,15,0.18); border: 1px solid rgba(241,196,15,0.5);
-            color: #ffe066; font-size: 10px; font-family: Arial; font-weight: bold;
-            border-radius: 3px; padding: 1px 5px; letter-spacing: 0.5px;
-        }
-        .ability-icon-small { font-size: 11px; margin-right: 3px; }
-        .ability-active-flash { 
+        .ability-active-flash {
             animation: abilityFlash 0.6s ease-in-out;
             border-color: #f1c40f !important;
             box-shadow: 0 0 25px #f1c40f, inset 0 0 15px rgba(241,196,15,0.3) !important;
@@ -456,8 +491,8 @@
             margin: 4px 0; border: 2px solid #f1c40f;
         }
         .ability-portrait img {
-            width: 140%; max-width: 140%; height: 204px;
-            object-fit: cover; object-position: left 40%; display: block;
+            width: 140%; max-width: none; height: 204px;
+            object-fit: cover; object-position: top; display: block;
         }
         .ability-popup-name { color: #fff; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 3px #000; }
         .ability-popup-move { color: #f1c40f; font-size: 17px; font-weight: bold; letter-spacing: 1px; }

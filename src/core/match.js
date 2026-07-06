@@ -1,10 +1,10 @@
-let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0} };
+let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
 
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
             autoEquipDeck(); save();
             showScreen('match-screen');
-            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal' };
+            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
@@ -12,8 +12,32 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function nextRound() {
-            if(match.round > 5 || match.pScore === 3 || match.oScore === 3) return endMatch(false);
-            match.selected = []; match.activeSupportUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
+            if (match.pScore === 3 || match.oScore === 3) return endMatch(false);
+            if (match.round > 5) return handleStalemate();
+            playRound();
+        }
+
+        // Called whenever the match can't continue normally — the round-5 cap was hit, or
+        // there are no fighting cards left to play — while nobody has reached 3 wins yet.
+        // No coin flips: whoever's ahead just wins outright. If it's genuinely tied and we
+        // haven't had our one Overtime round yet, every card becomes available again and
+        // one final sudden-death round is played. If THAT also ties, the whole match ends
+        // in a real draw (10 picks, no win/loss recorded — it's not tracked anywhere, it's
+        // just a one-off outcome).
+        function handleStalemate() {
+            if (match.pScore !== match.oScore) return endMatch(false);
+
+            if (match.overtimePlayed) return endMatch(false, true);
+
+            match.overtimePlayed = true;
+            match.used = [];
+            showNotification(`⚡ OVERTIME!<br>Scores are tied — one final round decides it all!`, 2200, () => {
+                playRound();
+            });
+        }
+
+        function playRound() {
+            match.selected = []; match.activeSupportUID = null; match.activeManagerUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('btn-confirm-play').style.display = 'none';
 
@@ -25,18 +49,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             if(availM.length >= 2) rules.push({ t: 'TAG TEAM', r: 2, g: 'M' });
             if(availF.length >= 1) rules.push({ t: 'DIVAS', r: 1, g: 'F' });
 
-            // Best-of-5 draws from a fixed 6-card pool (4 Superstars + 2 Divas), and a Tag
-            // Team round spends 2 at once, so it's possible (if Tag Team gets picked often)
-            // to run out of fighting cards before round 5 or a 3-win decision. Rather than
-            // block Tag Team outright (which would make it near-impossible to ever draw
-            // given the pool size), just end the match cleanly here if that happens —
-            // whoever's ahead on rounds so far wins; a coin flip breaks a tied score.
-            if (rules.length === 0) {
-                if (match.pScore === match.oScore) {
-                    if (Math.random() < 0.5) match.pScore++; else match.oScore++;
-                }
-                return endMatch(false);
-            }
+            if (rules.length === 0) return handleStalemate();
 
             let r = rules[Math.floor(Math.random() * rules.length)];
             let st = ['pow', 'tgh', 'spd', 'cha'][Math.floor(Math.random()*4)];
@@ -53,10 +66,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 matchTypeBannerEl.style.display = 'block';
             }
 
-            document.getElementById('match-info').innerHTML = `ROUND ${match.round}<br><span style="color:#fff; font-size:18px;">STAT: <span style="color:#f1c40f">${st.toUpperCase()}</span></span>`;
+            const roundLabel = match.overtimePlayed ? 'OVERTIME' : `ROUND ${match.round}`;
+            document.getElementById('match-info').innerHTML = `${roundLabel}<br><span style="color:#fff; font-size:18px;">STAT: <span style="color:#f1c40f">${st.toUpperCase()}</span></span>`;
             document.getElementById('cards-to-pick').innerText = r.r;
             document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
-            
+
             renderHand();
         }
 
@@ -96,9 +110,22 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 // Onclick handlers
                 if (isSupportCard && !isU && !isSupportActivated) {
                     div.onclick = () => {
-                        match.activeSupportUID = u; match.used.push(u);
-                        match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
-                        document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}!</span>`;
+                        const isManager = !!DB.find(x => x.id === cardObj.id).manager;
+                        if (isManager) {
+                            // Manager-type support (not an object/action prop): instead of a
+                            // one-round boost for the cards played that round, it permanently
+                            // buffs the player's ENTIRE deck for the rest of THIS match only
+                            // (never the opponent, never carried past the match).
+                            match.used.push(u);
+                            ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] += s[k]; });
+                            const added = ['pow','tgh','spd','cha'].filter(k => s[k] > 0).map(k => `+${s[k]} ${k.toUpperCase()}`).join(', ');
+                            document.getElementById('support-status').innerHTML = `<span style="color:#f1c40f">🎙️ ${s.name} SIGNED! ${added} to your whole roster for the rest of the match!</span>`;
+                            showNotification(`🎙️ MANAGER SIGNED!<br>${s.name} boosts your ENTIRE roster: ${added} for the rest of the match!`, 2400);
+                        } else {
+                            match.activeSupportUID = u; match.used.push(u);
+                            match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
+                            document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}!</span>`;
+                        }
                         renderHand();
                     };
                 } else if (isActiveGender && !isU) {
@@ -115,9 +142,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
         let _clashTimer1 = null, _clashTimer2 = null;
 
-        // forcedWinner ('p'|'o') breaks an exact tie on the active stat — rounds never draw
-        // anymore, so resolveRound() decides a tiebreak winner beforehand when pTot===oTot.
-        function skipClash(pTot, oTot, forcedWinner) {
+        // An exact tie on the active stat is a real draw — neither side scores a point,
+        // the round just moves on.
+        function skipClash(pTot, oTot) {
             // Curăță timere rămase
             if (_clashTimer1) { clearTimeout(_clashTimer1); _clashTimer1 = null; }
             if (_clashTimer2) { clearTimeout(_clashTimer2); _clashTimer2 = null; }
@@ -126,9 +153,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             arena.onclick = null;
             arena.style.cursor = '';
 
-            const playerWins = forcedWinner ? forcedWinner === 'p' : pTot > oTot;
-
-            if (playerWins) {
+            if (pTot > oTot) {
                 match.pScore++;
                 cameraShake(false);
                 let arenaPlayer = document.getElementById('arena-player');
@@ -142,10 +167,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     document.getElementById('score-player').innerText = match.pScore;
                     match.round++; nextRound();
                 });
-            } else {
+            } else if (oTot > pTot) {
                 match.oScore++;
                 showNotification(`<span style="color:#e74c3c;">ROUND LOSS...</span><br>${pTot} lost to ${oTot}`, 1500, () => {
                     document.getElementById('score-opp').innerText = match.oScore;
+                    match.round++; nextRound();
+                });
+            } else {
+                showNotification(`<span style="color:#f1c40f;">DRAW!</span><br>${pTot} vs ${oTot} — no point for either side.`, 1500, () => {
                     match.round++; nextRound();
                 });
             }
@@ -226,6 +255,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // into the one number shown on it.
             const playerCardBonus = {};
             const aiCardBonus = {};
+
+            // A manager-type support activated earlier this match permanently buffs every
+            // card in the player's deck for the rest of the match (never the opponent's).
+            const managerBonus = match.matchWideBonus[match.rule.stat] || 0;
+            if (managerBonus > 0) {
+                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + managerBonus; });
+                pTot += managerBonus * match.selected.length;
+            }
 
             match.selected.forEach(u => {
                 let cardObj = player.inventory.find(c=>c.uid===u);
@@ -360,27 +397,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
 
-            // Rounds never draw — if the active stat is exactly tied, break it with the
-            // combined total of all 4 stats on the cards in play, and a coin flip if even
-            // that's tied. Doesn't touch the displayed pTot/oTot, just who wins the round.
-            let forcedWinner = null;
-            if (pTot === oTot) {
-                const pAllStats = match.selected.reduce((s, u) => {
-                    const c = getStats(player.inventory.find(x => x.uid === u));
-                    return s + (c ? c.pow + c.tgh + c.spd + c.cha : 0);
-                }, 0);
-                const oAllStats = oppP.reduce((s, c) => s + c.pow + c.tgh + c.spd + c.cha, 0);
-                if (pAllStats > oAllStats) forcedWinner = 'p';
-                else if (oAllStats > pAllStats) forcedWinner = 'o';
-                else forcedWinner = Math.random() < 0.5 ? 'p' : 'o';
-            }
-
             // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
             // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să
             // rămână "înghețat" cât timp se arată o abilitate activată.
             const startClashSequence = () => {
                 arena.style.cursor = 'pointer';
-                arena.onclick = () => skipClash(pTot, oTot, forcedWinner);
+                arena.onclick = () => skipClash(pTot, oTot);
 
                 _clashTimer1 = setTimeout(() => {
                     _clashTimer1 = null;
@@ -391,7 +413,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
                     _clashTimer2 = setTimeout(() => {
                         _clashTimer2 = null;
-                        skipClash(pTot, oTot, forcedWinner);
+                        skipClash(pTot, oTot);
                     }, 800);
                 }, 600);
             };
@@ -403,7 +425,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             }
         }
 
-        function endMatch(forfeit) {
+        function endMatch(forfeit, isDraw) {
             let priorStreak = player.winStreak || 0;
 
             if(forfeit) {
@@ -411,6 +433,15 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 player.winStreak = 0; player.losses = (player.losses || 0) + 1; save();
                 let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
                 showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+                return;
+            }
+
+            if (isDraw) {
+                // Genuine draw after Overtime — rare enough that it's worth a flat 10-pick
+                // reward, but it doesn't touch wins/losses/streak at all; it's not tracked
+                // as its own stat anywhere, just a one-off result.
+                player.picks += 10; save();
+                showNotification(`🤝 MATCH DRAW!<br>Even Overtime couldn't decide it — you received 10 Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
 

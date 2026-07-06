@@ -1,41 +1,43 @@
 function getCardBase(card) { return DB.find(c => c.id === card.id); }
         function getCardRarity(card) { return getCardBase(card).rarity; }
 
+        // Nivel maxim fără upgrade, respectiv Pro/Perfect Pro, pentru raritatea cărții.
+        function getBaseMaxLevel(card) {
+            return LEVEL_CAPS[getCardRarity(card)] || UPGRADE.BASE_MAX;
+        }
+        function getProMaxLevel(card) {
+            return PRO_LEVEL_CAPS[getCardRarity(card)] || UPGRADE.NORMAL_MAX;
+        }
+
         function getMaxLevel(card) {
-            if (card.upgradeType === 'normal') return UPGRADE.NORMAL_MAX;
-            if (card.upgradeType === 'perfect') return card.phase === 2 ? UPGRADE.BASE_MAX : UPGRADE.BASE_MAX;
-            return UPGRADE.BASE_MAX;
+            if (card.upgradeType === 'normal') return getProMaxLevel(card);
+            if (card.upgradeType === 'perfect') return getBaseMaxLevel(card);
+            return getBaseMaxLevel(card);
         }
 
         function getEffectiveLevel(card) {
-            if (card.upgradeType === 'perfect' && card.phase === 2) return 10 + card.level;
+            if (card.upgradeType === 'perfect' && card.phase === 2) return getBaseMaxLevel(card) + card.level;
             return card.level;
         }
 
         function getEffectiveMax(card) {
-            if (card.upgradeType === 'normal') return UPGRADE.NORMAL_MAX;
-            if (card.upgradeType === 'perfect') return UPGRADE.PERFECT_MAX;
-            return UPGRADE.BASE_MAX;
+            if (card.upgradeType === 'normal') return getProMaxLevel(card);
+            if (card.upgradeType === 'perfect') return getProMaxLevel(card);
+            return getBaseMaxLevel(card);
         }
 
+        // CurrentStat = Base + (Max - Base) * (Level / MaxLevel), cu Max = Base * MAX_STAT_RATIO
+        // și MaxLevel = nivelul maxim fără upgrade al rarității. Pro/Perfect Pro continuă
+        // aceeași dreaptă peste MaxLevel, până la plafonul Pro (PRO_LEVEL_CAPS).
         function getStatMultiplier(card) {
-            const lv = card.level;
-            if (!card.upgradeType) return 1 + (lv - 1) * UPGRADE.GROWTH.base;
-            if (card.upgradeType === 'normal') {
-                if (lv <= 10) return 1 + (lv - 1) * UPGRADE.GROWTH.base;
-                const at10 = 1 + 9 * UPGRADE.GROWTH.base;
-                return at10 + (lv - 10) * UPGRADE.GROWTH.normal;
-            }
-            if (card.upgradeType === 'perfect' && card.phase === 2) {
-                const base10 = 1 + 9 * UPGRADE.GROWTH.base;
-                return base10 + lv * UPGRADE.GROWTH.perfectP2;
-            }
-            return 1 + (lv - 1) * UPGRADE.GROWTH.base;
+            const baseMax = getBaseMaxLevel(card);
+            const lvl = getEffectiveLevel(card);
+            return 1 + (UPGRADE.MAX_STAT_RATIO - 1) * (lvl / baseMax);
         }
 
         function isPerfectCard(card) { return card.upgradeType === 'perfect'; }
         function canPromote(card) {
-            return getCardBase(card).gender !== 'S' && !card.upgradeType && card.level >= UPGRADE.BASE_MAX;
+            return getCardBase(card).gender !== 'S' && !card.upgradeType && card.level >= getBaseMaxLevel(card);
         }
 
         function getXpNeeded(card) {
@@ -66,7 +68,8 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
         function addCard(id) {
             let base = DB.find(c => c.id === id);
             if(!base) return;
-            player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1, locked: false });
+            const cap = LEVEL_CAPS[base.rarity] || UPGRADE.BASE_MAX;
+            player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: cap, xp: 0, upgradeType: null, phase: 1, locked: false });
         }
 
         function getStats(card) {

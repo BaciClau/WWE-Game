@@ -65,7 +65,6 @@ function autoEquipDeck(force = false) {
                 document.getElementById('btn-save-deck').style.display = 'inline-flex';
                 document.getElementById('btn-cancel-deck').style.display = 'inline-flex';
                 document.getElementById('deck-edit-info').style.display = 'block';
-                document.getElementById('deck-mode-label').innerText = 'MANUAL EDIT — 4 M, 2 F, 1 SUPP';
                 document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITING...';
                 renderDeck();
             }
@@ -78,7 +77,6 @@ function autoEquipDeck(force = false) {
             document.getElementById('btn-save-deck').style.display = 'none';
             document.getElementById('btn-cancel-deck').style.display = 'none';
             document.getElementById('deck-edit-info').style.display = 'none';
-            document.getElementById('deck-mode-label').innerText = 'Top cards: 4 M, 2 F, 1 SUPP';
             document.getElementById('btn-edit-deck').innerHTML = '✏️ EDIT DECK';
             renderDeck();
         }
