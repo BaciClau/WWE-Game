@@ -231,11 +231,6 @@
             overflow: hidden; background: #000; border-right: 1px solid rgba(255,255,255,0.2);
         }
         .card-image-col-v2 img { width: 140%; max-width: none; height: 100%; object-fit: cover; object-position: top center; display: block; }
-        .card-diamond-v2 {
-            position: absolute; left: 8px; top: 50%; width: 20px; height: 20px;
-            transform: translateY(-50%) rotate(45deg); background: var(--rc);
-            border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 8px var(--rc); z-index: 2;
-        }
         .card-score-v2 {
             position: absolute; left: 6px; bottom: 6px; z-index: 2;
             background: rgba(0,0,0,0.8); border: 1px solid var(--rc); border-radius: 4px;

@@ -84,6 +84,18 @@ function updateUI() {
 
             const src = img.currentSrc || img.src;
             if (_bgRemovedCache[src]) { img.dataset.cardFitted = '1'; img.src = _bgRemovedCache[src]; return; }
+
+            // img.onload firing doesn't always guarantee the browser has finished decoding
+            // the image into a paintable state — drawing it into a canvas a hair too early
+            // silently produces a blank/transparent canvas (no error thrown), which then got
+            // cached and served as "the" image forever, i.e. a wrestler photo replaced by
+            // nothing. img.decode() waits for a real, paint-ready frame before we touch canvas.
+            const run = () => processCardImage(img, src);
+            if (img.decode) img.decode().then(run).catch(run);
+            else run();
+        }
+
+        function processCardImage(img, src) {
             try {
                 const nw = img.naturalWidth, nh = img.naturalHeight;
                 const scale = Math.min(1, 400 / Math.max(nw, nh));
@@ -130,10 +142,12 @@ function updateUI() {
                         else { if (x<minX) minX=x; if (x>maxX) maxX=x; if (y<minY) minY=y; if (y>maxY) maxY=y; }
                     }
                 }
+                if (maxX < minX || maxY < minY) return; // nothing detected (blank/undecoded canvas) — leave the original image untouched, never cache a blank result
+
                 ctx.putImageData(imgData, 0, 0);
 
                 let outCanvas = canvas;
-                if (maxX >= minX && maxY >= minY) {
+                {
                     // Crop to the actual subject (plus a small margin) instead of the full,
                     // often padding-heavy canvas — this is what makes a tiny/close-up-looking
                     // source photo end up "maxed out" to fill the card like the rest.
@@ -238,7 +252,6 @@ function updateUI() {
                     <div class="card-body-v2">
                         <div class="card-image-col-v2">
                             <img src="${stats.img}" onload="fitCardImage(this)">
-                            <div class="card-diamond-v2"></div>
                             ${isSupport ? '' : `<div class="card-score-v2">${lvlText}</div>`}
                         </div>
                         ${statsColHTML}
