@@ -257,8 +257,3 @@ function showCardSummaryModal(cardIds, title, onCollect) {
     };
     modal.style.display = 'flex';
 }
-
-function closePackRevealModal() {
-    const modal = document.getElementById('pack-reveal-modal');
-    if (modal) modal.style.display = 'none';
-}

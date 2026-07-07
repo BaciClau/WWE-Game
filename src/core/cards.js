@@ -48,13 +48,6 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             return Math.max(1, card.level) * 100;
         }
 
-        function getSacrificeXp(uid) {
-            const c = player.inventory.find(x => x.uid === uid);
-            if (!c) return 0;
-            const idx = RARITIES.indexOf(getCardRarity(c));
-            return UPGRADE.XP_BASE * Math.pow(2, Math.max(0, idx));
-        }
-
         function processLevelUps(card) {
             let gained = 0;
             while (getEffectiveLevel(card) < getEffectiveMax(card)) {
