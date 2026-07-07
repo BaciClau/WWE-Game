@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWE SuperCard Offline V0.10.2 - Trade XP</title> 
+    <title>WWE SuperCard V2.5</title> 
     <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
@@ -13,12 +13,7 @@
     </div>
 
     <header>
-        <button class="header-icon-btn" onclick="showScreen('main-menu')" title="Back">←</button>
-        <div class="badge">
-            <span style="color:gold;">💰 <span id="coins-display">0</span></span>
-            <span style="color:#e74c3c;">🎴 Picks: <span id="picks-display">0</span></span>
-            <span id="streak-badge" style="color:#ff9800; display:none;">🔥 Streak: <span id="streak-display">0</span></span>
-        </div>
+        <button id="header-back-btn" class="header-icon-btn" onclick="showScreen('main-menu')" title="Back" style="visibility:hidden; pointer-events:none;">←</button>
     </header>
 
     <!-- Rank/tier tracking still runs every update (used for guaranteed-pick rank-up logic) —
@@ -212,7 +207,7 @@
     <div id="nickname-modal" class="pull-modal-overlay">
         <div class="pull-modal-box">
             <h2 class="pull-title">CHOOSE YOUR SUPERSTAR NAME</h2>
-            <input id="nickname-input" type="text" maxlength="16" placeholder="Enter nickname..." class="nickname-input">
+            <input id="nickname-input" type="text" maxlength="20" placeholder="Enter nickname..." class="nickname-input">
             <button id="nickname-confirm-btn" class="menu-btn btn-play pull-continue-btn">✅ CONFIRM</button>
         </div>
     </div>

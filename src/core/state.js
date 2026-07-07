@@ -89,7 +89,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
             input.value = '';
             modal.style.display = 'flex';
             function submit() {
-                const name = input.value.trim().slice(0, 16) || 'Superstar';
+                const name = input.value.trim().slice(0, 20) || 'Superstar';
                 modal.style.display = 'none';
                 confirmBtn.removeEventListener('click', submit);
                 input.removeEventListener('keydown', onKey);

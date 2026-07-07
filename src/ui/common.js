@@ -32,11 +32,7 @@ function updateUI() {
             if (document.getElementById('hub-wins')) document.getElementById('hub-wins').innerText = player.wins || 0;
             if (document.getElementById('hub-losses')) document.getElementById('hub-losses').innerText = player.losses || 0;
 
-            document.getElementById('coins-display').innerText = player.coins;
-            document.getElementById('picks-display').innerText = player.picks;
-            document.getElementById('draft-picks').innerText = player.picks;
-            document.getElementById('streak-display').innerText = player.winStreak || 0;
-            document.getElementById('streak-badge').style.display = (player.winStreak > 0) ? 'inline' : 'none';
+            if (document.getElementById('draft-picks')) document.getElementById('draft-picks').innerText = player.picks;
             if(document.getElementById('col-count')) document.getElementById('col-count').innerText = player.inventory.length;
 
             let tierInfo = calculateDeckTier();
@@ -59,9 +55,15 @@ function updateUI() {
             }
         }
 
-        function showScreen(id) { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            const backBtn = document.getElementById('header-back-btn');
+            if (backBtn) {
+                const show = id !== 'main-menu';
+                backBtn.style.visibility = show ? 'visible' : 'hidden';
+                backBtn.style.pointerEvents = show ? 'auto' : 'none';
+            }
             if (id !== 'deck-edit-screen') {
                 tradeTarget = null;
                 tradeSacrifices = [];
