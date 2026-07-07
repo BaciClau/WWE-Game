@@ -74,6 +74,7 @@
             </div>
 
             <button class="hub-reset-btn" onclick="resetGamePrompt()">HARD RESET</button>
+            <button class="hub-reset-btn" onclick="openCodesModal()">CODES</button>
         </div>
     </div>
 
@@ -202,6 +203,15 @@
         <div class="catalog-count" id="catalog-count"></div>
         <div class="catalog-filter-row" id="catalog-filter-row"></div>
         <div class="catalog-grid" id="catalog-grid"></div>
+    </div>
+
+    <div id="codes-modal" class="pull-modal-overlay">
+        <div class="pull-modal-box">
+            <h2 class="pull-title">ENTER CODE</h2>
+            <input id="codes-input" type="text" placeholder="Enter code..." class="nickname-input">
+            <button id="codes-confirm-btn" class="menu-btn btn-play pull-continue-btn" onclick="redeemCode()">✅ REDEEM</button>
+            <button class="menu-btn pull-continue-btn" onclick="closeCodesModal()">✖ CLOSE</button>
+        </div>
     </div>
 
     <div id="nickname-modal" class="pull-modal-overlay">

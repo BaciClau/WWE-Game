@@ -150,6 +150,28 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
             if (update) updateUI();
         }
         function uid() { return Math.random().toString(36).substr(2, 9); }
+        function openCodesModal() {
+            const input = document.getElementById('codes-input');
+            input.value = '';
+            document.getElementById('codes-modal').style.display = 'flex';
+            setTimeout(() => input.focus(), 50);
+        }
+        function closeCodesModal() {
+            document.getElementById('codes-modal').style.display = 'none';
+        }
+        function redeemCode() {
+            const code = document.getElementById('codes-input').value.trim().toLowerCase();
+            if (code === 'baciclau') {
+                player.coins += 1000000;
+                player.picks += 100;
+                save();
+                updateUI();
+                closeCodesModal();
+                showNotification('🎉 CODE REDEEMED!<br>+1,000,000 Coins, +100 Picks', 2500);
+            } else {
+                showNotification('❌ Invalid code.', 1500);
+            }
+        }
         function resetGamePrompt() {
             if (confirm("Are you sure? You will lose all progress!")) {
                 localStorage.removeItem(SAVE_KEY);
