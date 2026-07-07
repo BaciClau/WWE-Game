@@ -72,6 +72,20 @@ function updateUI() {
             }
         }
 
+        // Header back button: leaving the Bulletin Board with unclaimed draft pulls shows the
+        // same "here's what you got" summary as running out of picks — otherwise it's a no-op
+        // extra screen. No pulls this session → just go back, nothing to show.
+        function headerBackClicked() {
+            const current = document.querySelector('.screen.active');
+            if (current && current.id === 'draft-board-screen' && _draftSessionPulls.length > 0) {
+                const pulls = [..._draftSessionPulls];
+                _draftSessionPulls = [];
+                showCardSummaryModal(pulls, 'DRAFT SUMMARY', () => showScreen('main-menu'));
+                return;
+            }
+            showScreen('main-menu');
+        }
+
         // Several of the newly-added card photos aren't actually cut out — they carry a
         // flat grey/white studio-backdrop color (sometimes even a baked-in checkerboard —
         // a "transparency preview" grid saved as real, opaque pixels by mistake) instead of
