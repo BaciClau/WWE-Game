@@ -26,13 +26,16 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             return getBaseMaxLevel(card);
         }
 
-        // CurrentStat = Base + (Max - Base) * (Level / MaxLevel), cu Max = Base * MAX_STAT_RATIO
+        // CurrentStat = Base + (Max - Base) * (Level / MaxLevel), cu Max = Base * ratio
         // și MaxLevel = nivelul maxim fără upgrade al rarității. Pro/Perfect Pro continuă
-        // aceeași dreaptă peste MaxLevel, până la plafonul Pro (PRO_LEVEL_CAPS).
+        // peste MaxLevel până la plafonul Pro (PRO_LEVEL_CAPS), dar Perfect Pro folosește
+        // un ratio mai mare (PERFECT_STAT_RATIO) — la fel de mult XP investit trebuie să
+        // aducă un card vizibil mai puternic, nu doar o etichetă ★ diferită.
         function getStatMultiplier(card) {
             const baseMax = getBaseMaxLevel(card);
             const lvl = getEffectiveLevel(card);
-            return 1 + (UPGRADE.MAX_STAT_RATIO - 1) * (lvl / baseMax);
+            const ratio = card.upgradeType === 'perfect' ? UPGRADE.PERFECT_STAT_RATIO : UPGRADE.MAX_STAT_RATIO;
+            return 1 + (ratio - 1) * (lvl / baseMax);
         }
 
         function isPerfectCard(card) { return card.upgradeType === 'perfect'; }
