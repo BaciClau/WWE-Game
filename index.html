@@ -178,11 +178,16 @@
     </div>
 
     <div id="draft-board-screen" class="screen">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button class="menu-btn" style="flex-direction:row; padding: 10px 20px;" onclick="headerBackClicked()">⬅️ MENU (Keep picks)</button>
-            <h2 style="margin:0;">PICKS REMAINING: <span id="draft-picks" style="color:#f1c40f; font-size: 36px; text-shadow: 0 0 10px #f1c40f;">0</span></h2>
+        <div class="draft-hud-bar">
+            <button class="draft-menu-btn" onclick="headerBackClicked()">⬅ MENU <span class="draft-menu-btn-sub">(Keep picks)</span></button>
+            <div class="draft-picks-hud">
+                <span class="draft-picks-label">Picks Remaining</span>
+                <span class="draft-picks-value" id="draft-picks">0</span>
+            </div>
         </div>
-        <div id="draft-board-grid"></div>
+        <div class="draft-board-stage">
+            <div id="draft-board-grid"></div>
+        </div>
     </div>
 
     <div id="store-screen" class="screen">
