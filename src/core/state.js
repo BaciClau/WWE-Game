@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null };
+let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0 };
         window.currentOpponents = [];
         let tradeTarget = null;
         let tradeSacrifices = [];
@@ -65,7 +65,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
         }
 
         function freshStart(nickname) {
-            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null };
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0 };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -122,6 +122,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
                 if (player.losses === undefined) player.losses = 0;
                 if (player.guaranteedPickRarity === undefined) player.guaranteedPickRarity = null;
                 if (player.lastFreePackClaim === undefined) player.lastFreePackClaim = null;
+                if (player.resetCounter === undefined) player.resetCounter = 0;
                 // Baseline to the CURRENT tier for old saves — don't retroactively grant a
                 // guarantee for progress the player already made before this feature existed.
                 if (player.lastTierName === undefined || player.lastTierName === null) player.lastTierName = calculateDeckTier().name;
