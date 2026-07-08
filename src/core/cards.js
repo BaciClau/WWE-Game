@@ -26,16 +26,33 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             return getBaseMaxLevel(card);
         }
 
-        // CurrentStat = Base + (Max - Base) * (Level / MaxLevel), cu Max = Base * ratio
-        // și MaxLevel = nivelul maxim fără upgrade al rarității. Pro/Perfect Pro continuă
-        // peste MaxLevel până la plafonul Pro (PRO_LEVEL_CAPS), dar Perfect Pro folosește
-        // un ratio mai mare (PERFECT_STAT_RATIO) — la fel de mult XP investit trebuie să
-        // aducă un card vizibil mai puternic, nu doar o etichetă ★ diferită.
+        // CurrentStat = Base + (Max - Base) * ((Level - 1) / (MaxLevel - 1)), cu Max = Base * ratio
+        // și MaxLevel = nivelul maxim fără upgrade al rarității. Anchored at Level 1 so a
+        // freshly-pulled, never-combined card shows exactly its cards.js base stats.
+        //
+        // Combining (Pro/Perfect Pro) is the one deliberate exception, matching the real
+        // game: "combining cards will transform two identical cards into the pro version...
+        // and will not only provide a stat boost, but drop the card's level back down to 1.
+        // The higher the level of the two cards when you combine them, the better the
+        // effect will be" — i.e. the level number resets, but the STATS don't fall back to
+        // raw base; they carry over the multiplier the card had earned right before the
+        // combine (banked into card.comboMultiplier by focusPromoteNormal/
+        // focusPromotePerfect) and keep growing from there, not from 1.
         function getStatMultiplier(card) {
             const baseMax = getBaseMaxLevel(card);
+            const banked = card.comboMultiplier || 1;
+            if (card.upgradeType === 'perfect' && card.phase === 2) {
+                // Perfect Pro's post-combine climb is its own short stretch (card.level runs
+                // 0..stretchMax, shown as the ★ rating). ★0 — right away — already carries the
+                // banked pre-combine multiplier (typically ~MAX_STAT_RATIO, since Perfect Pro
+                // requires both source cards fully trained), climbing further to banked +
+                // (PERFECT_STAT_RATIO - 1) at the top of the stretch. Deliberately NOT using
+                // getEffectiveLevel()'s baseMax offset here.
+                const stretchMax = getProMaxLevel(card) - baseMax;
+                return banked + (UPGRADE.PERFECT_STAT_RATIO - 1) * (card.level / stretchMax);
+            }
             const lvl = getEffectiveLevel(card);
-            const ratio = card.upgradeType === 'perfect' ? UPGRADE.PERFECT_STAT_RATIO : UPGRADE.MAX_STAT_RATIO;
-            return 1 + (ratio - 1) * (lvl / baseMax);
+            return banked + (UPGRADE.MAX_STAT_RATIO - 1) * ((lvl - 1) / (baseMax - 1));
         }
 
         function isPerfectCard(card) { return card.upgradeType === 'perfect'; }

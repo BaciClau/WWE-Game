@@ -8,52 +8,39 @@ const PACK_RARITY_LABELS = {
 
 const DAILY_PACK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-// Prices calibrated against a ~225 coins/day sustainable income (the sum of the 4 daily
-// mission coin rewards — the only ongoing coin source now that match wins no longer pay out).
-// Each tier costs ~2x the previous one, ending with the Survivor Pack costing exactly one
-// month (30 days) of saved-up daily income if nothing else is bought along the way. Rates
-// lean harder on the pack's own guaranteed rarity than before; the top-tier chance in each
-// pack is a real long-shot, not a coin flip — this is meant to be a grind, just not a
-// year-long one.
+// WWE SuperCard 2014 (Survivor era) shop philosophy: coins buy a CHANCE, never a guaranteed
+// endgame card. Nothing above Ultra Rare is sold — Epic/Legendary/Survivor only come from
+// playing (draft board resets, match rewards, future modes), so the shop can never feel like
+// buying your way to the top. "Minimum Rarity" is the honest framing: it's a floor on the
+// roll, not a promise of what you'll actually get. BOARD PICKS sells the currency that fuels
+// the real progression path (the draft board) instead of selling cards directly.
 const PACKS = [
     {
-        id: 'basic', name: 'BASIC PACK', cost: 100, count: 5, border: '#bdc3c7', icon: '📦',
-        desc: '5 Common & Uncommon Cards',
+        id: 'basic', name: 'BASIC PACK', cost: 100, count: 5, border: '#888888', icon: '📦',
         chances: { Common: 70, Uncommon: 24, Rare: 5, SuperRare: 1 }
     },
     {
-        id: 'rare', name: 'RARE PACK', cost: 200, count: 5, border: '#00FFFF', icon: '📗',
-        desc: '5 Guaranteed Rare Cards',
+        id: 'rare', name: 'RARE PACK', cost: 300, count: 5, border: '#8fdcff', icon: '📗',
+        minRarity: 'Rare',
         chances: { Rare: 75, SuperRare: 18, UltraRare: 6, Epic: 1 }
     },
     {
-        id: 'superrare', name: 'SUPER RARE PACK', cost: 400, count: 5, border: '#4444FF', icon: '💎',
-        desc: '5 Guaranteed Super Rare Cards',
+        id: 'superrare', name: 'SUPER RARE PACK', cost: 700, count: 5, border: '#2244ff', icon: '💎',
+        minRarity: 'SuperRare',
         chances: { SuperRare: 75, UltraRare: 18, Epic: 6, Legendary: 1 }
     },
     {
-        id: 'ultrarare', name: 'ULTRA RARE PACK', cost: 850, count: 3, border: '#8800FF', icon: '⚡',
-        desc: '3 Guaranteed Ultra Rare Cards',
+        id: 'ultrarare', name: 'ULTRA RARE PACK', cost: 1500, count: 3, border: '#9900cc', icon: '⚡',
+        minRarity: 'UltraRare',
         chances: { UltraRare: 78, Epic: 16, Legendary: 5, Survivor: 1 }
     },
     {
-        id: 'epic', name: 'EPIC PACK', cost: 1700, count: 2, border: '#CC00CC', icon: '🔮',
-        desc: '2 Guaranteed Epic Cards',
-        chances: { Epic: 82, Legendary: 15, Survivor: 3 }
-    },
-    {
-        id: 'legendary', name: 'LEGENDARY PACK', cost: 3400, count: 1, border: '#FFD700', icon: '👑',
-        desc: '1 Guaranteed Legendary Card',
-        chances: { Legendary: 90, Survivor: 10 }
-    },
-    {
-        id: 'survivor', name: 'SURVIVOR PACK', cost: 6750, count: 1, border: '#e74c3c', icon: '🏆',
-        desc: '1 Guaranteed Survivor Card - The Ultimate Rarity',
-        chances: { Legendary: 10, Survivor: 90 }, special: true
+        id: 'boardpicks', name: 'BOARD PICKS', cost: 150, border: '#f1c40f', icon: '🎫',
+        picks: 5
     },
     {
         id: 'daily', name: 'DAILY FREE PACK', cost: 0, count: 1, border: '#2ecc71', icon: '🎁',
-        desc: '1 Free Card Every 24 Hours', free: true,
+        free: true,
         chances: { Common: 60, Uncommon: 27, Rare: 10, SuperRare: 2.5, UltraRare: 0.4, Epic: 0.08, Legendary: 0.015, Survivor: 0.005 }
     }
 ];
@@ -100,13 +87,24 @@ function renderPackRowHTML(p) {
             <div class="pack-price">💰 ${p.cost.toLocaleString()}</div>
             <button class="pack-buy-btn" data-pack="${p.id}" onclick="buyPack('${p.id}')">BUY</button>
         `;
+
+    // BOARD PICKS sells a currency, not cards — its own compact line, no rarity odds.
+    const contentLine = p.picks
+        ? `<div class="pack-count">🎫 +${p.picks} Draft Picks</div>`
+        : `<div class="pack-count">${p.count} CARD${p.count === 1 ? '' : 'S'}</div>`;
+    const minRarityLine = p.minRarity
+        ? `<div class="pack-min-rarity">MINIMUM RARITY: ${PACK_RARITY_LABELS[p.minRarity]}</div>`
+        : '';
+    const chancesLine = p.chances ? `<div class="pack-chances">${renderPackChanceText(p.chances)}</div>` : '';
+
     return `
-        <div class="pack-row ${p.special ? 'pack-special-glow' : ''}" style="border-color:${p.border};">
+        <div class="pack-row" style="border-color:${p.border};">
             <div class="pack-icon">${p.icon}</div>
             <div class="pack-info">
-                <div class="pack-name" style="${p.special ? 'color:#ffcc00;' : ''}">${p.name}</div>
-                <div class="pack-desc">${p.desc}</div>
-                <div class="pack-chances">${renderPackChanceText(p.chances)}</div>
+                <div class="pack-name">${p.name}</div>
+                ${contentLine}
+                ${minRarityLine}
+                ${chancesLine}
             </div>
             <div class="pack-price-col">${priceCol}</div>
         </div>
@@ -161,6 +159,17 @@ function buyPack(packId) {
     try {
         if (pack.free) player.lastFreePackClaim = Date.now();
         else player.coins -= pack.cost;
+
+        // BOARD PICKS sells Draft Picks directly — no cards to roll or reveal, so it just
+        // credits the currency and confirms with a notification instead of the card modal.
+        if (pack.picks) {
+            player.picks += pack.picks;
+            save();
+            renderStoreScreen();
+            updateUI();
+            showNotification(`🎫 +${pack.picks} Draft Picks!`, 1800);
+            return;
+        }
 
         const pulledIds = [];
         for (let i = 0; i < pack.count; i++) {

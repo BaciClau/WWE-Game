@@ -61,7 +61,12 @@ const TIERS = [
             MAX_STAT_RATIO: 1.8,
             // Perfect Pro folosește un ratio mai mare decât Pro normal, ca cele două upgrade-uri
             // să nu mai ajungă la exact aceleași statistici finale (înainte era doar cosmetic ★).
-            PERFECT_STAT_RATIO: 2.1
+            PERFECT_STAT_RATIO: 2.1,
+            // Combining always grants at least a small stat bump, even from two level-1
+            // duplicates — matching the real game ("combining two level 1 cards would result
+            // in a minimal stat boost compared to combining fully trained cards"). Training
+            // both cards up first still gives a much bigger boost on top of this floor.
+            COMBINE_BASE_BONUS: 0.05
         };
 
         // Recompense pentru streak de victorii consecutive (reset la orice înfrângere/forfeit).

@@ -237,7 +237,7 @@ const DB = [
             { id: 711, name: "Eve", rarity: "Survivor", gender: "F", pow: 617, tgh: 587, spd: 587, cha: 624, img: "src/assets/images/carti/Eve%20torres.png" },
             { id: 712, name: "Nikki Bella", rarity: "Survivor", gender: "F", pow: 596, tgh: 579, spd: 652, cha: 669, img: "src/assets/images/carti/Nikki%20bella.png" },
             { id: 713, name: "Emma", rarity: "Survivor", gender: "F", pow: 556, tgh: 549, spd: 517, cha: 654, img: "src/assets/images/carti/Emma.png" },
-            { id: 720, name: "Mr. Fuji", rarity: "Survivor", gender: "S", pow: 0, tgh: 100, spd: 0, cha: 0, manager: true, img: "src/assets/images/carti/Mr_Fuji_pro.png" },
+            { id: 720, name: "Mr. Fuji", rarity: "Survivor", gender: "S", pow: 0, tgh: 50, spd: 0, cha: 0, manager: true, img: "src/assets/images/carti/Mr_Fuji_pro.png" },
             
             // === SURVIVOR (adăugat) ===
             { id: 709, name: "Triple H", rarity: "Survivor", gender: "M", pow: 649, tgh: 647, spd: 526, cha: 714, img: "src/assets/images/carti/Triple%20H.webp" },

@@ -277,13 +277,22 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const dup = player.inventory.find(c => c.uid === tradeSacrifices[0]);
             if (!dup) return;
 
+            // Bank the average pre-combine multiplier of both cards BEFORE resetting the
+            // level — matching the real game's "the higher the level of the two cards when
+            // you combine them, the better the effect will be": the level number drops back
+            // to 1, but the stats at that LVL 1 stay elevated instead of falling to raw base.
+            // COMBINE_BASE_BONUS is a small guaranteed floor on top — even combining two
+            // level-1 duplicates gives "a minimal stat boost" in the real game, not zero.
+            const banked = (getStatMultiplier(target) + getStatMultiplier(dup)) / 2 + UPGRADE.COMBINE_BASE_BONUS;
             consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'normal';
             target.maxLvl = proMax;
-            processLevelUps(target);
+            target.level = 1;
+            target.xp = 0;
+            target.comboMultiplier = banked;
             incrementMission('combine_card');
-            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} can now reach LVL ${proMax}.`, 2500);
+            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} reset to LVL 1 (stats boosted from training) — can now reach LVL ${proMax}.`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();
         }
@@ -298,6 +307,9 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const dupMaxed = getEffectiveLevel(dup) >= getBaseMaxLevel(dup);
             if (!targetMaxed || !dupMaxed) return; // Perfect Pro needs BOTH cards fully trained
 
+            // Same banking as focusPromoteNormal — both cards are required to already be
+            // maxed here, so this will typically land right around MAX_STAT_RATIO.
+            const banked = (getStatMultiplier(target) + getStatMultiplier(dup)) / 2 + UPGRADE.COMBINE_BASE_BONUS;
             consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'perfect';
@@ -305,8 +317,9 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             target.level = 0;
             target.xp = 0;
             target.maxLvl = getBaseMaxLevel(target);
+            target.comboMultiplier = banked;
             incrementMission('combine_card');
-            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL ${proMax}!`, 2500);
+            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 (stats boosted from training) — can now reach LVL ${proMax}!`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();
         }
