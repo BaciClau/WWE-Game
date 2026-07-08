@@ -48,6 +48,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             if (!card) return;
             tradeTarget = uid;
             tradeSacrifices = [];
+            focusMode = 'train';
 
             document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(card));
             document.getElementById('card-focus-menu').style.display = 'flex';
@@ -119,7 +120,12 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         function renderFocusFodderGrid() {
             const grid = document.getElementById('focus-fodder-grid');
             grid.innerHTML = '';
-            const fodderCards = player.inventory.filter(c => c.uid !== tradeTarget && !c.locked && !isCardEquipped(c.uid));
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            const fodderCards = player.inventory.filter(c => {
+                if (c.uid === tradeTarget || c.locked || isCardEquipped(c.uid)) return false;
+                if (focusMode === 'combine') return target && c.id === target.id;
+                return true;
+            });
             fodderCards.forEach(c => {
                 const s = getStats(c);
                 const extra = tradeSacrifices.includes(c.uid) ? 'trade-sacrifice' : '';
@@ -132,7 +138,11 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         }
 
         function toggleFocusFodder(uid) {
-            if (tradeSacrifices.includes(uid)) {
+            if (focusMode === 'combine') {
+                // Combining only ever fuses ONE duplicate into the target — selecting a
+                // different duplicate replaces the previous pick instead of stacking.
+                tradeSacrifices = tradeSacrifices.includes(uid) ? [] : [uid];
+            } else if (tradeSacrifices.includes(uid)) {
                 tradeSacrifices = tradeSacrifices.filter(u => u !== uid);
             } else {
                 tradeSacrifices.push(uid);
@@ -141,6 +151,13 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             updateFocusTrainStatus();
         }
 
+        // Pro/Perfect Pro requires an exact duplicate (same DB id) fused into the target —
+        // matching WWE SuperCard's real Combine mechanic. Combining works at ANY level, even
+        // two level-1 duplicates:
+        //   - Perfect Pro requires BOTH the target and the duplicate to already be fully
+        //     trained (base max level) at the moment of combining.
+        //   - Otherwise, fusing works too, just yields a regular (weaker) Pro.
+        // TRAIN only ever levels a card up via XP fodder — it never promotes on its own.
         function updateFocusTrainStatus() {
             const status = document.getElementById('focus-train-status');
             const btnFeed = document.getElementById('focus-btn-feed');
@@ -163,6 +180,32 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const effLv = getEffectiveLevel(target);
             const xpNeed = getXpNeeded(target);
 
+            if (focusMode === 'combine') {
+                const modeTag = `<div style="color:#e040fb; font-size:12px; margin-bottom:6px;">🔀 COMBINE — fuse a duplicate ${base.name} to promote</div>`;
+                if (!canPromote(target)) {
+                    status.innerHTML = `${modeTag}<strong>${base.name}</strong> has already been promoted.`;
+                    return;
+                }
+                const dup = tradeSacrifices.length === 1 ? player.inventory.find(c => c.uid === tradeSacrifices[0]) : null;
+                if (!dup) {
+                    status.innerHTML = `${modeTag}<strong>${base.name}</strong> LVL ${effLv}/${effMax} — select the duplicate below to fuse. Works at any level, but <strong>Perfect Pro</strong> needs both cards fully trained first.`;
+                    return;
+                }
+                const targetMaxed = effLv >= effMax;
+                const dupMaxed = getEffectiveLevel(dup) >= getBaseMaxLevel(dup);
+                const bothMaxed = targetMaxed && dupMaxed;
+                const proMax = getProMaxLevel(target);
+                status.innerHTML = bothMaxed
+                    ? `${modeTag}Both cards are fully trained — <strong style="color:#2ecc71">Perfect Pro</strong> available!`
+                    : `${modeTag}Not both fully trained (target ${effLv}/${effMax}, duplicate ${getEffectiveLevel(dup)}/${getBaseMaxLevel(dup)}) — only regular <strong>Pro</strong> available.`;
+                btnPro.innerText = `⬆️ PRO (MAX ${proMax})`;
+                btnPerfectPro.innerText = `★ PERFECT PRO (MAX ${proMax})`;
+                btnPro.style.display = 'inline-flex';
+                btnPerfectPro.style.display = bothMaxed ? 'inline-flex' : 'none';
+                return;
+            }
+
+            // --- TRAIN mode: level up via XP fodder only, no promotion here anymore. ---
             let pendingXP = 0;
             let bonusXP = 0;
             let hasNormalUpgradeFodder = false;
@@ -174,16 +217,8 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             });
             const pending = pendingXP + bonusXP;
 
-            if (canPromote(target)) {
-                status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — choose <strong>Pro</strong> or <strong>Perfect Pro ★</strong>.`;
-                btnPro.style.display = 'inline-flex';
-                btnPerfectPro.style.display = 'inline-flex';
-                if (pending > 0) btnFeed.style.display = 'inline-flex';
-                return;
-            }
-
             if (effLv >= effMax) {
-                status.innerHTML = `<strong>${base.name}</strong> is at max level (${effMax}).`;
+                status.innerHTML = `<strong>${base.name}</strong> is at max level (${effMax}). Use <strong>COMBINE</strong> (Card List) with a duplicate to promote to Pro or Perfect Pro.`;
                 return;
             }
 
@@ -194,10 +229,12 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             if (pending > 0) btnFeed.style.display = 'inline-flex';
         }
 
+        // TRAIN-only — feeds fodder XP into the target. Never called in combine mode (the
+        // FEED button is hidden there; see updateFocusTrainStatus()).
         function focusFeedSacrifices() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             const sacs = tradeSacrifices.slice();
-            if (!target || sacs.length === 0) return;
+            if (!target || sacs.length === 0 || focusMode === 'combine') return;
 
             let baseXP = 0, bonusXP = 0;
             let hasNormalUpgradeFodder = false;
@@ -219,6 +256,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             showNotification(msg, 2000);
 
             autoEquipDeck(); save();
+            incrementMission('train_card');
             document.getElementById('card-focus-card-wrap').innerHTML = renderHTMLCard(getStats(target));
             if (canPromote(target)) {
                 focusBackToMenu();
@@ -228,13 +266,23 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             }
         }
 
+        // Both promotions now require COMBINE mode with exactly one duplicate selected —
+        // matching WWE SuperCard's real mechanic (two identical cards fuse into one Pro/
+        // Perfect Pro card; the duplicate is consumed). Perfect Pro additionally requires
+        // that duplicate to already be fully trained (base max level).
         function focusPromoteNormal() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
+            if (focusMode !== 'combine' || tradeSacrifices.length !== 1) return;
+            const dup = player.inventory.find(c => c.uid === tradeSacrifices[0]);
+            if (!dup) return;
+
+            consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'normal';
             target.maxLvl = proMax;
             processLevelUps(target);
+            incrementMission('combine_card');
             showNotification(`⬆️ PRO!<br>${getCardBase(target).name} can now reach LVL ${proMax}.`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();
@@ -243,12 +291,21 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         function focusPromotePerfect() {
             const target = player.inventory.find(c => c.uid === tradeTarget);
             if (!target || !canPromote(target)) return;
+            if (focusMode !== 'combine' || tradeSacrifices.length !== 1) return;
+            const dup = player.inventory.find(c => c.uid === tradeSacrifices[0]);
+            if (!dup) return;
+            const targetMaxed = getEffectiveLevel(target) >= getBaseMaxLevel(target);
+            const dupMaxed = getEffectiveLevel(dup) >= getBaseMaxLevel(dup);
+            if (!targetMaxed || !dupMaxed) return; // Perfect Pro needs BOTH cards fully trained
+
+            consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'perfect';
             target.phase = 2;
             target.level = 0;
             target.xp = 0;
             target.maxLvl = getBaseMaxLevel(target);
+            incrementMission('combine_card');
             showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 — can now reach LVL ${proMax}!`, 2500);
             autoEquipDeck(); save();
             focusBackToMenu();

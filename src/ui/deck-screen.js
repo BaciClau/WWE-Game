@@ -254,11 +254,20 @@ function renderDeck() {
             focusStartTrain();
         }
 
-        // "Combine" (feeding fodder into a card / promoting it to Pro or Perfect Pro) is the
-        // same underlying mechanic as Train in this game — there's no separate system to
-        // split it into, so both menu items open the same training panel.
+        // Combine merges an exact duplicate (same DB id — same wrestler print, same rarity)
+        // into the current card as XP fodder, via the same training panel as TRAIN but with
+        // the fodder grid restricted to just that duplicate (see focusMode in training.js).
         function cardListCombine() {
-            cardListTrain();
+            const c = getCurrentCardListCard();
+            if (!c) return;
+            const hasDuplicate = player.inventory.some(x => x.uid !== c.uid && x.id === c.id && !x.locked && !isCardEquipped(x.uid));
+            if (!hasDuplicate) {
+                showNotification(`🔀 No duplicate ${getCardBase(c).name} card available to combine.`, 1800);
+                return;
+            }
+            openCardFocus(c.uid);
+            focusMode = 'combine';
+            focusStartTrain();
         }
 
         function cardListSetChamp() {

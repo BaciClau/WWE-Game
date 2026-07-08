@@ -1,7 +1,27 @@
-let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0 };
+let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [] };
+
+// One-time data cleanup: several DB ids were exact duplicate entries (same wrestler, same
+// rarity, same stats — copy-pasted by mistake) and have been removed from src/data/cards.js.
+// Any already-saved card/discovery referencing a removed id is remapped to the surviving
+// canonical id here, so existing saves don't break (DB.find would otherwise return undefined).
+const DUPLICATE_ID_REMAP = {
+    234: 132, // Paige (Rare)
+    316: 305, 617: 305, // Roman Reigns (SuperRare)
+    317: 306, 419: 306, // Seth Rollins (SuperRare)
+    309: 307, // Triple H (SuperRare)
+    325: 312, // Nikki Bella (SuperRare)
+    622: 313, // Paige (SuperRare)
+    408: 401, // Daniel Bryan (UltraRare)
+    416: 403, // Randy Orton (UltraRare)
+    717: 707  // Andre the Giant (Survivor)
+};
         window.currentOpponents = [];
         let tradeTarget = null;
         let tradeSacrifices = [];
+        // 'train' = any non-locked/unequipped card can be fed as XP fodder.
+        // 'combine' = only exact duplicates (same DB id) of the target card are offered —
+        // set by cardListCombine() right before opening the focus panel.
+        let focusMode = 'train';
 
         let _notifTimer = null;
         let _notifCallback = null;
@@ -65,7 +85,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
         }
 
         function freshStart(nickname) {
-            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0 };
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [] };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -116,6 +136,7 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
             if (saved) {
                 player = JSON.parse(saved);
                 player.inventory = (player.inventory || []).map(migrateCard);
+                player.inventory.forEach(c => { if (DUPLICATE_ID_REMAP[c.id]) c.id = DUPLICATE_ID_REMAP[c.id]; });
                 if (player.winStreak === undefined) player.winStreak = 0;
                 if (player.favoriteUid === undefined) player.favoriteUid = null;
                 if (player.wins === undefined) player.wins = 0;
@@ -123,9 +144,19 @@ let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: 
                 if (player.guaranteedPickRarity === undefined) player.guaranteedPickRarity = null;
                 if (player.lastFreePackClaim === undefined) player.lastFreePackClaim = null;
                 if (player.resetCounter === undefined) player.resetCounter = 0;
+                if (player.missionProgress === undefined) player.missionProgress = {};
+                if (player.completedMissions === undefined) player.completedMissions = [];
+                if (player.lastDailyReset === undefined) player.lastDailyReset = null;
+                if (player.discoveredCardIds === undefined) {
+                    // Backfill from current inventory so cards already owned before this
+                    // feature existed don't regress to "?" in the Catalog.
+                    player.discoveredCardIds = [...new Set(player.inventory.map(c => c.id))];
+                }
+                player.discoveredCardIds = [...new Set(player.discoveredCardIds.map(id => DUPLICATE_ID_REMAP[id] || id))];
                 // Baseline to the CURRENT tier for old saves — don't retroactively grant a
                 // guarantee for progress the player already made before this feature existed.
                 if (player.lastTierName === undefined || player.lastTierName === null) player.lastTierName = calculateDeckTier().name;
+                checkDailyReset();
                 if (!player.nickname) {
                     promptNickname(function(name) {
                         player.nickname = name;

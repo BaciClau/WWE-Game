@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWE SuperCard V2.5</title> 
+    <title>WWE SuperCard</title> 
     <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
@@ -60,6 +60,9 @@
             <button class="dash-btn dash-btn-reverse" onclick="showNotification('🚧 Coming soon!', 1500)">
                 <span class="dash-btn-icon">👥</span><span>FRIENDS</span>
             </button>
+            <button class="dash-btn" onclick="showScreen('missions-screen'); enterMissionsScreen();">
+                <span class="dash-btn-icon">🎯</span><span>MISSIONS</span>
+            </button>
             <div class="dash-btn-row">
                 <button class="dash-btn half" onclick="showNotification('🚧 Coming soon!', 1500)">
                     <span class="dash-btn-icon">📅</span><span>LOGIN BONUS</span>
@@ -83,7 +86,7 @@
             <button class="dash-btn opp-half-btn" onclick="showScreen('deck-edit-screen'); renderDeck();">
                 <span class="dash-btn-icon">✏️</span><span>EDIT DECK</span>
             </button>
-            <button class="dash-btn dash-btn-reverse opp-half-btn" onclick="showNotification('🚧 Coming soon!', 1500)">
+            <button class="dash-btn dash-btn-reverse opp-half-btn" onclick="showScreen('ladder-rewards-screen'); enterLadderRewards();">
                 <span class="dash-btn-icon">🏆</span><span>LADDER REWARDS</span>
             </button>
         </div>
@@ -206,6 +209,21 @@
         <div class="catalog-grid" id="catalog-grid"></div>
     </div>
 
+    <div id="catalog-hover-preview" class="catalog-hover-preview"></div>
+
+    <div id="missions-screen" class="screen">
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 12px;" onclick="showScreen('main-menu')">⬅️ MENU</button>
+        <h2 class="missions-title">MISSIONS</h2>
+        <div class="missions-countdown" id="missions-countdown"></div>
+        <div class="missions-list" id="missions-list"></div>
+    </div>
+
+    <div id="ladder-rewards-screen" class="screen">
+        <button class="menu-btn" style="flex-direction:row; padding: 10px 20px; margin-bottom: 12px;" onclick="showScreen('opp-select-screen')">⬅️ MENU</button>
+        <h2 class="missions-title">LADDER REWARDS</h2>
+        <div class="missions-list" id="ladder-rewards-list"></div>
+    </div>
+
     <div id="codes-modal" class="pull-modal-overlay">
         <div class="pull-modal-box">
             <h2 class="pull-title">ENTER CODE</h2>
@@ -265,11 +283,13 @@
 
         <script src="src/data/cards.js"></script>
     <script src="src/data/abilities.js"></script>
+    <script src="src/data/missions.js"></script>
     <script src="src/core/config.js"></script>
     <script src="src/core/state.js"></script>
     <script src="src/core/cards.js"></script>
     <script src="src/core/training.js"></script>
     <script src="src/core/deck.js"></script>
+    <script src="src/core/missions.js"></script>
     <script src="src/ui/common.js"></script>
     <script src="src/ui/fx.js"></script>
     <script src="src/ui/deck-screen.js"></script>
@@ -279,6 +299,7 @@
     <script src="src/ui/draft-shop.js"></script>
     <script src="src/ui/store-screen.js"></script>
     <script src="src/ui/catalog-screen.js"></script>
+    <script src="src/ui/missions-screen.js"></script>
     <script src="src/main.js"></script>
 </body>
 </html>

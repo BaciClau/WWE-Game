@@ -243,7 +243,7 @@
 
         .rarity-Common     { --rc: #888888; border-color: #888888; background: linear-gradient(135deg, #444444, #1e1e1e); }
         .rarity-Uncommon   { --rc: #00aa00; border-color: #00aa00; background: linear-gradient(135deg, #1a4a1a, #0c1f0c); box-shadow: 0 0 8px #00aa00; }
-        .rarity-Rare       { --rc: #0088ff; border-color: #0088ff; background: linear-gradient(135deg, #0a1a4a, #050d24); box-shadow: 0 0 10px #0088ff; }
+        .rarity-Rare       { --rc: #8fdcff; border-color: #8fdcff; background: linear-gradient(135deg, #1565c0, #0a3d73); box-shadow: 0 0 10px #8fdcff; }
         .rarity-SuperRare  { --rc: #2244ff; border-color: #2244ff; background: linear-gradient(135deg, #0a0a55, #050528); box-shadow: 0 0 12px #2244ff; }
         .rarity-UltraRare  { --rc: #9900cc; border-color: #9900cc; background: linear-gradient(135deg, #350055, #1a002a); box-shadow: 0 0 15px #9900cc; }
         .rarity-Epic       { --rc: #cc7700; border-color: #cc7700; background: linear-gradient(135deg, #4a2500, #241200); box-shadow: 0 0 15px #cc7700; }
@@ -291,7 +291,9 @@
         .stat-boosted { background: rgba(46,204,113,0.45); box-shadow: 0 0 8px rgba(46,204,113,0.8); }
 
         .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
-        .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; left: 4px; right: auto; }
+        /* Same top-right spot as .star (Perfect Pro) — top-left used to sit right on top of
+           the rarity label text (RARE/UNCOMMON/etc.), making it unreadable. */
+        .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; right: 4px; }
         .card.trade-sacrifice { box-shadow: 0 0 25px #e74c3c; border-color: #e74c3c !important; }
 
         .card-ability-footer {
@@ -752,6 +754,49 @@
             width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .catalog-thumb-locked .catalog-thumb-name { color: #555; }
+        .catalog-thumb:not(.catalog-thumb-locked) { cursor: pointer; transition: transform 0.15s; }
+        .catalog-thumb:not(.catalog-thumb-locked):hover { transform: translateY(-4px) scale(1.06); }
+
+        /* Enlarged card + full stats shown on hover over a discovered Catalog thumbnail. */
+        .catalog-hover-preview {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.7);
+            z-index: 9999; pointer-events: none; filter: drop-shadow(0 10px 40px rgba(0,0,0,0.8));
+            animation: catalogPreviewPop 0.15s ease-out;
+        }
+        @keyframes catalogPreviewPop { from { opacity: 0; transform: translate(-50%, -50%) scale(1.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.7); } }
+
+        /* MISSIONS (daily, from main menu) + LADDER REWARDS (one-time, from Exhibition) —
+           share the same row/list/progress-bar/claim-button styling below. */
+        #missions-screen, #ladder-rewards-screen { max-width: 720px; margin: 0 auto; }
+        .missions-title { text-align: center; font-size: 38px; font-weight: 900; color: #fff; text-shadow: 2px 2px 4px #000; letter-spacing: 2px; margin: 4px 0 14px; }
+        .missions-countdown { text-align: center; font-size: 13px; color: #2ecc71; font-weight: bold; font-family: Arial; letter-spacing: 0.5px; margin-bottom: 16px; min-height: 16px; }
+
+        .missions-list { display: flex; flex-direction: column; gap: 12px; }
+        .mission-row {
+            display: flex; align-items: center; gap: 16px; background: #000; border-radius: 12px;
+            border: 2px solid #444; padding: 14px 18px; box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+        }
+        .mission-row-done { border-color: #2ecc71; opacity: 0.7; }
+        .mission-info { flex: 1; min-width: 0; }
+        .mission-title-text { font-size: 16px; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+        .mission-desc { font-size: 12px; color: #aaa; margin: 3px 0 8px; font-family: Arial; }
+        .mission-progress-bar-bg { width: 100%; height: 18px; background: #222; border: 1px solid #555; border-radius: 9px; overflow: hidden; position: relative; }
+        .mission-progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--wwe-gold), var(--wwe-red)); transition: width 0.4s ease; }
+        .mission-progress-text { position: absolute; width: 100%; text-align: center; top: 0; left: 0; line-height: 18px; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; font-family: Arial; }
+
+        .mission-reward-col { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; min-width: 110px; }
+        .mission-reward { font-size: 13px; font-weight: bold; color: #f1c40f; font-family: Arial; display: flex; gap: 8px; white-space: nowrap; }
+        .mission-claim-btn {
+            background: #000; color: #666; border: 2px solid #555; border-radius: 8px; padding: 8px 20px;
+            font-weight: bold; font-size: 12px; letter-spacing: 0.5px; cursor: not-allowed; font-family: inherit; white-space: nowrap;
+        }
+        .mission-claim-btn.ready { color: #fff; border-color: #2ecc71; cursor: pointer; box-shadow: 0 0 10px rgba(46,204,113,0.3); animation: missionClaimPulse 1.6s ease-in-out infinite; }
+        .mission-claim-btn.ready:hover { background: rgba(46,204,113,0.15); }
+        .mission-claim-btn.done { color: #2ecc71; border-color: #2ecc71; cursor: default; animation: none; }
+        @keyframes missionClaimPulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(46,204,113,0.25); }
+            50% { box-shadow: 0 0 16px rgba(46,204,113,0.55); }
+        }
 
         .pack-row {
             display: flex; align-items: center; gap: 16px; background: #000; border-radius: 12px;

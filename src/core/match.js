@@ -453,6 +453,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             if(forfeit) {
                 match.oScore = 3; match.pScore = 0;
                 player.winStreak = 0; player.losses = (player.losses || 0) + 1; save();
+                incrementMission('play_exhibition');
                 let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
                 showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
@@ -463,6 +464,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 // reward, but it doesn't touch wins/losses/streak at all; it's not tracked
                 // as its own stat anywhere, just a one-off result.
                 player.picks += 10; save();
+                incrementMission('play_exhibition');
                 showNotification(`🤝 MATCH DRAW!<br>Even Overtime couldn't decide it — you received 10 Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
@@ -471,7 +473,6 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // A clean 3-0 sweep earns a bonus pick (3 total); a normal win (3-1/3-2) is 2, a loss is 1.
             let picksWon = w ? (match.oScore === 0 ? 3 : 2) : 1;
 
-            let coinsWon = w ? 30 : 10;
             let streakMsgs = [];
             let freePackEarned = false;
 
@@ -484,21 +485,19 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     freePackEarned = true;
                     streakMsgs.push(`🔥 ${streak}-Win Streak! FREE PACK!`);
                 }
-                if (streak % STREAK_REWARDS.pickBonusEvery === 0) {
-                    picksWon += STREAK_REWARDS.pickBonusAmount;
-                    streakMsgs.push(`🔥 ${streak}-Win Streak! +${STREAK_REWARDS.pickBonusAmount} Pick`);
-                }
-                if (streak % STREAK_REWARDS.coinBonusEvery === 0) {
-                    let bonus = Math.round(coinsWon * STREAK_REWARDS.coinBonusPct / 100);
-                    coinsWon += bonus;
-                    streakMsgs.push(`🔥 ${streak}-Win Streak! +${STREAK_REWARDS.coinBonusPct}% coins`);
+                let pickBonus = STREAK_REWARDS.pickBonusSchedule[streak % 10];
+                if (pickBonus) {
+                    picksWon += pickBonus;
+                    streakMsgs.push(`🔥 ${streak}-Win Streak! +${pickBonus} Pick${pickBonus > 1 ? 's' : ''}`);
                 }
             } else {
                 player.losses = (player.losses || 0) + 1;
                 player.winStreak = 0;
             }
 
-            player.picks += picksWon; player.coins += coinsWon; save();
+            player.picks += picksWon; save();
+            incrementMission('play_exhibition');
+            if (w) incrementMission('win_exhibition');
 
             let streakHtml = streakMsgs.length ? `<br><span style="color:#ff9800; font-size:15px;">${streakMsgs.join('<br>')}</span>` : '';
             let lossResetNote = (!w && priorStreak >= 3) ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';

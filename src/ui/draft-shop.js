@@ -67,6 +67,7 @@ function renderDraftBoard() {
         function pullDraft(i) {
             if(player.picks <= 0) return showNotification("No more picks! Play Exhibition to earn more.", 1500);
             player.picks--; player.board[i] = true;
+            incrementMission('draft_picks');
 
             let isReset = (i === player.resetIdx);
             let pulledId = 1;
@@ -154,6 +155,7 @@ function renderDraftBoard() {
             if (newBIdx > bIdx) {
                 player.guaranteedPickRarity = newTierInfo.base;
             }
+            checkTierMissions();
 
             let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
             document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);

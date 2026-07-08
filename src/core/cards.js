@@ -39,8 +39,13 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
         }
 
         function isPerfectCard(card) { return card.upgradeType === 'perfect'; }
+        // Combining works at ANY level in the real game — even two level-1 duplicates can
+        // fuse into a Pro card. The only requirements are: not a support card, and not
+        // already Pro/Perfect Pro itself. Whether the result is Pro vs. Perfect Pro depends
+        // on how trained both cards were at the moment of combining (see focusPromoteNormal/
+        // focusPromotePerfect in training.js), not on reaching max level first.
         function canPromote(card) {
-            return getCardBase(card).gender !== 'S' && !card.upgradeType && card.level >= getBaseMaxLevel(card);
+            return getCardBase(card).gender !== 'S' && !card.upgradeType;
         }
 
         function getXpNeeded(card) {
@@ -66,6 +71,9 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             if(!base) return;
             const cap = LEVEL_CAPS[base.rarity] || UPGRADE.BASE_MAX;
             player.inventory.push({ uid: uid(), id: id, level: 1, maxLvl: cap, xp: 0, upgradeType: null, phase: 1, locked: false });
+            if (!player.discoveredCardIds.includes(id)) player.discoveredCardIds.push(id);
+            incrementMission('collect_cards');
+            checkTierMissions();
         }
 
         function getStats(card) {
