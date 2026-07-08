@@ -100,7 +100,7 @@
 
         .badge { background: #1a1a1a; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--wwe-red); font-size: 22px; display: flex; gap: 18px; margin-left: auto; }
         
-        .screen { display: none; padding: 24px; max-width: 1300px; margin: auto; }
+        .screen { display: none; padding: 24px; max-width: 1300px; margin: auto; box-sizing: border-box; }
         .screen.active { display: block; animation: fadeIn 0.4s ease; }
 
         #main-menu.screen.active {
@@ -900,4 +900,113 @@
         .lock-badge {
             position: absolute; bottom: 3px; left: 3px; font-size: 16px; z-index: 5;
             filter: drop-shadow(0 0 3px #000);
+        }
+
+        /* ===== MOBILE (phones, ~480px and under) =====
+           Everything above targets desktop widths. These overrides only kick in below the
+           breakpoint, so desktop/tablet layout is completely untouched. Fixes: header tier
+           bar overflowing next to the back button, the draft board HUD bar clipping off the
+           top of the screen, and the Exhibition screen (deck strip, action buttons, opponent
+           rows with the fight button) overflowing horizontally instead of fitting the screen. */
+        @media (max-width: 480px) {
+            .screen { padding: 14px; }
+
+            /* Header: shrink the tier bar so it clears the back button instead of overlapping it. */
+            .header-tier-bar-bg { width: 44vw; }
+            .header-tier-text { font-size: 13px; }
+
+            /* Main menu: smaller username so it doesn't sit awkwardly far from the card. */
+            .dash-username { font-size: 22px; }
+
+            /* Bulletin Board HUD bar: let it wrap instead of clipping off the top edge. */
+            .draft-hud-bar { flex-wrap: wrap; row-gap: 10px; margin-bottom: 18px; }
+            .draft-menu-btn { padding: 6px 12px; font-size: 15px; }
+            .draft-picks-hud { padding: 6px 16px; }
+            .draft-picks-value { font-size: 26px; }
+            #draft-board-grid { gap: 8px; }
+
+            /* Exhibition: deck strip + record no longer forced onto one unbreakable row. */
+            .opp-top-bar { flex-wrap: wrap; row-gap: 8px; }
+            .opp-record { flex-basis: 100%; text-align: center; }
+
+            /* Action buttons (EDIT DECK / LADDER REWARDS): tighter padding so icon+text fit
+               instead of overflowing the button's own rounded rect. */
+            .opp-half-btn { padding: 0 10px; font-size: 12px; gap: 4px; }
+            .opp-half-btn .dash-btn-icon { position: static; transform: none; font-size: 20px; }
+            .dash-btn.half { padding: 0 14px; }
+
+            .section-title { font-size: 20px; }
+
+            /* Opponent rows: allow the middle text column to actually shrink (flex children
+               don't shrink below their content's natural width by default) so the fight
+               button on the right stays on-screen instead of getting pushed off the edge. */
+            .opponent-row { padding: 10px 12px; gap: 10px; }
+            .opponent-info { min-width: 0; }
+            .opponent-name, .opponent-wl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .opponent-avatar { width: 46px; height: 46px; }
+            .opponent-fight-btn { width: 36px; height: 36px; font-size: 16px; }
+
+            /* MY CARDS: the nav arrows / card / menu buttons row was a fixed 3-column desktop
+               layout (card scaled 1.6x with big margins) — way too wide for a phone screen.
+               Stack everything vertically instead. */
+            .cl-header-row { flex-direction: column; }
+            .cl-totals { min-width: 0; width: 100%; box-sizing: border-box; }
+            .cl-title { font-size: 28px; margin: 4px 0 12px; }
+            .cl-sort-filter-row { gap: 8px; margin-bottom: 16px; }
+            .cl-sf-btn { font-size: 12px; padding: 10px 6px; }
+            .cl-body { flex-direction: column; gap: 14px; }
+            .cl-nav-col { flex-direction: row; gap: 20px; }
+            .cl-focus-wrap { transform: scale(1); margin: 0; }
+
+            /* Every card-picking screen (match hand, deck edit collection, focus fodder grid)
+               used the same 172px desktop card size, so only ONE fit per row here — forcing
+               a huge amount of vertical scrolling to see the rest of the hand mid-fight.
+               Priority is fitting the whole hand on screen with no scrolling, size is
+               secondary, so this goes to 3-per-row instead of 2. Wrapper boxes that scale a
+               full-size .card via transform (pull/focus modals) just end up with a bit of
+               unused space around a smaller card — they don't overflow either way. */
+            .card { width: 86px; height: 123px; }
+            .card-container { gap: 6px; }
+            /* Both use inline style="padding: 20px" which needs !important to override. */
+            #player-hand-area, #active-deck-grid { padding: 8px !important; }
+            .card-header-v2 { height: 30px; padding: 3px 5px 2px; }
+            .card-name-v2 { font-size: 11px; }
+            .card-rarity-label { font-size: 8px; }
+            .card-stats-col-v2 { height: 102px; }
+            .stat-v2-label { font-size: 6px; }
+            .stat-v2-value { font-size: 11px; }
+            .card-ability-footer { font-size: 8px; padding: 2px 4px; }
+
+            /* Match screen: the empty "VS" arena box (min-height 280px) and oversized score
+               text ate almost the whole screen before any cards even showed. Compact
+               everything above the card grid so the hand fits with little to no scrolling. */
+            .match-forfeit-row { margin-bottom: 8px !important; }
+            .match-forfeit-row #support-status { font-size: 10px !important; }
+            .match-round-box { padding: 6px 12px !important; }
+            .match-score-col { font-size: 12px !important; }
+            .match-score-col span { font-size: 20px !important; }
+            #match-info { font-size: 14px !important; }
+            .match-arena { min-height: 50px; padding: 6px; margin: 6px 0; }
+            .vs-badge { font-size: 20px; }
+            .match-confirm-spacer { height: 38px !important; margin: 6px 0 !important; }
+            .match-type-banner { padding: 5px 8px; font-size: 12px; letter-spacing: 1px; margin-bottom: 6px; }
+            .section-title { padding: 6px 12px; margin-bottom: 8px; }
+
+            /* Arena (the cards actually facing off this round): WWE SuperCard's own compact
+               style — stat labels (POW/TGH/SPD/CHA) printed ONCE per side via ::before
+               instead of repeated on every card, name/rarity/ability text hidden entirely.
+               renderHTMLCard() itself is untouched — this only hides/shrinks pieces of its
+               output when it's rendered inside the arena. */
+            .arena-side::before {
+                content: "POW\A TGH\A SPD\A CHA"; white-space: pre-line;
+                font-size: 8px; font-weight: bold; color: #fff; line-height: 2.1;
+                flex-shrink: 0; align-self: center; text-shadow: 1px 1px 2px #000;
+            }
+            .arena-side { width: 48%; gap: 4px; }
+            .arena-side .card { width: 62px; height: 89px; }
+            .arena-side .card-header-v2, .arena-side .card-ability-footer { display: none; }
+            .arena-side .card-body-v2 { height: 100%; }
+            .arena-side .stat-v2-label { display: none; }
+            .arena-side .card-stats-col-v2 { height: auto; gap: 2px; padding: 2px 1px; }
+            .arena-side .stat-v2-value { font-size: 10px; }
         }

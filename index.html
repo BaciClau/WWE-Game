@@ -158,20 +158,20 @@
     </div>
 
     <div id="match-screen" class="screen">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="match-forfeit-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <button class="menu-btn btn-danger" style="flex-direction:row;" onclick="endMatch(true)">🏳️ FORFEIT</button>
             <div style="color: #bbb; font-family: Arial; font-size: 14px;" id="support-status">Tap your Support card to activate it before this round!</div>
         </div>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px 30px; border-radius: 15px; border: 1px solid #c0392b;">
-            <div style="font-size: 24px; color: #f1c40f;">YOU <br><span id="score-player" style="font-size: 50px; font-weight:bold;">0</span></div>
+
+        <div class="match-round-box" style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px 30px; border-radius: 15px; border: 1px solid #c0392b;">
+            <div class="match-score-col" style="font-size: 24px; color: #f1c40f;">YOU <br><span id="score-player" style="font-size: 50px; font-weight:bold;">0</span></div>
             <div id="match-info" style="font-size: 24px; color: #f1c40f; text-align: center; text-shadow: 2px 2px #000;">ROUND 1</div>
-            <div style="font-size: 24px; color: #e74c3c; text-align:right;">AI <br><span id="score-opp" style="font-size: 50px; font-weight:bold;">0</span></div>
+            <div class="match-score-col" style="font-size: 24px; color: #e74c3c; text-align:right;">AI <br><span id="score-opp" style="font-size: 50px; font-weight:bold;">0</span></div>
         </div>
-        
+
         <div class="match-arena" id="arena-area"><div class="vs-badge">VS</div></div>
 
-        <div style="text-align: center; margin: 20px 0; height: 60px;">
+        <div class="match-confirm-spacer" style="text-align: center; margin: 20px 0; height: 60px;">
             <button id="btn-confirm-play" class="menu-btn btn-play" style="display:none; margin: auto; flex-direction:row; padding: 10px 30px;" onclick="resolveRound()">🔥 SEND TO THE RING!</button>
         </div>
 
