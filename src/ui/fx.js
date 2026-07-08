@@ -71,6 +71,34 @@ function burstAtElement(el, rarity, options = {}) {
     if (isSurvivor) cameraShake(false);
 }
 
+// Round-result reveal, in-ring — replaces the old small text popup (showNotification) after a
+// clash: the winning side's card(s) scale up with a spotlight glow, the losing side fades out,
+// and a short result label floats at the top of the ring. No blocking popup, just the cards.
+function showRoundWinnerSpotlight(winnerSideId, loserSideId, resultLabel, resultColor, onDone) {
+    const arena = document.getElementById('arena-area');
+    const winnerSide = winnerSideId && document.getElementById(winnerSideId);
+    const loserSide = loserSideId && document.getElementById(loserSideId);
+    const vsBadge = arena.querySelector('.vs-badge');
+
+    if (vsBadge) vsBadge.classList.add('vs-badge-hidden');
+    if (loserSide) loserSide.classList.add('round-loser-fade');
+    if (winnerSide) winnerSide.classList.add('round-winner-spotlight');
+
+    const label = document.createElement('div');
+    label.className = 'round-result-badge';
+    label.style.color = resultColor;
+    label.innerText = resultLabel;
+    arena.appendChild(label);
+
+    setTimeout(() => {
+        label.remove();
+        if (vsBadge) vsBadge.classList.remove('vs-badge-hidden');
+        if (loserSide) loserSide.classList.remove('round-loser-fade');
+        if (winnerSide) winnerSide.classList.remove('round-winner-spotlight');
+        if (onDone) onDone();
+    }, 1400);
+}
+
 // Sărbătoare mare la câștigarea meciului — confetti multicolor din centrul ecranului + shake puternic.
 function celebrateMatchWin() {
     cameraShake(true);

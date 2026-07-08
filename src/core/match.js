@@ -177,6 +177,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
             if (pTot > oTot) {
                 match.pScore++;
+                document.getElementById('score-player').innerText = match.pScore;
                 cameraShake(false);
                 let arenaPlayer = document.getElementById('arena-player');
                 let bestRarity = match.selected.reduce((best, u) => {
@@ -185,18 +186,17 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     return RARITIES.indexOf(s.rarity) > RARITIES.indexOf(best) ? s.rarity : best;
                 }, 'Common');
                 burstAtElement(arenaPlayer, bestRarity);
-                showNotification(`<span style="color:#2ecc71;">ROUND WIN!</span><br>${pTot} beat ${oTot}`, 1500, () => {
-                    document.getElementById('score-player').innerText = match.pScore;
+                showRoundWinnerSpotlight('arena-player', 'arena-opp', 'ROUND WIN!', '#2ecc71', () => {
                     match.round++; nextRound();
                 });
             } else if (oTot > pTot) {
                 match.oScore++;
-                showNotification(`<span style="color:#e74c3c;">ROUND LOSS...</span><br>${pTot} lost to ${oTot}`, 1500, () => {
-                    document.getElementById('score-opp').innerText = match.oScore;
+                document.getElementById('score-opp').innerText = match.oScore;
+                showRoundWinnerSpotlight('arena-opp', 'arena-player', 'ROUND LOSS...', '#e74c3c', () => {
                     match.round++; nextRound();
                 });
             } else {
-                showNotification(`<span style="color:#f1c40f;">DRAW!</span><br>${pTot} vs ${oTot} — no point for either side.`, 1500, () => {
+                showRoundWinnerSpotlight(null, null, 'DRAW!', '#f1c40f', () => {
                     match.round++; nextRound();
                 });
             }
