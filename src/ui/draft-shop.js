@@ -86,8 +86,8 @@ function renderDraftBoard() {
 
             if (guaranteedRarity) {
                 player.guaranteedPickRarity = null;
-                let pool = DB.filter(c => c.rarity === guaranteedRarity);
-                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare');
+                let pool = DB.filter(c => c.rarity === guaranteedRarity && !c.ladderReward);
+                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare' && !c.ladderReward);
                 pulledId = pool[Math.floor(Math.random() * pool.length)].id;
             } else if (isReset) {
                 let dropRarity;
@@ -136,8 +136,8 @@ function renderDraftBoard() {
                 // as a whiff.
                 player.resetCounter = (dropRarity === pBase) ? 0 : player.resetCounter + 1;
 
-                let pool = DB.filter(c => c.rarity === dropRarity);
-                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare'); // Fallback
+                let pool = DB.filter(c => c.rarity === dropRarity && !c.ladderReward);
+                if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare' && !c.ladderReward); // Fallback
                 pulledId = pool[Math.floor(Math.random() * pool.length)].id;
 
             } else {
@@ -145,7 +145,7 @@ function renderDraftBoard() {
                 let odds = DRAFT_NORMAL_ODDS[pBase] || DRAFT_NORMAL_ODDS.Rare;
                 let pRarity = draftWeightedPick(odds);
 
-                let pool = DB.filter(c => c.rarity === pRarity);
+                let pool = DB.filter(c => c.rarity === pRarity && !c.ladderReward);
                 pulledId = pool[Math.floor(Math.random() * pool.length)].id;
             }
 

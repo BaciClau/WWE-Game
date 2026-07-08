@@ -26,5 +26,32 @@ const MISSIONS = [
     { id: 'once_tier_ultrarare', title: 'Elite Status', description: 'Reach Ultra Rare deck tier', type: 'reach_tier', target: 'UltraRare', reward: { coins: 1000, picks: 3 }, repeatable: false },
     { id: 'once_tier_epic', title: 'Epic Roster', description: 'Reach Epic deck tier', type: 'reach_tier', target: 'Epic', reward: { card: 'SuperRare' }, repeatable: false },
     { id: 'once_tier_legendary', title: 'Legendary Status', description: 'Reach Legendary deck tier', type: 'reach_tier', target: 'Legendary', reward: { coins: 2000, card: 'UltraRare' }, repeatable: false },
-    { id: 'once_tier_survivor', title: 'The Ultimate Survivor', description: 'Reach Survivor deck tier', type: 'reach_tier', target: 'Survivor', reward: { card: 'Epic', picks: 5 }, repeatable: false }
+    { id: 'once_tier_survivor', title: 'The Ultimate Survivor', description: 'Reach Survivor deck tier', type: 'reach_tier', target: 'Survivor', reward: { card: 'Epic', picks: 5 }, repeatable: false },
+
+    // --- Ladder Rewards (one-time, shown only on the LADDER REWARDS screen) ---
+    // Fixed, named-card rewards — the one deliberate exception to the "never a fixed card id"
+    // rule above. These are exclusive "Ladder Reward" reprints (John Cena / Paige) from the
+    // real WWE SuperCard Season 1 card set, flagged `ladderReward: true` in cards.js so they
+    // can never drop from packs/draft/starter/opponent decks — a pure win-count grind is the
+    // only way to obtain them. Most cards have a 2nd-copy rung at a much higher win count
+    // (useful for the combine/upgrade mechanic once you own two). Thresholds per user spec;
+    // Legendary Paige (60000) and Survivor Cena (75000) extend the same escalating pattern.
+    { id: 'ladder_1', title: 'Ladder Reward: Rare Paige', description: 'Win 125 Exhibition matches', type: 'win_exhibition', target: 125, reward: { cardId: 900 }, repeatable: false },
+    { id: 'ladder_2', title: 'Ladder Reward: 2nd Rare Paige', description: 'Win 200 Exhibition matches', type: 'win_exhibition', target: 200, reward: { cardId: 900 }, repeatable: false },
+    { id: 'ladder_3', title: 'Ladder Reward: Super Rare Cena', description: 'Win 450 Exhibition matches', type: 'win_exhibition', target: 450, reward: { cardId: 901 }, repeatable: false },
+    { id: 'ladder_4', title: 'Ladder Reward: Super Rare Paige', description: 'Win 750 Exhibition matches', type: 'win_exhibition', target: 750, reward: { cardId: 902 }, repeatable: false },
+    { id: 'ladder_5', title: 'Ladder Reward: 2nd Super Rare Cena', description: 'Win 1200 Exhibition matches', type: 'win_exhibition', target: 1200, reward: { cardId: 901 }, repeatable: false },
+    { id: 'ladder_6', title: 'Ladder Reward: 2nd Super Rare Paige', description: 'Win 2000 Exhibition matches', type: 'win_exhibition', target: 2000, reward: { cardId: 902 }, repeatable: false },
+    { id: 'ladder_7', title: 'Ladder Reward: Ultra Rare Cena', description: 'Win 4000 Exhibition matches', type: 'win_exhibition', target: 4000, reward: { cardId: 903 }, repeatable: false },
+    { id: 'ladder_8', title: 'Ladder Reward: Ultra Rare Paige', description: 'Win 6500 Exhibition matches', type: 'win_exhibition', target: 6500, reward: { cardId: 904 }, repeatable: false },
+    { id: 'ladder_9', title: 'Ladder Reward: 2nd Ultra Rare Cena', description: 'Win 9000 Exhibition matches', type: 'win_exhibition', target: 9000, reward: { cardId: 903 }, repeatable: false },
+    { id: 'ladder_10', title: 'Ladder Reward: 2nd Ultra Rare Paige', description: 'Win 11500 Exhibition matches', type: 'win_exhibition', target: 11500, reward: { cardId: 904 }, repeatable: false },
+    { id: 'ladder_11', title: 'Ladder Reward: Epic Cena', description: 'Win 15000 Exhibition matches', type: 'win_exhibition', target: 15000, reward: { cardId: 905 }, repeatable: false },
+    { id: 'ladder_12', title: 'Ladder Reward: Epic Paige', description: 'Win 17500 Exhibition matches', type: 'win_exhibition', target: 17500, reward: { cardId: 906 }, repeatable: false },
+    { id: 'ladder_13', title: 'Ladder Reward: 2nd Epic Cena', description: 'Win 20000 Exhibition matches', type: 'win_exhibition', target: 20000, reward: { cardId: 905 }, repeatable: false },
+    { id: 'ladder_14', title: 'Ladder Reward: 2nd Epic Paige', description: 'Win 30000 Exhibition matches', type: 'win_exhibition', target: 30000, reward: { cardId: 906 }, repeatable: false },
+    { id: 'ladder_15', title: 'Ladder Reward: Legendary Cena', description: 'Win 40000 Exhibition matches', type: 'win_exhibition', target: 40000, reward: { cardId: 907 }, repeatable: false },
+    { id: 'ladder_16', title: 'Ladder Reward: 2nd Legendary Cena', description: 'Win 50000 Exhibition matches', type: 'win_exhibition', target: 50000, reward: { cardId: 907 }, repeatable: false },
+    { id: 'ladder_17', title: 'Ladder Reward: Legendary Paige', description: 'Win 60000 Exhibition matches', type: 'win_exhibition', target: 60000, reward: { cardId: 908 }, repeatable: false },
+    { id: 'ladder_18', title: 'Ladder Reward: Survivor Cena', description: 'Win 75000 Exhibition matches', type: 'win_exhibition', target: 75000, reward: { cardId: 909 }, repeatable: false }
 ];

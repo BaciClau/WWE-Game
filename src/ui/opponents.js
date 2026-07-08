@@ -127,12 +127,12 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
         // go below 1, so a rarity whose level-1 floor already exceeds the target will
         // overshoot — that overshoot is exactly what actualPower reports).
         function draftAttempt(rarity, targetPower) {
-            let poolM = DB.filter(c => c.gender === 'M' && c.rarity === rarity);
-            let poolF = DB.filter(c => c.gender === 'F' && c.rarity === rarity);
-            let poolS = DB.filter(c => c.gender === 'S' && c.rarity === rarity);
-            if (!poolM.length) poolM = DB.filter(c => c.gender === 'M');
-            if (!poolF.length) poolF = DB.filter(c => c.gender === 'F');
-            if (!poolS.length) poolS = DB.filter(c => c.gender === 'S');
+            let poolM = DB.filter(c => c.gender === 'M' && c.rarity === rarity && !c.ladderReward);
+            let poolF = DB.filter(c => c.gender === 'F' && c.rarity === rarity && !c.ladderReward);
+            let poolS = DB.filter(c => c.gender === 'S' && c.rarity === rarity && !c.ladderReward);
+            if (!poolM.length) poolM = DB.filter(c => c.gender === 'M' && !c.ladderReward);
+            if (!poolF.length) poolF = DB.filter(c => c.gender === 'F' && !c.ladderReward);
+            if (!poolS.length) poolS = DB.filter(c => c.gender === 'S' && !c.ladderReward);
 
             const mCards = Array.from({ length: 4 }, () => poolM[Math.floor(Math.random() * poolM.length)]);
             const fCards = Array.from({ length: 2 }, () => poolF[Math.floor(Math.random() * poolF.length)]);

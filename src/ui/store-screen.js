@@ -72,7 +72,7 @@ function rollPackRarity(chances) {
 }
 
 function pickRandomCardOfRarity(rarity) {
-    const pool = DB.filter(c => c.rarity === rarity);
+    const pool = DB.filter(c => c.rarity === rarity && !c.ladderReward);
     return pool.length ? pool[Math.floor(Math.random() * pool.length)] : DB[0];
 }
 

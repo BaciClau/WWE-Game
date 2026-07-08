@@ -13,7 +13,9 @@ const DUPLICATE_ID_REMAP = {
     622: 313, // Paige (SuperRare)
     408: 401, // Daniel Bryan (UltraRare)
     416: 403, // Randy Orton (UltraRare)
-    717: 707  // Andre the Giant (Survivor)
+    717: 707, // Andre the Giant (Survivor)
+    449: 131, // Nikki Bella (UltraRare)
+    537: 233  // Nikki Bella (Epic)
 };
         window.currentOpponents = [];
         let tradeTarget = null;
@@ -79,7 +81,7 @@ const DUPLICATE_ID_REMAP = {
 
         // Alege N cărți random distincte dintr-o raritate dată (orice gen — M/F/S, nu contează).
         function pickRandomStarterCards(rarity, count) {
-            const pool = DB.filter(c => c.rarity === rarity);
+            const pool = DB.filter(c => c.rarity === rarity && !c.ladderReward);
             const shuffled = [...pool].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(c => c.id);
         }
@@ -137,6 +139,12 @@ const DUPLICATE_ID_REMAP = {
                 player = JSON.parse(saved);
                 player.inventory = (player.inventory || []).map(migrateCard);
                 player.inventory.forEach(c => { if (DUPLICATE_ID_REMAP[c.id]) c.id = DUPLICATE_ID_REMAP[c.id]; });
+                // Safety net: drop any inventory card whose id doesn't resolve in DB even after
+                // remapping (e.g. a future data edit removes/renumbers an id someone already
+                // owns). Without this, calculateDeckTier() and friends throw on DB.find(...)
+                // returning undefined, which freezes the whole game (header stuck on
+                // "CALCULATING...", Exhibition unable to open) instead of just losing one card.
+                player.inventory = player.inventory.filter(c => DB.some(b => b.id === c.id));
                 if (player.winStreak === undefined) player.winStreak = 0;
                 if (player.favoriteUid === undefined) player.favoriteUid = null;
                 if (player.wins === undefined) player.wins = 0;

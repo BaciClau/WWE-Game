@@ -22,6 +22,13 @@ function renderMissionRewardHTML(reward) {
         const label = (typeof PACK_RARITY_LABELS !== 'undefined' && PACK_RARITY_LABELS[reward.card]) || reward.card;
         parts.push(`<span class="mission-reward-part" style="color:${color};">🃏 ${label}</span>`);
     }
+    if (reward.cardId) {
+        const card = DB.find(c => c.id === reward.cardId);
+        if (card) {
+            const color = (typeof CATALOG_RARITY_COLORS !== 'undefined' && CATALOG_RARITY_COLORS[card.rarity]) || '#fff';
+            parts.push(`<span class="mission-reward-part" style="color:${color};">🃏 ${card.name}</span>`);
+        }
+    }
     return parts.join('');
 }
 

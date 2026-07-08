@@ -79,11 +79,18 @@ function claimMissionReward(missionId) {
         rewardParts.push(`+${mission.reward.picks} Draft Pick${mission.reward.picks > 1 ? 's' : ''}`);
     }
     if (mission.reward.card) {
-        const pool = DB.filter(c => c.rarity === mission.reward.card);
+        const pool = DB.filter(c => c.rarity === mission.reward.card && !c.ladderReward);
         if (pool.length > 0) {
             const card = pool[Math.floor(Math.random() * pool.length)];
             addCard(card.id);
             rewardParts.push(`+1 ${(typeof PACK_RARITY_LABELS !== 'undefined' && PACK_RARITY_LABELS[mission.reward.card]) || mission.reward.card} Card`);
+        }
+    }
+    if (mission.reward.cardId) {
+        const card = DB.find(c => c.id === mission.reward.cardId);
+        if (card) {
+            addCard(card.id);
+            rewardParts.push(`+1 ${card.name} (${(typeof PACK_RARITY_LABELS !== 'undefined' && PACK_RARITY_LABELS[card.rarity]) || card.rarity})`);
         }
     }
 
