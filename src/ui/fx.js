@@ -71,6 +71,25 @@ function burstAtElement(el, rarity, options = {}) {
     if (isSurvivor) cameraShake(false);
 }
 
+// Support card activation, in-ring — replaces the old big showAbilityPopup overlay: the actual
+// support card (art + stats, same renderHTMLCard as everywhere else) slides in from the left
+// under the activating side's fighter card(s), sits for a beat, then slides back out the way
+// it came. Non-blocking (doesn't pause the clash sequence).
+function showSupportBoostSlide(side, cardStats, statName, bonus) {
+    const arena = document.getElementById('arena-area');
+    if (!arena) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'support-boost-slide support-boost-slide-' + side;
+    wrap.innerHTML = renderHTMLCard(cardStats) +
+        `<div class="support-boost-slide-tag">🛠️ +${bonus} ${statName.toUpperCase()}</div>`;
+    arena.appendChild(wrap);
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('support-boost-slide-in')));
+    setTimeout(() => {
+        wrap.classList.remove('support-boost-slide-in');
+        setTimeout(() => wrap.remove(), 450);
+    }, 1600);
+}
+
 // Round-result reveal, in-ring — replaces the old small text popup (showNotification) after a
 // clash: the winning side's card(s) scale up with a spotlight glow, the losing side fades out,
 // and a short result label floats at the top of the ring. No blocking popup, just the cards.
@@ -121,12 +140,9 @@ function showAbilityPopup(evt, onDone) {
     const rarity = evt.cardStats.rarity;
     const glowColor = (RARITY_FX_COLORS[rarity] || RARITY_FX_COLORS.Common)[0];
     const isAI = !!evt.isAI;
-    const isSupport = !!evt.isSupport;
     const isCombined = !!evt.isCombined;
     const sideLabel = isCombined
         ? (isAI ? '⚠️ OPPONENT COMBO!' : '💥 COMBINED BOOST!')
-        : isSupport
-        ? (isAI ? '⚠️ OPPONENT SUPPORT!' : '🛠️ SUPPORT ACTIVATED!')
         : (isAI ? '⚠️ OPPONENT ABILITY!' : '⚡ ABILITY ACTIVATED!');
     const sideColor = isAI ? '#e74c3c' : '#2ecc71';
 

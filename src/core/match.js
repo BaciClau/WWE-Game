@@ -335,20 +335,20 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             if (playerSupportBonus > 0) {
                 match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + perCardSupportBonus; });
             }
+            // Captured here, but the actual slide-in fires further below — AFTER
+            // arena.innerHTML rebuilds the ring with this round's fighter cards. Firing it
+            // this early would just get wiped out by that innerHTML replacement before the
+            // browser ever paints it.
+            let playerSupportCardStats = null;
             if (match.activeSupportUID && playerSupportBonus > 0) {
                 const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
                 if (supportCard) {
-                    const supportStats = getStats(supportCard);
-                    abilityEvents.push({
-                        cardStats: supportStats,
-                        ab: { icon: '🛠️', name: 'Support Boost', desc: `${supportStats.name} backs up the team!` },
-                        bonus: playerSupportBonus, statName: match.rule.stat, isAI: false, isSupport: true
-                    });
+                    playerSupportCardStats = getStats(supportCard);
                     setTimeout(() => {
-                        let el = document.getElementById('card-' + supportStats.uid);
+                        let el = document.getElementById('card-' + playerSupportCardStats.uid);
                         if (el) {
                             el.classList.add('ability-active-flash');
-                            burstAtElement(el, supportStats.rarity);
+                            burstAtElement(el, playerSupportCardStats.rarity);
                             setTimeout(() => el.classList.remove('ability-active-flash'), 700);
                         }
                     }, 700);
@@ -377,11 +377,6 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             }
 
             if (aiPlay.support && aiSupportBonus > 0) {
-                abilityEvents.push({
-                    cardStats: aiPlay.support,
-                    ab: { icon: '🛠️', name: 'Support Boost', desc: `${aiPlay.support.name} backs up the team!` },
-                    bonus: aiSupportBonus, statName: activeStat, isAI: true, isSupport: true
-                });
                 setTimeout(() => {
                     let el = document.getElementById('card-' + aiPlay.support.uid);
                     if (el) {
@@ -425,6 +420,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
+
+            // Now that the ring actually has this round's cards in it, fire the support
+            // slide-in(s) — any earlier and arena.innerHTML above would've wiped them out.
+            if (playerSupportCardStats) showSupportBoostSlide('player', playerSupportCardStats, match.rule.stat, playerSupportBonus);
+            if (aiPlay.support && aiSupportBonus > 0) showSupportBoostSlide('ai', aiPlay.support, activeStat, aiSupportBonus);
 
             // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
             // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să

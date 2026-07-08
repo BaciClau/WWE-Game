@@ -83,6 +83,16 @@ function updateUI() {
                 showCardSummaryModal(pulls, 'DRAFT SUMMARY', () => showScreen('main-menu'));
                 return;
             }
+            // The dedicated FORFEIT button is hidden now (see .match-forfeit-row in
+            // styles.css) — leaving a match this way forfeits it instead, same as that button
+            // did, just gated behind a confirm so a stray back-tap can't cost a match by
+            // accident.
+            if (current && current.id === 'match-screen') {
+                if (confirm('Sigur vrei să renunți la meci? Va conta ca înfrângere.')) {
+                    endMatch(true);
+                }
+                return;
+            }
             showScreen('main-menu');
         }
 

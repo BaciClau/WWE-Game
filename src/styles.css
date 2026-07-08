@@ -47,42 +47,46 @@
             background: radial-gradient(ellipse at center, rgba(140,0,0,0.32) 0%, rgba(25,0,0,0.85) 55%, #000 100%);
             border-radius: 18px;
         }
-        .opp-top-bar { display: flex; align-items: center; gap: 14px; max-width: 700px; margin: 0 auto 12px; }
-        .opp-deck-strip { flex: 1; display: flex; gap: 6px; overflow-x: auto; padding: 4px; }
+        /* Sizing here is deliberately generous — the Exhibition screen has a lot of unused
+           vertical room below a short opponent list, so everything on it (deck-strip thumbs,
+           win/loss text, avatars, names, fight buttons) runs bigger than the game's usual
+           compact scale. Left-right layout/positions are untouched — only sizes grew. */
+        .opp-top-bar { display: flex; align-items: center; gap: 18px; max-width: 700px; margin: 0 auto 18px; }
+        .opp-deck-strip { flex: 1; display: flex; gap: 8px; overflow-x: auto; padding: 4px; }
         .opp-deck-thumb {
-            width: 42px; height: 58px; flex-shrink: 0; border-radius: 6px; overflow: hidden;
+            width: 58px; height: 80px; flex-shrink: 0; border-radius: 8px; overflow: hidden;
             border: 2px solid var(--rc, #888); background: #000; box-shadow: 0 3px 8px rgba(0,0,0,0.6);
         }
         .opp-deck-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-        .opp-record { flex-shrink: 0; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; color: #fff; text-shadow: 0 0 8px rgba(192,57,43,0.6); }
+        .opp-record { flex-shrink: 0; font-size: 19px; font-weight: bold; letter-spacing: 0.5px; color: #fff; text-shadow: 0 0 8px rgba(192,57,43,0.6); }
 
-        .opp-actions-row { display: flex; gap: 12px; max-width: 700px; margin: 0 auto 20px; }
-        .opp-half-btn { height: 60px; font-size: 15px; padding: 0 30px; }
-        .opp-half-btn .dash-btn-icon { font-size: 26px; }
+        .opp-actions-row { display: flex; gap: 16px; max-width: 700px; margin: 0 auto 26px; }
+        .opp-half-btn { height: 76px; font-size: 19px; padding: 0 30px; }
+        .opp-half-btn .dash-btn-icon { font-size: 32px; }
 
-        .opponents-list { display: flex; flex-direction: column; gap: 14px; max-width: 700px; margin: 0 auto; }
+        .opponents-list { display: flex; flex-direction: column; gap: 20px; max-width: 700px; margin: 0 auto; }
         .opponent-row {
-            display: flex; align-items: center; gap: 18px; cursor: pointer;
+            display: flex; align-items: center; gap: 24px; cursor: pointer;
             background: linear-gradient(135deg, var(--wwe-red-dark), var(--wwe-black));
-            border: 2px solid var(--wwe-gold); border-radius: 12px; padding: 14px 20px;
+            border: 2px solid var(--wwe-gold); border-radius: 14px; padding: 20px 26px;
             box-shadow: 0 6px 15px rgba(0,0,0,0.6); transition: all 0.2s;
         }
         .opponent-row:hover { transform: translateY(-3px); border-color: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.8); }
         .opponent-avatar {
-            width: 60px; height: 60px; border-radius: 10px; background: #000;
+            width: 84px; height: 84px; border-radius: 12px; background: #000;
             border: 2px solid var(--wwe-red); display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; overflow: hidden;
         }
         .opponent-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .opponent-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        .opponent-name { font-size: 19px; font-weight: bold; color: #fff; letter-spacing: 1px; }
-        .opponent-tier { font-size: 12px; font-weight: bold; font-family: Arial; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 0 6px currentColor; }
-        .opponent-wl { font-size: 13px; font-family: Arial; color: #ddd; letter-spacing: 0.5px; }
+        .opponent-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .opponent-name { font-size: 26px; font-weight: bold; color: #fff; letter-spacing: 1px; }
+        .opponent-tier { font-size: 15px; font-weight: bold; font-family: Arial; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 0 6px currentColor; }
+        .opponent-wl { font-size: 17px; font-family: Arial; color: #ddd; letter-spacing: 0.5px; }
         .opponent-fight-btn {
-            width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+            width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
             background: linear-gradient(135deg, var(--wwe-gold), #d35400);
             border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; box-shadow: 0 3px 0 #000, 0 5px 10px rgba(0,0,0,0.6);
+            font-size: 26px; box-shadow: 0 3px 0 #000, 0 5px 10px rgba(0,0,0,0.6);
         }
 
         .tier-container { display: flex; flex-direction: column; align-items: center; }
@@ -322,6 +326,44 @@
         /* WWE SuperCard (2014)-style ring: canvas mat + 3 corner-to-corner ropes (red/white/
            blue, classic WWE color order) + 4 turnbuckle pads — all pure CSS layered
            gradients, no image assets, so it scales/recolors cleanly at any screen size. */
+        /* The FORFEIT button + support-tip text row is hidden (not removed — match.js writes
+           to #support-status directly with no null-guard, so the element must stay in the
+           DOM). Forfeiting now happens through the header BACK button instead (see
+           headerBackClicked() in common.js), which frees up this whole row of vertical space. */
+        .match-forfeit-row { display: none !important; }
+        /* Squeeze the rest of the match screen's chrome too — these still carry their
+           original full-size inline padding/margin/height, which needs !important to
+           override. Cards themselves are untouched; only the space around them shrinks. */
+        .match-round-box { padding: 6px 22px !important; }
+        .match-score-col { font-size: 18px !important; }
+        .match-score-col span { font-size: 30px !important; }
+        #match-info { font-size: 19px !important; }
+        .match-confirm-spacer { height: 46px !important; margin: 6px 0 !important; }
+        .match-confirm-spacer .menu-btn { padding: 8px 24px !important; font-size: 14px !important; }
+        .match-type-banner { padding: 5px 12px !important; margin-bottom: 5px !important; }
+        #match-screen .section-title { padding: 5px 14px !important; margin-bottom: 6px !important; }
+        #player-hand-area { padding: 6px !important; }
+        #match-screen .card-container { margin-top: 6px !important; gap: 10px !important; }
+        .match-arena { margin: 6px 0 !important; padding: 22px !important; min-height: 320px !important; }
+        .vs-badge { font-size: 60px !important; }
+
+        /* Hand-selection cards (below the arena) shrink a bit — the arena above grows instead,
+           and this is the one place where smaller cards actually free up real vertical room,
+           since this grid can run several rows deep depending on hand size. Arena cards
+           (#arena-player/#arena-opp) are untouched — only the picking grid gets smaller. */
+        #player-hand-area .card { width: 158px !important; height: 227px !important; }
+        #player-hand-area .card-header-v2 { height: 36px !important; padding: 4px 7px 3px !important; }
+        #player-hand-area .card-name-v2 { font-size: 14px !important; }
+        /* Image column has its own fixed 160px height in the base card style — without
+           shrinking it too, it (plus the header) alone exceeds this smaller card's total
+           height, and the footer below (the support-card "SUPPORT BONUS: X" text especially)
+           gets silently clipped off by .card's overflow:hidden instead of just looking tight. */
+        #player-hand-area .card-image-col-v2 { height: 144px !important; }
+        #player-hand-area .card-stats-col-v2 { height: 144px !important; }
+        #player-hand-area .stat-v2-value { font-size: 14px !important; }
+        #player-hand-area .card-ability-footer { height: 36px !important; padding: 2px 5px !important; }
+        #player-hand-area .ability-footer-name-v2 { font-size: 10px !important; }
+        #player-hand-area .ability-footer-bonus-v2 { font-size: 9px !important; }
         .match-arena {
             background:
                 radial-gradient(circle at 22px 20px, #c0392b 0 9px, transparent 10px),
@@ -334,8 +376,8 @@
                 radial-gradient(ellipse at center, #3d3d3d 0%, #202020 65%, #0a0a0a 100%);
             border: 6px solid #7a1616; border-radius: 16px;
             box-shadow: inset 0 0 50px #000, 0 10px 20px rgba(0,0,0,0.5), 0 0 20px rgba(192,57,43,0.3);
-            padding: 30px; display: flex; justify-content: space-between; align-items: center;
-            min-height: 280px; position: relative; margin: 20px 0; overflow: hidden;
+            padding: 16px; display: flex; justify-content: space-between; align-items: center;
+            min-height: 260px; position: relative; margin: 10px 0; overflow: hidden;
         }
         .vs-badge {
             font-size: 50px; font-style: italic; color: #e74c3c; text-shadow: 3px 3px 0 #fff, 0 0 30px red;
@@ -368,6 +410,28 @@
             font-size: 20px; font-weight: 900; letter-spacing: 1px; font-style: italic;
             text-shadow: 0 2px 4px #000, 0 0 14px currentColor; white-space: nowrap;
             animation: fadeIn 0.3s ease;
+        }
+
+        /* Support card activation (showSupportBoostSlide in fx.js) — the actual support card
+           (art + stats) slides in under the activating side, sits briefly, slides back out.
+           Replaces the old full-screen "SUPPORT ACTIVATED!" popup. The card itself renders at
+           its normal 172×247 size but is visually scaled down and clipped to a small footprint
+           so it tucks neatly under the fighter card above it. Player's slides in left→right;
+           the opponent's is mirrored (right→left), so each reads as coming from "its own side". */
+        .support-boost-slide {
+            position: absolute; bottom: 4px; z-index: 8; width: 98px; height: 158px;
+            opacity: 0; pointer-events: none;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+        }
+        .support-boost-slide-player { left: 6%; transform: translateX(-140px); }
+        .support-boost-slide-ai { left: 54%; transform: translateX(140px); }
+        .support-boost-slide.support-boost-slide-in { opacity: 1; transform: translateX(0); }
+        .support-boost-slide .card { position: absolute; top: 0; left: 0; transform: scale(0.56); transform-origin: top left; }
+        .support-boost-slide-tag {
+            position: absolute; top: 140px; left: 0; width: 98px; text-align: center;
+            background: rgba(0,0,0,0.9); border: 1px solid #f1c40f; border-radius: 4px;
+            padding: 2px 4px; font-size: 9px; font-weight: bold; color: #f1c40f; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
         }
 
         /* Bright radial burst behind the VS badge at the exact moment the cards clash —
