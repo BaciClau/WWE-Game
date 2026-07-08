@@ -8,46 +8,53 @@ const PACK_RARITY_LABELS = {
 
 const DAILY_PACK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+// Prices calibrated against a ~225 coins/day sustainable income (the sum of the 4 daily
+// mission coin rewards — the only ongoing coin source now that match wins no longer pay out).
+// Each tier costs ~2x the previous one, ending with the Survivor Pack costing exactly one
+// month (30 days) of saved-up daily income if nothing else is bought along the way. Rates
+// lean harder on the pack's own guaranteed rarity than before; the top-tier chance in each
+// pack is a real long-shot, not a coin flip — this is meant to be a grind, just not a
+// year-long one.
 const PACKS = [
     {
         id: 'basic', name: 'BASIC PACK', cost: 100, count: 5, border: '#bdc3c7', icon: '📦',
         desc: '5 Common & Uncommon Cards',
-        chances: { Common: 68, Uncommon: 25, Rare: 6, SuperRare: 1 }
+        chances: { Common: 70, Uncommon: 24, Rare: 5, SuperRare: 1 }
     },
     {
-        id: 'rare', name: 'RARE PACK', cost: 500, count: 5, border: '#00FFFF', icon: '📗',
+        id: 'rare', name: 'RARE PACK', cost: 200, count: 5, border: '#00FFFF', icon: '📗',
         desc: '5 Guaranteed Rare Cards',
-        chances: { Rare: 55, SuperRare: 30, UltraRare: 12, Epic: 3 }
+        chances: { Rare: 75, SuperRare: 18, UltraRare: 6, Epic: 1 }
     },
     {
-        id: 'superrare', name: 'SUPER RARE PACK', cost: 1500, count: 5, border: '#4444FF', icon: '💎',
+        id: 'superrare', name: 'SUPER RARE PACK', cost: 400, count: 5, border: '#4444FF', icon: '💎',
         desc: '5 Guaranteed Super Rare Cards',
-        chances: { SuperRare: 55, UltraRare: 30, Epic: 12, Legendary: 3 }
+        chances: { SuperRare: 75, UltraRare: 18, Epic: 6, Legendary: 1 }
     },
     {
-        id: 'ultrarare', name: 'ULTRA RARE PACK', cost: 5000, count: 3, border: '#8800FF', icon: '⚡',
+        id: 'ultrarare', name: 'ULTRA RARE PACK', cost: 850, count: 3, border: '#8800FF', icon: '⚡',
         desc: '3 Guaranteed Ultra Rare Cards',
-        chances: { UltraRare: 55, Epic: 30, Legendary: 12, Survivor: 3 }
+        chances: { UltraRare: 78, Epic: 16, Legendary: 5, Survivor: 1 }
     },
     {
-        id: 'epic', name: 'EPIC PACK', cost: 15000, count: 2, border: '#CC00CC', icon: '🔮',
+        id: 'epic', name: 'EPIC PACK', cost: 1700, count: 2, border: '#CC00CC', icon: '🔮',
         desc: '2 Guaranteed Epic Cards',
-        chances: { Epic: 70, Legendary: 23, Survivor: 7 }
+        chances: { Epic: 82, Legendary: 15, Survivor: 3 }
     },
     {
-        id: 'legendary', name: 'LEGENDARY PACK', cost: 50000, count: 1, border: '#FFD700', icon: '👑',
+        id: 'legendary', name: 'LEGENDARY PACK', cost: 3400, count: 1, border: '#FFD700', icon: '👑',
         desc: '1 Guaranteed Legendary Card',
-        chances: { Legendary: 82, Survivor: 18 }
+        chances: { Legendary: 90, Survivor: 10 }
     },
     {
-        id: 'survivor', name: 'SURVIVOR PACK', cost: 150000, count: 1, border: '#e74c3c', icon: '🏆',
+        id: 'survivor', name: 'SURVIVOR PACK', cost: 6750, count: 1, border: '#e74c3c', icon: '🏆',
         desc: '1 Guaranteed Survivor Card - The Ultimate Rarity',
-        chances: { Legendary: 25, Survivor: 75 }, special: true
+        chances: { Legendary: 10, Survivor: 90 }, special: true
     },
     {
         id: 'daily', name: 'DAILY FREE PACK', cost: 0, count: 1, border: '#2ecc71', icon: '🎁',
         desc: '1 Free Card Every 24 Hours', free: true,
-        chances: { Common: 50, Uncommon: 25, Rare: 15, SuperRare: 7, UltraRare: 2, Epic: 0.8, Legendary: 0.18, Survivor: 0.02 }
+        chances: { Common: 60, Uncommon: 27, Rare: 10, SuperRare: 2.5, UltraRare: 0.4, Epic: 0.08, Legendary: 0.015, Survivor: 0.005 }
     }
 ];
 

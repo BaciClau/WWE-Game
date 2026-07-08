@@ -38,14 +38,18 @@ function renderDraftBoard() {
         // 15/25/40 progression at every base rarity.
         const DRAFT_RESET_CHANCE = { '': 15, '+': 25, '++': 40 };
 
-        // Normal (non-reset) tile odds, keyed by current deck base tier.
+        // Normal (non-reset) tile odds, keyed by current deck base tier. Matches the real
+        // Season 1 board: every tile except the one reset tile is guaranteed filler
+        // (Common/Uncommon only) — you "whittle away" junk until you hit the reset tile,
+        // which is the ONLY one that can ever drop Rare or better. Higher tier just improves
+        // the Common/Uncommon ratio of that filler, it never unlocks bigger drops here.
         const DRAFT_NORMAL_ODDS = {
-            Rare:      [['Common', 70], ['Uncommon', 25], ['Rare', 5]],
-            SuperRare: [['Common', 55], ['Uncommon', 25], ['Rare', 15], ['SuperRare', 5]],
-            UltraRare: [['Common', 40], ['Uncommon', 20], ['Rare', 20], ['SuperRare', 15], ['UltraRare', 5]],
-            Epic:      [['Common', 30], ['Uncommon', 15], ['Rare', 20], ['SuperRare', 20], ['UltraRare', 10], ['Epic', 5]],
-            Legendary: [['Common', 20], ['Uncommon', 10], ['Rare', 15], ['SuperRare', 20], ['UltraRare', 15], ['Epic', 10], ['Legendary', 10]],
-            Survivor:  [['Common', 15], ['Uncommon', 10], ['Rare', 10], ['SuperRare', 15], ['UltraRare', 15], ['Epic', 15], ['Legendary', 15], ['Survivor', 5]]
+            Rare:      [['Common', 75], ['Uncommon', 25]],
+            SuperRare: [['Common', 65], ['Uncommon', 35]],
+            UltraRare: [['Common', 55], ['Uncommon', 45]],
+            Epic:      [['Common', 45], ['Uncommon', 55]],
+            Legendary: [['Common', 35], ['Uncommon', 65]],
+            Survivor:  [['Common', 25], ['Uncommon', 75]]
         };
 
         function draftWeightedPick(pairs) {

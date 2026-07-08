@@ -327,8 +327,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // Support gets the same big popup treatment as an ability activation, and its
             // bonus adds onto every fighter it backed up this round (same card can also
             // carry an ability bonus on top — both add into the one number shown on it).
+            // NOTE: playerSupportBonus is already doubled for Tag Team rounds (team-wide
+            // total) — showing that doubled amount on EACH of the 2 cards would visually
+            // double-count it (30+30 on-card vs the real 30 added to pTot). Each card shows
+            // its own undoubled share instead, so the two card displays sum to the real total.
+            const perCardSupportBonus = match.supportBonus[match.rule.stat] || 0;
             if (playerSupportBonus > 0) {
-                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + playerSupportBonus; });
+                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + perCardSupportBonus; });
             }
             if (match.activeSupportUID && playerSupportBonus > 0) {
                 const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
@@ -365,8 +370,10 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             });
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
+            // Same fix as the player's side above: show each card its own undoubled share,
+            // not the team-wide doubled total, so the displayed numbers don't double-count.
             if (aiSupportBonus > 0) {
-                oppP.forEach(c => { aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + aiSupportBonus; });
+                oppP.forEach(c => { aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + aiPlay.supportBonus; });
             }
 
             if (aiPlay.support && aiSupportBonus > 0) {
