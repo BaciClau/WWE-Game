@@ -439,6 +439,8 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     let ao = document.getElementById('arena-opp');
                     if (ap) ap.classList.add('anim-clash-left');
                     if (ao) ao.classList.add('anim-clash-right');
+                    arena.classList.add('impact-flash');
+                    setTimeout(() => arena.classList.remove('impact-flash'), 500);
 
                     _clashTimer2 = setTimeout(() => {
                         _clashTimer2 = null;

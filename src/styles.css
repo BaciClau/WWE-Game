@@ -311,17 +311,42 @@
         .ability-footer-name-v2 { font-size: 11px; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 2px #000; line-height: 1.2; }
         .ability-footer-bonus-v2 { font-size: 10px; color: #ffffff; margin-top: 2px; }
 
+        /* WWE SuperCard (2014)-style ring: canvas mat + 3 corner-to-corner ropes (red/white/
+           blue, classic WWE color order) + 4 turnbuckle pads — all pure CSS layered
+           gradients, no image assets, so it scales/recolors cleanly at any screen size. */
         .match-arena {
-            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), radial-gradient(circle, #2a2a2a, #000);
-            border: 4px solid var(--wwe-red); border-radius: 20px; box-shadow: inset 0 0 50px #000, 0 10px 20px rgba(0,0,0,0.5), 0 0 20px rgba(192,57,43,0.3);
+            background:
+                radial-gradient(circle at 22px 20px, #c0392b 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 22px) 20px, #c0392b 0 9px, transparent 10px),
+                radial-gradient(circle at 22px calc(100% - 20px), #c0392b 0 9px, transparent 10px),
+                radial-gradient(circle at calc(100% - 22px) calc(100% - 20px), #c0392b 0 9px, transparent 10px),
+                linear-gradient(to bottom, transparent 15%, #c0392b 15%, #c0392b 16.5%, transparent 16.5%),
+                linear-gradient(to bottom, transparent 49.2%, #ecf0f1 49.2%, #ecf0f1 50.7%, transparent 50.7%),
+                linear-gradient(to bottom, transparent 83%, #2980b9 83%, #2980b9 84.5%, transparent 84.5%),
+                radial-gradient(ellipse at center, #3d3d3d 0%, #202020 65%, #0a0a0a 100%);
+            border: 6px solid #7a1616; border-radius: 16px;
+            box-shadow: inset 0 0 50px #000, 0 10px 20px rgba(0,0,0,0.5), 0 0 20px rgba(192,57,43,0.3);
             padding: 30px; display: flex; justify-content: space-between; align-items: center;
             min-height: 280px; position: relative; margin: 20px 0; overflow: hidden;
         }
-        .vs-badge { 
+        .vs-badge {
             font-size: 50px; font-style: italic; color: #e74c3c; text-shadow: 3px 3px 0 #fff, 0 0 30px red;
             font-weight: bold; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5;
         }
         .arena-side { display: flex; gap: 10px; width: 45%; justify-content: center; z-index: 2;}
+
+        /* Bright radial burst behind the VS badge at the exact moment the cards clash —
+           timed to fire alongside .anim-clash-left/.anim-clash-right in match.js. */
+        .match-arena.impact-flash::after {
+            content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+            background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,204,0,0.5) 30%, transparent 70%);
+            animation: impactFlash 0.5s ease-out forwards;
+        }
+        @keyframes impactFlash {
+            0% { opacity: 0; transform: scale(0.3); }
+            30% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.4); }
+        }
         
         /* ANIMAȚII LUPTĂ */
         @keyframes clashLeft { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(60px) scale(1.1) rotate(5deg); } 50% { transform: translateX(-10px) scale(1); } 70% { transform: translateX(60px) scale(1.1) rotate(5deg); } 100% { transform: translateX(0) scale(1); } }
