@@ -12,9 +12,18 @@
 // oferă cardurile brute — se putea avea un deck plin de Epic și tot ieșea Super Rare).
 // Subtreptele (+/++) marchează 33%/66% din distanța către pragul de bază al rarității
 // următoare. Rare rămâne 0 (rangul de start, toată lumea începe aici).
+// FIX: pragul "Rare+" (949) era doar 33% dintr-o interpolare artificială către Super Rare
+// (2877), fără nicio legătură cu un deck real — dar cel mai SLAB deck legal posibil (7
+// carduri Common, nivel 1, neantrenate) totalizează deja 1483, deci tier-ul de bază "Rare"
+// era de fapt inaccesibil (orice deck valid sărea direct la "Rare+"). Prima recalibrare
+// (1642 = totalul EXACT al celui mai BUN deck posibil compus doar din Common) tot nu era
+// bună — un deck maxim din Common ajungea CHIAR LA LIMITĂ, fără nicio marjă reală. Acum
+// 1750 = best-Common (1642) + o marjă de ~110 stats, cât să nu fie atins doar cu Common
+// maxim, ci necesită fie antrenament, fie primul card Uncommon. "Rare++" (1899) rămâne
+// neschimbat — un deck plin de Uncommon (1908) tot îl depășește la limită, deci nu era stricat.
 const TIERS = [
   { name: 'Rare',         base: 'Rare',      min: 0,     color: '#3498db' },
-  { name: 'Rare+',        base: 'Rare',      min: 949,   color: '#3498db' },
+  { name: 'Rare+',        base: 'Rare',      min: 1750,  color: '#3498db' },
   { name: 'Rare++',       base: 'Rare',      min: 1899,  color: '#3498db' },
   { name: 'Super Rare',   base: 'SuperRare', min: 2877,  color: '#00bcd4' },
   { name: 'Super Rare+',  base: 'SuperRare', min: 3250,  color: '#00bcd4' },

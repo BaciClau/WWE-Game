@@ -18,7 +18,17 @@ function autoEquipDeck(force = false) {
                 let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
             });
             let sortedS = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => {
-                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+                let baseA = DB.find(x=>x.id===a.id), baseB = DB.find(x=>x.id===b.id);
+                let rankA = RARITIES.indexOf(baseA.rarity), rankB = RARITIES.indexOf(baseB.rarity);
+                // A strictly higher-rank (rarer) support card always wins outright.
+                if (rankB !== rankA) return rankB - rankA;
+                // Same rank — always prefer a Manager card over a non-Manager one, regardless
+                // of raw stat total (managers give the Support Bonus a different in-match role
+                // than a plain object card, so they're worth keeping equipped when tied).
+                let mgrA = baseA.manager ? 1 : 0, mgrB = baseB.manager ? 1 : 0;
+                if (mgrB !== mgrA) return mgrB - mgrA;
+                let stA=getStats(a), stB=getStats(b);
+                return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
             });
             
             while(sortedM.length < 4) { addCard(1); sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M'); }
