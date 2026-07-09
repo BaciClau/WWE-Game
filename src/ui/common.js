@@ -1,3 +1,15 @@
+// Pure DOM paint for the header tier bar — split out of updateUI() so the deck editor can
+// call it with a live PREVIEW tier (computed from the in-progress draft, not the saved deck)
+// without touching any of updateUI()'s side effects (missions, rank-up granting, save()).
+function renderTierDisplay(tierInfo) {
+    let tn = document.getElementById('tier-name');
+    if (!tn) return;
+    tn.innerText = tierInfo.name; tn.style.color = tierInfo.color;
+    document.getElementById('tier-bar').style.width = tierInfo.pct + '%';
+    document.getElementById('tier-bar').style.background = `linear-gradient(90deg, ${tierInfo.color}, #fff)`;
+    document.getElementById('tier-numbers-display').innerText = `${tierInfo.current} / ${tierInfo.next}`;
+}
+
 function updateUI() {
             const favCard = player.favoriteUid ? player.inventory.find(c => c.uid === player.favoriteUid) : null;
 
@@ -36,19 +48,27 @@ function updateUI() {
             if(document.getElementById('col-count')) document.getElementById('col-count').innerText = player.inventory.length;
 
             let tierInfo = calculateDeckTier();
-            let tn = document.getElementById('tier-name');
-            tn.innerText = tierInfo.name; tn.style.color = tierInfo.color;
-            document.getElementById('tier-bar').style.width = tierInfo.pct + '%';
-            document.getElementById('tier-bar').style.background = `linear-gradient(90deg, ${tierInfo.color}, #fff)`;
-            document.getElementById('tier-numbers-display').innerText = `${tierInfo.current} / ${tierInfo.next}`;
+            renderTierDisplay(tierInfo);
 
             if (tierInfo.name !== player.lastTierName) {
                 const tierNames = TIERS.map(t => t.name);
-                const oldIdx = tierNames.indexOf(player.lastTierName);
                 const newIdx = tierNames.indexOf(tierInfo.name);
-                if (newIdx > oldIdx) {
+                // The guarantee is a ONE-TIME reward per tier, ever — gated on the all-time
+                // PEAK tier (highestTierName, which only ratchets up), not the last-displayed
+                // tier. Since the deck is editable and tier now tracks whatever's equipped
+                // (see calculateDeckTier), lastTierName alone would let a player farm infinite
+                // guarantees by swapping a weak card in (tier drops), then back out (tier
+                // "rises" again) — re-triggering the reward each time. Comparing against the
+                // peak instead means only a genuinely NEW best tier ever grants one.
+                const peakIdx = tierNames.indexOf(player.highestTierName);
+                if (newIdx > peakIdx) {
                     player.guaranteedPickRarity = tierInfo.base;
-                    showNotification(`🎉 RANK UP! You reached <strong>${tierInfo.name}</strong>!<br>Your next Draft pick is guaranteed a <strong>${tierInfo.base}</strong> card!`, 3000);
+                    // Guaranteed, but not necessarily the very next tile — mirrors the
+                    // original board's rank-up reward, which lands on a random upcoming pick
+                    // rather than deterministically the first one (0-4 normal picks first).
+                    player.guaranteedPickDelay = Math.floor(Math.random() * 5);
+                    player.highestTierName = tierInfo.name;
+                    showNotification(`🎉 RANK UP! You reached <strong>${tierInfo.name}</strong>!<br>You've earned a guaranteed <strong>${tierInfo.base}</strong> card on an upcoming Draft pick!`, 3000);
                 }
                 player.lastTierName = tierInfo.name;
                 save(false);
@@ -72,6 +92,26 @@ function updateUI() {
             }
         }
 
+        // In-theme replacement for the native browser confirm() popup — same yes/no modal
+        // look as every other popup in the game (pull-modal-overlay/box), instead of the
+        // browser's own chrome. onConfirm fires only if the player taps YES.
+        function showConfirmModal(message, onConfirm, yesLabel, noLabel) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-modal-title').innerText = message;
+            const yesBtn = document.getElementById('confirm-modal-yes-btn');
+            const noBtn = document.getElementById('confirm-modal-no-btn');
+            yesBtn.innerText = yesLabel || 'YES';
+            noBtn.innerText = noLabel || 'CANCEL';
+            const cleanup = () => {
+                modal.style.display = 'none';
+                yesBtn.onclick = null;
+                noBtn.onclick = null;
+            };
+            yesBtn.onclick = () => { cleanup(); onConfirm(); };
+            noBtn.onclick = cleanup;
+            modal.style.display = 'flex';
+        }
+
         // Header back button: leaving the Bulletin Board with unclaimed draft pulls shows the
         // same "here's what you got" summary as running out of picks — otherwise it's a no-op
         // extra screen. No pulls this session → just go back, nothing to show.
@@ -88,9 +128,7 @@ function updateUI() {
             // did, just gated behind a confirm so a stray back-tap can't cost a match by
             // accident.
             if (current && current.id === 'match-screen') {
-                if (confirm('Sigur vrei să renunți la meci? Va conta ca înfrângere.')) {
-                    endMatch(true);
-                }
+                showConfirmModal('Sigur vrei să renunți la meci?\nVa conta ca înfrângere.', () => endMatch(true));
                 return;
             }
             showScreen('main-menu');

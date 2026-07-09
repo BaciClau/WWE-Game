@@ -54,6 +54,15 @@ function autoEquipDeck(force = false) {
         let deckEditMode = false;
         let deckEditDraft = { M: [], F: [], S: [] }; // draft temporar cât ești în edit
 
+        // Live preview: while editing, the header tier bar reflects the in-progress draft
+        // (deckEditDraft) instead of the saved player.deck, so swapping cards updates the tier
+        // instantly without needing to hit Save first. Purely a DOM repaint — it never touches
+        // player.guaranteedPickRarity/highestTierName/save(), so nothing is granted until the
+        // player actually commits the change via saveDeckEdit().
+        function refreshLiveTierPreview() {
+            if (typeof renderTierDisplay === 'function') renderTierDisplay(calculateDeckTier(deckEditDraft));
+        }
+
         function toggleDeckEdit() {
             if (deckEditMode) {
                 cancelDeckEdit();
@@ -67,6 +76,7 @@ function autoEquipDeck(force = false) {
                 document.getElementById('deck-edit-info').style.display = 'block';
                 document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITING...';
                 renderDeck();
+                refreshLiveTierPreview();
             }
         }
 
@@ -79,6 +89,8 @@ function autoEquipDeck(force = false) {
             document.getElementById('deck-edit-info').style.display = 'none';
             document.getElementById('btn-edit-deck').innerHTML = '✏️ EDIT DECK';
             renderDeck();
+            // Restore the header to the real saved tier (the preview never touched player.deck).
+            if (typeof renderTierDisplay === 'function') renderTierDisplay(calculateDeckTier());
         }
 
         function saveDeckEdit() {
@@ -99,6 +111,7 @@ function autoEquipDeck(force = false) {
             autoEquipDeck(true);
             deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
             renderDeck();
+            refreshLiveTierPreview();
             showNotification('🤖 Auto-best applied to draft!', 1000);
         }
 
@@ -123,6 +136,7 @@ function autoEquipDeck(force = false) {
             }
             updateDeckSlotsInfo();
             renderDeck();
+            refreshLiveTierPreview();
         }
 
         function updateDeckSlotsInfo() {
@@ -131,13 +145,19 @@ function autoEquipDeck(force = false) {
             if (el) el.innerHTML = `M: <span style="color:${m===4?'#2ecc71':'#e74c3c'}">${m}/4</span>  F: <span style="color:${f===2?'#2ecc71':'#e74c3c'}">${f}/2</span>  SUPP: <span style="color:${s<=1?'#2ecc71':'#f1c40f'}">${s}/1</span>`;
         }
 
-        function calculateDeckTier() {
-            let m = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,4);
-            let f = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,2);
-            let s = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => { let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha); }).slice(0,1);
+        function calculateDeckTier(deckOverride) {
+            // Tier is driven by the cards actually EQUIPPED in the active deck (player.deck),
+            // not by the best cards sitting in the full collection — so swapping cards in/out
+            // of the deck moves the tier up or down immediately, instead of the tier only ever
+            // being able to climb as the collection grows regardless of what's equipped.
+            // deckOverride lets the deck editor preview the tier of the in-progress draft
+            // (deckEditDraft) before it's actually saved to player.deck.
+            let deck = deckOverride || player.deck;
+            let equippedUids = new Set([...deck.M, ...deck.F, ...deck.S]);
+            let equipped = player.inventory.filter(c => equippedUids.has(c.uid));
 
             let totalStats = 0;
-            [...m, ...f, ...s].forEach(c => { let st = getStats(c); totalStats += (st.pow + st.tgh + st.spd + st.cha); });
+            equipped.forEach(c => { let st = getStats(c); totalStats += (st.pow + st.tgh + st.spd + st.cha); });
 
             let cTier = TIERS[0]; let nTier = TIERS[1];
             for(let i=0; i<TIERS.length; i++) {

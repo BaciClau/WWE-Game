@@ -287,12 +287,13 @@ function renderDeck() {
             if (c.locked) return showNotification('🔒 Unlock this card before deleting it.', 1500);
             const inDeck = player.deck.M.includes(c.uid) || player.deck.F.includes(c.uid) || player.deck.S.includes(c.uid);
             if (inDeck) return showNotification('⚠️ Remove this card from your deck (Exhibition → Change Cards) before deleting it.', 2000);
-            if (!confirm(`Delete ${getCardBase(c).name} permanently? This cannot be undone.`)) return;
-            player.inventory = player.inventory.filter(x => x.uid !== c.uid);
-            if (player.favoriteUid === c.uid) { player.favoriteUid = null; updateUI(); }
-            save();
-            renderCardList();
-            showNotification('🗑️ Card deleted.', 1200);
+            showConfirmModal(`Delete ${getCardBase(c).name} permanently?\nThis cannot be undone.`, () => {
+                player.inventory = player.inventory.filter(x => x.uid !== c.uid);
+                if (player.favoriteUid === c.uid) { player.favoriteUid = null; updateUI(); }
+                save();
+                renderCardList();
+                showNotification('🗑️ Card deleted.', 1200);
+            }, 'DELETE');
         }
 
         // --- MATCHMAKING: 4 opponents with varied difficulty ---

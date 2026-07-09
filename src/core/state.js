@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [] };
+let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [] };
 
 // One-time data cleanup: several DB ids were exact duplicate entries (same wrestler, same
 // rarity, same stats — copy-pasted by mistake) and have been removed from src/data/cards.js.
@@ -87,7 +87,7 @@ const DUPLICATE_ID_REMAP = {
         }
 
         function freshStart(nickname) {
-            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: null, guaranteedPickRarity: null, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [] };
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [] };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -97,8 +97,11 @@ const DUPLICATE_ID_REMAP = {
             autoEquipDeck();
             // Baseline for the rank-up guarantee — set BEFORE generateBoard()/save() below,
             // since save() triggers updateUI(), which would otherwise see lastTierName still
-            // null and mistake the starting tier for a "rank up".
+            // null and mistake the starting tier for a "rank up". highestTierName is the
+            // all-time peak (only ever ratchets up) — separate from lastTierName, which just
+            // tracks the last DISPLAYED tier and can move up/down freely as the deck is edited.
             player.lastTierName = calculateDeckTier().name;
+            player.highestTierName = player.lastTierName;
             generateBoard();
             localStorage.setItem('sc_version', GAME_VERSION);
             save(false);
@@ -150,6 +153,7 @@ const DUPLICATE_ID_REMAP = {
                 if (player.wins === undefined) player.wins = 0;
                 if (player.losses === undefined) player.losses = 0;
                 if (player.guaranteedPickRarity === undefined) player.guaranteedPickRarity = null;
+                if (player.guaranteedPickDelay === undefined) player.guaranteedPickDelay = 0;
                 if (player.lastFreePackClaim === undefined) player.lastFreePackClaim = null;
                 if (player.resetCounter === undefined) player.resetCounter = 0;
                 if (player.missionProgress === undefined) player.missionProgress = {};
@@ -164,6 +168,7 @@ const DUPLICATE_ID_REMAP = {
                 // Baseline to the CURRENT tier for old saves — don't retroactively grant a
                 // guarantee for progress the player already made before this feature existed.
                 if (player.lastTierName === undefined || player.lastTierName === null) player.lastTierName = calculateDeckTier().name;
+                if (player.highestTierName === undefined || player.highestTierName === null) player.highestTierName = player.lastTierName;
                 checkDailyReset();
                 if (!player.nickname) {
                     promptNickname(function(name) {
@@ -213,11 +218,11 @@ const DUPLICATE_ID_REMAP = {
             }
         }
         function resetGamePrompt() {
-            if (confirm("Are you sure? You will lose all progress!")) {
+            showConfirmModal('Are you sure?\nYou will lose all progress!', () => {
                 localStorage.removeItem(SAVE_KEY);
                 localStorage.removeItem('sc2014_v010');
                 localStorage.removeItem('sc2014_v90');
                 localStorage.removeItem('sc_version');
                 location.reload();
-            }
+            }, 'RESET');
         }

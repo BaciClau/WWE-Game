@@ -76,9 +76,20 @@ function renderDraftBoard() {
             let isReset = (i === player.resetIdx);
             let pulledId = 1;
 
-            // A tier rank-up guarantees the very next pick is a card from the new tier's
-            // rarity, regardless of which tile is clicked — consumed after this one pull.
-            let guaranteedRarity = player.guaranteedPickRarity;
+            // A tier rank-up guarantees SOME upcoming pick (any tile) is a card from the new
+            // tier's rarity — but not deterministically the very next one. A random delay
+            // (0-4 picks) is rolled when the guarantee is granted; it only fires once that
+            // countdown reaches 0, so it can land on the first pull (lucky) or several pulls
+            // later, same as the original board's rank-up reward feel. Never more than one
+            // guarantee pending at a time (a fresh tier-up overwrites, doesn't stack).
+            let guaranteedRarity = null;
+            if (player.guaranteedPickRarity) {
+                if (player.guaranteedPickDelay > 0) {
+                    player.guaranteedPickDelay--;
+                } else {
+                    guaranteedRarity = player.guaranteedPickRarity;
+                }
+            }
 
             let tInfo = calculateDeckTier();
             let pBase = tInfo.base;
@@ -86,6 +97,7 @@ function renderDraftBoard() {
 
             if (guaranteedRarity) {
                 player.guaranteedPickRarity = null;
+                player.guaranteedPickDelay = 0;
                 let pool = DB.filter(c => c.rarity === guaranteedRarity && !c.ladderReward);
                 if (pool.length === 0) pool = DB.filter(c => c.rarity === 'Rare' && !c.ladderReward);
                 pulledId = pool[Math.floor(Math.random() * pool.length)].id;
@@ -149,16 +161,11 @@ function renderDraftBoard() {
                 pulledId = pool[Math.floor(Math.random() * pool.length)].id;
             }
 
+            // save() -> updateUI() (below) is what actually detects a tier-up and grants the
+            // rank-up guarantee (see common.js) — any change to that granting logic belongs
+            // there, not here, so there's a single source of truth for it.
             addCard(pulledId); save(); renderDraftBoard();
             _draftSessionPulls.push(pulledId);
-
-            // Tier-up guarantee: if this pull pushed the deck into a new BASE tier, the very
-            // next pull (any tile) is guaranteed a card from that new tier.
-            let newTierInfo = calculateDeckTier();
-            let newBIdx = DRAFT_BASE_RARITIES.indexOf(newTierInfo.base);
-            if (newBIdx > bIdx) {
-                player.guaranteedPickRarity = newTierInfo.base;
-            }
             checkTierMissions();
 
             let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
