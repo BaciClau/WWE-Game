@@ -14,14 +14,31 @@
         html { height: 100%; }
         /* App shell: header + active screen fill exactly 100dvh, no page-level scroll, on
            ANY monitor/zoom/DPI-scaling combination — a screen that doesn't fit its own
-           content scrolls internally (below) rather than growing the whole page. */
+           content scrolls internally (below) rather than growing the whole page.
+           The flex/height layout lives on #app-viewport (not body directly) so the auto-scale
+           safety net (src/ui/autoscale.js) can transform:scale() that one wrapper down to fit
+           small windows, while body keeps a hard, real-viewport-sized overflow:hidden clip —
+           modals stay OUTSIDE #app-viewport on purpose, since position:fixed children of a
+           transformed ancestor resolve against that ancestor instead of the true viewport. */
         body {
             font-family: 'Oswald', 'Impact', sans-serif;
             background: radial-gradient(circle at top, var(--wwe-red-dark) 0%, #000000 70%);
             color: white; margin: 0; padding: 0; user-select: none;
             height: 100vh; height: 100dvh;
             overflow: hidden;
+        }
+        #app-viewport {
+            height: 100%;
             display: flex; flex-direction: column;
+            transform-origin: top left;
+        }
+        /* Applied by autoscale.js, only to the active screen it's currently measuring/scaling
+           — lets that screen grow to its true natural height instead of being clipped by its
+           own overflow-y:auto, since the OUTER transform:scale + body's overflow:hidden handle
+           fitting it into the real viewport instead. */
+        .autoscale-native-size {
+            flex: 0 0 auto !important;
+            overflow-y: visible !important;
         }
 
         header {

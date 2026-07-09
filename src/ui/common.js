@@ -90,6 +90,7 @@ function updateUI() {
                 document.getElementById('card-focus-modal').style.display = 'none';
                 if (deckEditMode) cancelDeckEdit();
             }
+            if (typeof scheduleAutoScale === 'function') scheduleAutoScale();
         }
 
         // In-theme replacement for the native browser confirm() popup — same yes/no modal
