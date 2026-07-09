@@ -3,6 +3,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
             autoEquipDeck(); save();
+            // Cleared in endMatch() on every real outcome — if this is still set on the NEXT
+            // page load, the tab was closed/refreshed mid-match instead of ending normally.
+            localStorage.setItem('sc_match_in_progress', '1');
             showScreen('match-screen');
             match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
@@ -457,6 +460,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function endMatch(forfeit, isDraw) {
+            // Cleared here (every outcome — forfeit/draw/win/loss all pass through this
+            // function) so a NORMAL match end never gets mistaken for "left mid-match" on the
+            // next page load. See startMatchWithOpponent() where it's set, and initGame() in
+            // state.js where a still-set flag on load means the tab was closed/refreshed while
+            // a match was in progress.
+            localStorage.removeItem('sc_match_in_progress');
             let priorStreak = player.winStreak || 0;
 
             if(forfeit) {

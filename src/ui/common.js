@@ -30,16 +30,22 @@ function updateUI() {
                 hubPlaceholder.style.display = 'none';
                 hubName.innerText = getCardBase(favCard).name;
                 if (dashCard) {
-                    // Same favorite-card selection as always — just also used as the whole
-                    // main card's backdrop (dark on the left where the logo sits, fading to
-                    // transparent on the right where the photo shows through).
-                    dashCard.style.backgroundImage = `linear-gradient(90deg, rgba(10,0,0,0.92) 35%, rgba(10,0,0,0.1) 92%), url('${newSrc}')`;
+                    // Backdrop is tinted by the favorite card's RARITY (see .dash-rarity-* in
+                    // styles.css), not a second copy of the same photo — using the photo twice
+                    // (once as a cover-cropped background, once as the sharp foreground cutout)
+                    // read as a ghostly double-exposure of the character.
+                    dashCard.style.backgroundImage = '';
+                    RARITIES.forEach(r => dashCard.classList.remove('dash-rarity-' + r));
+                    dashCard.classList.add('dash-rarity-' + getCardBase(favCard).rarity);
                 }
             } else if (hubImg) {
                 hubImg.style.display = 'none';
                 hubPlaceholder.style.display = 'flex';
                 hubName.innerText = 'NO FAVORITE SET';
-                if (dashCard) dashCard.style.backgroundImage = '';
+                if (dashCard) {
+                    dashCard.style.backgroundImage = '';
+                    RARITIES.forEach(r => dashCard.classList.remove('dash-rarity-' + r));
+                }
             }
             if (document.getElementById('hub-wins')) document.getElementById('hub-wins').innerText = player.wins || 0;
             if (document.getElementById('hub-losses')) document.getElementById('hub-losses').innerText = player.losses || 0;

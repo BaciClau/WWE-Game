@@ -50,6 +50,15 @@
             overflow-y: visible !important;
         }
 
+        /* Tiny, out-of-the-way build tag — fixed to the real viewport corner (outside
+           #app-viewport) so auto-scale never touches it, and pointer-events:none so it can
+           never intercept a click. */
+        #version-badge {
+            position: fixed; left: 6px; bottom: 4px;
+            font-family: Arial, sans-serif; font-size: 10px; color: rgba(255,255,255,0.22);
+            pointer-events: none; user-select: none; z-index: 5; letter-spacing: 0.5px;
+        }
+
         header {
             display: flex; justify-content: space-between; align-items: center;
             flex-shrink: 0; position: relative;
@@ -167,6 +176,27 @@
                 linear-gradient(135deg, #1a0000, #000);
             background-size: cover; background-position: center; transition: background-image 0.3s;
         }
+        /* Champ-card backdrop, keyed by the favorite card's rarity — used instead of a second,
+           differently-cropped copy of the SAME photo (which read as a ghostly double-exposure
+           behind the sharp foreground portrait). ONE layer only — solid rarity tint on the
+           right, BEHIND the actual photo (object-position:bottom right, z-index 3) — fading
+           through the middle toward transparent by 40%, so the color reads as coming from
+           behind the character, not from the opposite side behind the logo.
+           background-color:#000 is the permanent base UNDER the gradient — without it, the
+           transparent portion revealed the PAGE's own dark-red background bleeding through
+           instead of solid black.
+           Uses each rarity's BRIGHT accent/border color (same one used elsewhere as
+           .rarity-X's border-color), not the dark fill gradient those small cards use — Common
+           specifically (#444444) was nearly invisible against black, since both are similarly
+           dark; the bright accent colors give reliable contrast at every rarity. */
+        .dash-card.dash-rarity-Common    { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(136,136,136,0.85) 85%, rgba(136,136,136,0.85) 100%); }
+        .dash-card.dash-rarity-Uncommon  { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(0,170,0,0.85) 85%, rgba(0,170,0,0.85) 100%); }
+        .dash-card.dash-rarity-Rare      { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(143,220,255,0.85) 85%, rgba(143,220,255,0.85) 100%); }
+        .dash-card.dash-rarity-SuperRare { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(34,68,255,0.85) 85%, rgba(34,68,255,0.85) 100%); }
+        .dash-card.dash-rarity-UltraRare { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(153,0,204,0.85) 85%, rgba(153,0,204,0.85) 100%); }
+        .dash-card.dash-rarity-Epic      { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(204,119,0,0.85) 85%, rgba(204,119,0,0.85) 100%); }
+        .dash-card.dash-rarity-Legendary { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(255,204,0,0.85) 85%, rgba(255,204,0,0.85) 100%); }
+        .dash-card.dash-rarity-Survivor  { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(204,0,0,0.85) 85%, rgba(204,0,0,0.85) 100%); }
         .dash-card-photo-clip { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; z-index: 1; }
         .dash-card-logo {
             position: absolute; left: 0; top: 0; bottom: 0; width: 46%; z-index: 2; pointer-events: none;

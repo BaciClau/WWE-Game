@@ -170,6 +170,16 @@ const DUPLICATE_ID_REMAP = {
                 if (player.lastTierName === undefined || player.lastTierName === null) player.lastTierName = calculateDeckTier().name;
                 if (player.highestTierName === undefined || player.highestTierName === null) player.highestTierName = player.lastTierName;
                 checkDailyReset();
+                // Still set means the tab was closed/refreshed while a match was in progress
+                // (startMatchWithOpponent sets it, endMatch clears it on every real outcome —
+                // forfeit/draw/win/loss) — count it as a forfeit instead of silently dropping
+                // the player back at the main menu with no explanation and no consequence.
+                if (localStorage.getItem('sc_match_in_progress') === '1') {
+                    localStorage.removeItem('sc_match_in_progress');
+                    player.winStreak = 0;
+                    player.losses = (player.losses || 0) + 1;
+                    showNotification('🏳️ You left a match in progress — it was counted as a forfeit.', 2800);
+                }
                 if (!player.nickname) {
                     promptNickname(function(name) {
                         player.nickname = name;
