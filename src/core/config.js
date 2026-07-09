@@ -12,34 +12,37 @@
 // oferă cardurile brute — se putea avea un deck plin de Epic și tot ieșea Super Rare).
 // Subtreptele (+/++) marchează 33%/66% din distanța către pragul de bază al rarității
 // următoare. Rare rămâne 0 (rangul de start, toată lumea începe aici).
-// FIX: pragul "Rare+" (949) era doar 33% dintr-o interpolare artificială către Super Rare
-// (2877), fără nicio legătură cu un deck real — dar cel mai SLAB deck legal posibil (7
-// carduri Common, nivel 1, neantrenate) totalizează deja 1483, deci tier-ul de bază "Rare"
-// era de fapt inaccesibil (orice deck valid sărea direct la "Rare+"). Prima recalibrare
-// (1642 = totalul EXACT al celui mai BUN deck posibil compus doar din Common) tot nu era
-// bună — un deck maxim din Common ajungea CHIAR LA LIMITĂ, fără nicio marjă reală. Acum
-// 1750 = best-Common (1642) + o marjă de ~110 stats, cât să nu fie atins doar cu Common
-// maxim, ci necesită fie antrenament, fie primul card Uncommon. "Rare++" (1899) rămâne
-// neschimbat — un deck plin de Uncommon (1908) tot îl depășește la limită, deci nu era stricat.
+// FIX v7 (grindier, anchored to a REAL reported deck): a player's real 7-card deck — The
+// Rock/John Cena/Alberto Del Rio/Darren Young (4 Rare, level 1) + Alicia Fox (Uncommon) +
+// AJ Lee (Common) + Lana (Uncommon manager) — totals EXACTLY 2044 (verified against the
+// in-game header number, not estimated). The player felt that lineup (4 real Rare cards, but
+// still level 1 and padded with Common/Uncommon filler) should land only 3/4 of the way to
+// "Rare+", not already past Rare++ like the v6 thresholds put it — the game is meant to be
+// grindy (reaching Ultra Rare/Epic should take a long haul of real play, not just owning a
+// handful of untrained Rares). Solving 2044 = 0.75 × RarePlusThreshold gives 2725 for
+// "Rare+". Every other threshold is scaled by that SAME factor (2725/1750 ≈ ×1.557) rather
+// than recalibrated individually, so the shape of the curve (still: base tier's threshold =
+// the exact total of the best possible level-1 deck of that rarity, per v6) is preserved —
+// just stretched to actually require substantially more grinding to climb.
 const TIERS = [
   { name: 'Rare',         base: 'Rare',      min: 0,     color: '#3498db' },
-  { name: 'Rare+',        base: 'Rare',      min: 1750,  color: '#3498db' },
-  { name: 'Rare++',       base: 'Rare',      min: 1899,  color: '#3498db' },
-  { name: 'Super Rare',   base: 'SuperRare', min: 2877,  color: '#00bcd4' },
-  { name: 'Super Rare+',  base: 'SuperRare', min: 3250,  color: '#00bcd4' },
-  { name: 'Super Rare++', base: 'SuperRare', min: 3623,  color: '#00bcd4' },
-  { name: 'Ultra Rare',   base: 'UltraRare', min: 4008,  color: '#e040fb' },
-  { name: 'Ultra Rare+',  base: 'UltraRare', min: 5071,  color: '#e040fb' },
-  { name: 'Ultra Rare++', base: 'UltraRare', min: 6134,  color: '#e040fb' },
-  { name: 'Epic',         base: 'Epic',      min: 7229,  color: '#9b59b6' },
-  { name: 'Epic+',        base: 'Epic',      min: 8322,  color: '#9b59b6' },
-  { name: 'Epic++',       base: 'Epic',      min: 9414,  color: '#9b59b6' },
-  { name: 'Legendary',    base: 'Legendary', min: 10540, color: '#f1c40f' },
-  { name: 'Legendary+',   base: 'Legendary', min: 12493, color: '#f1c40f' },
-  { name: 'Legendary++',  base: 'Legendary', min: 14447, color: '#f1c40f' },
-  { name: 'Survivor',     base: 'Survivor',  min: 16459, color: '#e74c3c' },
-  { name: 'Survivor+',    base: 'Survivor',  min: 19951, color: '#e74c3c' },
-  { name: 'Survivor++',   base: 'Survivor',  min: 23442, color: '#e74c3c' },
+  { name: 'Rare+',        base: 'Rare',      min: 2725,  color: '#3498db' },
+  { name: 'Rare++',       base: 'Rare',      min: 2957,  color: '#3498db' },
+  { name: 'Super Rare',   base: 'SuperRare', min: 4480,  color: '#00bcd4' },
+  { name: 'Super Rare+',  base: 'SuperRare', min: 5061,  color: '#00bcd4' },
+  { name: 'Super Rare++', base: 'SuperRare', min: 5642,  color: '#00bcd4' },
+  { name: 'Ultra Rare',   base: 'UltraRare', min: 6241,  color: '#e040fb' },
+  { name: 'Ultra Rare+',  base: 'UltraRare', min: 7896,  color: '#e040fb' },
+  { name: 'Ultra Rare++', base: 'UltraRare', min: 9552,  color: '#e040fb' },
+  { name: 'Epic',         base: 'Epic',      min: 11257, color: '#9b59b6' },
+  { name: 'Epic+',        base: 'Epic',      min: 12959, color: '#9b59b6' },
+  { name: 'Epic++',       base: 'Epic',      min: 14659, color: '#9b59b6' },
+  { name: 'Legendary',    base: 'Legendary', min: 16412, color: '#f1c40f' },
+  { name: 'Legendary+',   base: 'Legendary', min: 19453, color: '#f1c40f' },
+  { name: 'Legendary++',  base: 'Legendary', min: 22496, color: '#f1c40f' },
+  { name: 'Survivor',     base: 'Survivor',  min: 25629, color: '#e74c3c' },
+  { name: 'Survivor+',    base: 'Survivor',  min: 31067, color: '#e74c3c' },
+  { name: 'Survivor++',   base: 'Survivor',  min: 36503, color: '#e74c3c' },
 ];
 
         // Crește la fiecare update → hard reset automat la load

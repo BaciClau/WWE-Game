@@ -128,7 +128,6 @@
         .tier-text { font-size: 24px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 10px currentColor; }
         .tier-bar-bg { width: 320px; height: 20px; background: #222; border: 2px solid var(--wwe-red); border-radius: 8px; overflow: hidden; margin-top: 4px; box-shadow: inset 0 0 5px #000; position: relative;}
         .tier-bar-fill { height: 100%; background: linear-gradient(90deg, var(--wwe-gold), var(--wwe-red)); width: 0%; transition: width 0.5s ease; }
-        .tier-numbers { position: absolute; width: 100%; text-align: center; font-size: 13px; top: 0; left: 0; line-height: 20px; font-family: Arial; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000;}
 
         /* Tier progress shown in the header, centered on the middle of the screen regardless
            of the back button's width on the left (header has position:relative for this). */
@@ -140,7 +139,11 @@
         .header-tier-bar-bg { width: 320px; height: 20px; background: #222; border: 2px solid var(--wwe-red); border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 5px #000; position: relative; }
         /* Numbers stay in the DOM (still updated in updateUI()) so the underlying tier math
            is untouched — just not shown to the player, who should only see the bar fill. */
-        .header-tier-numbers { display: none; }
+        .header-tier-numbers {
+            position: absolute; width: 100%; text-align: center; font-size: 13px; top: 0; left: 0;
+            line-height: 20px; font-family: Arial; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000;
+            display: none;
+        }
 
         .badge { background: #1a1a1a; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--wwe-red); font-size: 22px; display: flex; gap: 18px; margin-left: auto; }
         
