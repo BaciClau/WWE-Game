@@ -15,21 +15,30 @@
         /* App shell: header + active screen fill exactly 100dvh, no page-level scroll, on
            ANY monitor/zoom/DPI-scaling combination — a screen that doesn't fit its own
            content scrolls internally (below) rather than growing the whole page.
-           The flex/height layout lives on #app-viewport (not body directly) so the auto-scale
-           safety net (src/ui/autoscale.js) can transform:scale() that one wrapper down to fit
-           small windows, while body keeps a hard, real-viewport-sized overflow:hidden clip —
-           modals stay OUTSIDE #app-viewport on purpose, since position:fixed children of a
-           transformed ancestor resolve against that ancestor instead of the true viewport. */
+           header stays a DIRECT flex child of body, at its natural 1:1 size, always spanning
+           the full width — it must NEVER be inside the scaled #app-viewport wrapper, or it
+           shrinks/grows along with the content instead of staying a fixed, full-width toolbar.
+           #app-viewport only wraps the .screen elements and takes the remaining height below
+           the header; the auto-scale safety net (src/ui/autoscale.js) transform:scale()s just
+           that wrapper to fit small windows. Modals stay OUTSIDE #app-viewport too, since
+           position:fixed children of a transformed ancestor resolve against that ancestor
+           instead of the true viewport. */
         body {
             font-family: 'Oswald', 'Impact', sans-serif;
             background: radial-gradient(circle at top, var(--wwe-red-dark) 0%, #000000 70%);
             color: white; margin: 0; padding: 0; user-select: none;
             height: 100vh; height: 100dvh;
             overflow: hidden;
+            display: flex; flex-direction: column;
         }
         #app-viewport {
-            height: 100%;
+            flex: 1 1 auto; min-height: 0;
             display: flex; flex-direction: column;
+            /* Always scale from the true top-left (0,0) — matches the wrapper's own untransformed
+               position, which coincides with the real viewport's top-left corner. Centering the
+               scaled result horizontally is handled by an explicit translateX in autoscale.js
+               (percentage transform-origin values are relative to the wrapper's OWN box, which
+               isn't always viewport-width, so they don't reliably land on the true center). */
             transform-origin: top left;
         }
         /* Applied by autoscale.js, only to the active screen it's currently measuring/scaling

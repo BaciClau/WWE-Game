@@ -1,12 +1,14 @@
 // Automatic "fit to viewport" safety net. Some players run the game in smaller browser
 // windows / laptop screens than it was designed on, and a few "single view" screens (menu,
-// opponent select, deck edit, match) are meant to show everything at once without scrolling.
+// opponent select, match) are meant to show everything at once without scrolling.
 // Rather than hand-tuning spacing for every possible window size, this detects when the real
-// content doesn't fit the actual browser viewport and shrinks the WHOLE app uniformly (header
-// + active screen) via transform:scale() until it does. List-heavy screens (card catalog,
-// collection, missions, store, draft board, ladder rewards) are deliberately excluded — those
-// are supposed to scroll internally when there's a lot of content, shrinking them into
-// illegibility would be worse than the scrollbar they already have.
+// content doesn't fit the actual browser viewport and shrinks it via transform:scale() until
+// it does. The header is NEVER part of this — it's a sibling of #app-viewport, always full
+// width at its natural size, so it stays a normal fixed toolbar instead of shrinking/growing
+// along with the content. List-heavy screens (card catalog, collection, missions, store,
+// draft board, ladder rewards) are deliberately excluded from scaling — those are supposed to
+// scroll internally when there's a lot of content, shrinking them into illegibility would be
+// worse than the scrollbar they already have.
 //
 // NOTE: an earlier version of this used CSS `zoom` on <html>, which turned out not to work —
 // zoom doesn't affect scrollHeight/clientHeight measurements (they stay in the element's own
@@ -16,7 +18,12 @@
 // SCROLL/OVERFLOW DECISION happens on body (outer, unscaled, real-viewport-sized,
 // overflow:hidden) comparing against the WRAPPER's rendered (post-transform) footprint, not
 // against a local, transform-blind measurement.
-const AUTOSCALE_SCREEN_IDS = ['main-menu', 'opp-select-screen', 'deck-edit-screen', 'match-screen'];
+// deck-edit-screen is deliberately NOT in this list — it has both a fixed "your deck" section
+// AND an unbounded collection grid below it, and toggling edit mode changes its content height
+// (toolbar/banner + "IN DECK" labels), which kept nudging the computed scale every time edit
+// mode was entered/exited — a small but constant, distracting resize. A normal scrollbar there
+// is the better tradeoff, same as the other list-heavy screens below.
+const AUTOSCALE_SCREEN_IDS = ['main-menu', 'opp-select-screen', 'match-screen'];
 const AUTOSCALE_MIN = 0.55;
 
 let _autoscaleRaf = null;
@@ -34,6 +41,18 @@ function _autoscaleReset(wrapper, activeScreen) {
     document.querySelectorAll('.autoscale-native-size').forEach(el => {
         if (el !== activeScreen) el.classList.remove('autoscale-native-size');
     });
+}
+
+// Builds a transform that scales from the wrapper's true (0,0) origin — which always matches
+// the real viewport's top-left corner — and then translates the SCALED result to center it
+// horizontally within the viewport. Using an explicit translate instead of a percentage
+// transform-origin avoids depending on how wide the wrapper's own box happens to be (it's
+// sometimes wider than the viewport on purpose, see the "still overflows at floor" case
+// below), which a percentage origin would get wrong.
+function _autoscaleTransform(wrapW, scale) {
+    const renderedW = wrapW * scale;
+    const translateX = Math.max(0, (window.innerWidth - renderedW) / 2);
+    return 'translate(' + translateX + 'px, 0px) scale(' + scale + ')';
 }
 
 function _autoscaleCompute() {
@@ -55,19 +74,29 @@ function _autoscaleCompute() {
     _autoscaleReset(wrapper, activeScreen);
     activeScreen.classList.add('autoscale-native-size');
 
+    // header is now a sibling of #app-viewport (not inside it) so it always renders at its
+    // natural 1:1 size, full-width, never scaled — only the space BELOW it is available for
+    // the wrapper to fill.
     const header = document.querySelector('header');
     const headerH = header ? header.getBoundingClientRect().height : 0;
-    const naturalW = Math.max(wrapper.scrollWidth, activeScreen.scrollWidth);
-    const naturalH = headerH + activeScreen.scrollHeight;
+    const availH = window.innerHeight - headerH;
+    // Content is usually narrower than the viewport (.screen has max-width + margin:auto to
+    // stay centered) — sizing the wrapper to the CONTENT's own width instead of the viewport
+    // would shrink it down to that narrower box and, since transform-origin is top-left, pin
+    // everything to the top-left corner with a big empty gap on the right instead of staying
+    // centered. Always keep at least the viewport width; only grow wider if content genuinely
+    // needs more.
+    const naturalW = Math.max(window.innerWidth, activeScreen.scrollWidth);
+    const naturalH = activeScreen.scrollHeight;
 
-    let scale = Math.min(1, window.innerHeight / naturalH, window.innerWidth / naturalW);
+    let scale = Math.min(1, availH / naturalH, window.innerWidth / naturalW);
     if (!isFinite(scale) || scale <= 0) scale = 1;
     // Below this, give up shrinking further and let the screen's own overflow-y:auto take
     // over as a last resort — better a normal scrollbar than unreadably tiny text.
     scale = Math.max(AUTOSCALE_MIN, scale);
 
     const stillOverflowsAtFloor = scale <= AUTOSCALE_MIN + 1e-6 &&
-        (naturalH * scale > window.innerHeight + 0.5 || naturalW * scale > window.innerWidth + 0.5);
+        (naturalH * scale > availH + 0.5 || naturalW * scale > window.innerWidth + 0.5);
 
     if (scale >= 0.999) {
         // Fits natively — leave everything at rest, normal overflow-y:auto stays harmless
@@ -80,13 +109,14 @@ function _autoscaleCompute() {
         // way the leftover excess still scrolls normally within the screen, instead of being
         // silently clipped off-screen by body's overflow:hidden with nothing to reach it.
         activeScreen.classList.remove('autoscale-native-size');
-        wrapper.style.width = (window.innerWidth / scale) + 'px';
-        wrapper.style.height = (window.innerHeight / scale) + 'px';
-        wrapper.style.transform = 'scale(' + scale + ')';
+        const floorW = window.innerWidth / scale;
+        wrapper.style.width = floorW + 'px';
+        wrapper.style.height = (availH / scale) + 'px';
+        wrapper.style.transform = _autoscaleTransform(floorW, scale);
     } else {
         wrapper.style.width = naturalW + 'px';
         wrapper.style.height = naturalH + 'px';
-        wrapper.style.transform = 'scale(' + scale + ')';
+        wrapper.style.transform = _autoscaleTransform(naturalW, scale);
     }
 
     // Give the browser two frames to deliver (and let us ignore) any ResizeObserver

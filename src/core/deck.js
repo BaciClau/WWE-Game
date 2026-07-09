@@ -74,30 +74,51 @@ function autoEquipDeck(force = false) {
         }
 
         function toggleDeckEdit() {
-            if (deckEditMode) {
-                cancelDeckEdit();
-            } else {
-                deckEditMode = true;
-                // Porneste cu deck-ul curent ca baza
-                deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
-                document.getElementById('btn-auto-deck').style.display = 'inline-flex';
-                document.getElementById('btn-save-deck').style.display = 'inline-flex';
-                document.getElementById('btn-cancel-deck').style.display = 'inline-flex';
-                document.getElementById('deck-edit-info').style.display = 'block';
-                document.getElementById('btn-edit-deck').innerHTML = '✏️ EDITING...';
-                renderDeck();
-                refreshLiveTierPreview();
-            }
+            // While editing, this button is just a status label ("EDITING...") — CANCEL and
+            // SAVE DECK are the only ways out, so it doesn't also duplicate cancelDeckEdit().
+            if (deckEditMode) return;
+            deckEditMode = true;
+            // Porneste cu deck-ul curent ca baza
+            deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
+            // visibility (not display) — these stay in the layout flow either way, so the
+            // screen's total height doesn't change when entering/exiting edit mode, which
+            // would otherwise make the auto-scale safety net visibly re-shrink everything.
+            document.getElementById('btn-auto-deck').style.visibility = 'visible';
+            document.getElementById('btn-auto-deck').style.pointerEvents = 'auto';
+            document.getElementById('btn-save-deck').style.visibility = 'visible';
+            document.getElementById('btn-save-deck').style.pointerEvents = 'auto';
+            document.getElementById('btn-cancel-deck').style.visibility = 'visible';
+            document.getElementById('btn-cancel-deck').style.pointerEvents = 'auto';
+            document.getElementById('deck-edit-info').style.visibility = 'visible';
+            const editBtn = document.getElementById('btn-edit-deck');
+            editBtn.innerHTML = '✏️ EDITING...';
+            editBtn.style.pointerEvents = 'none';
+            editBtn.style.opacity = '0.6';
+            // Can't start a match mid-edit — only CANCEL or SAVE DECK get you out of here.
+            const startBtn = document.getElementById('btn-start-confirm-deck');
+            startBtn.style.pointerEvents = 'none';
+            startBtn.style.opacity = '0.5';
+            renderDeck();
+            refreshLiveTierPreview();
         }
 
         function cancelDeckEdit() {
             deckEditMode = false;
             deckEditDraft = { M: [], F: [], S: [] };
-            document.getElementById('btn-auto-deck').style.display = 'none';
-            document.getElementById('btn-save-deck').style.display = 'none';
-            document.getElementById('btn-cancel-deck').style.display = 'none';
-            document.getElementById('deck-edit-info').style.display = 'none';
-            document.getElementById('btn-edit-deck').innerHTML = '✏️ EDIT DECK';
+            document.getElementById('btn-auto-deck').style.visibility = 'hidden';
+            document.getElementById('btn-auto-deck').style.pointerEvents = 'none';
+            document.getElementById('btn-save-deck').style.visibility = 'hidden';
+            document.getElementById('btn-save-deck').style.pointerEvents = 'none';
+            document.getElementById('btn-cancel-deck').style.visibility = 'hidden';
+            document.getElementById('btn-cancel-deck').style.pointerEvents = 'none';
+            document.getElementById('deck-edit-info').style.visibility = 'hidden';
+            const editBtn = document.getElementById('btn-edit-deck');
+            editBtn.innerHTML = '✏️ EDIT DECK';
+            editBtn.style.pointerEvents = 'auto';
+            editBtn.style.opacity = '1';
+            const startBtn = document.getElementById('btn-start-confirm-deck');
+            startBtn.style.pointerEvents = 'auto';
+            startBtn.style.opacity = '1';
             renderDeck();
             // Restore the header to the real saved tier (the preview never touched player.deck).
             if (typeof renderTierDisplay === 'function') renderTierDisplay(calculateDeckTier());

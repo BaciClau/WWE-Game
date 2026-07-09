@@ -129,7 +129,13 @@ function updateUI() {
             // did, just gated behind a confirm so a stray back-tap can't cost a match by
             // accident.
             if (current && current.id === 'match-screen') {
-                showConfirmModal('Sigur vrei să renunți la meci?\nVa conta ca înfrângere.', () => endMatch(true));
+                showConfirmModal('Are you sure you want to forfeit the match?\nIt will count as a loss.', () => endMatch(true));
+                return;
+            }
+            // Ladder Rewards is only ever opened from Opponent Select — back should return
+            // there, not dump the player all the way out to the main menu.
+            if (current && current.id === 'ladder-rewards-screen') {
+                showScreen('opp-select-screen');
                 return;
             }
             showScreen('main-menu');
