@@ -1,11 +1,20 @@
 let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
 
+        // True from the moment endMatch() runs until the next match starts. The round flow
+        // has several delayed callbacks in flight at any time (clash timers, the spotlight's
+        // 1.4s onDone, a queued Overtime notification) that a mid-round forfeit does NOT
+        // cancel — without this guard one of them could fire AFTER the forfeit already ended
+        // the match and run endMatch a second time (double loss recorded, a consolation pick
+        // granted for a forfeited match, and a surprise screen jump to the draft board).
+        let _matchOver = false;
+
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
             autoEquipDeck(); save();
             // Cleared in endMatch() on every real outcome — if this is still set on the NEXT
             // page load, the tab was closed/refreshed mid-match instead of ending normally.
             localStorage.setItem('sc_match_in_progress', '1');
+            _matchOver = false;
             showScreen('match-screen');
             match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
@@ -15,6 +24,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function nextRound() {
+            if (_matchOver) return;
             if (match.pScore === 3 || match.oScore === 3) return endMatch(false);
             if (match.round > 5) return handleStalemate();
             playRound();
@@ -40,6 +50,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function playRound() {
+            // Guards the Overtime notification's delayed callback (and any other queued
+            // path into a new round) against a forfeit that already ended the match.
+            if (_matchOver) return;
             // activeManagerUID is deliberately NOT reset here — a signed manager buffs the
             // deck for the REST OF THE MATCH (see matchWideBonus), not just the round it was
             // played in, so its "signed" state (and the card's "TO DECK" footer text) must
@@ -180,7 +193,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         } else {
                             match.activeSupportUID = u; match.used.push(u);
                             match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
-                            document.getElementById('support-status').innerHTML = `<span style="color:#2ecc71">✅ ${s.name} Activat! Bonus la ${match.rule.stat.toUpperCase()}! (tap again to undo)</span>`;
+                            // Only claim a bonus the card actually gives on THIS round's stat —
+                            // activating a support with 0 there is allowed (player's call, can
+                            // still undo), but the old message promised a bonus regardless.
+                            const roundBonus = s[match.rule.stat] || 0;
+                            document.getElementById('support-status').innerHTML = roundBonus > 0
+                                ? `<span style="color:#2ecc71">✅ ${s.name} Activat! +${roundBonus} ${match.rule.stat.toUpperCase()}! (tap again to undo)</span>`
+                                : `<span style="color:#f39c12">⚠️ ${s.name} gives no ${match.rule.stat.toUpperCase()} bonus this round! (tap again to undo)</span>`;
                         }
                         renderHand();
                     };
@@ -201,6 +220,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         // An exact tie on the active stat is a real draw — neither side scores a point,
         // the round just moves on.
         function skipClash(pTot, oTot) {
+            // A clash timer can still be pending when a forfeit ends the match — never let
+            // it score a round (and cascade into a second endMatch) after the fact.
+            if (_matchOver) return;
             // Curăță timere rămase
             if (_clashTimer1) { clearTimeout(_clashTimer1); _clashTimer1 = null; }
             if (_clashTimer2) { clearTimeout(_clashTimer2); _clashTimer2 = null; }
@@ -512,6 +534,14 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function endMatch(forfeit, isDraw) {
+            if (_matchOver) return;
+            _matchOver = true;
+            // A forfeit can land mid-round-resolution — kill the pending clash timers and the
+            // arena's skip-click so the already-decided round can't keep resolving afterwards.
+            if (_clashTimer1) { clearTimeout(_clashTimer1); _clashTimer1 = null; }
+            if (_clashTimer2) { clearTimeout(_clashTimer2); _clashTimer2 = null; }
+            let arenaEl = document.getElementById('arena-area');
+            if (arenaEl) { arenaEl.onclick = null; arenaEl.style.cursor = ''; }
             // Cleared here (every outcome — forfeit/draw/win/loss all pass through this
             // function) so a NORMAL match end never gets mistaken for "left mid-match" on the
             // next page load. See startMatchWithOpponent() where it's set, and initGame() in

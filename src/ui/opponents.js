@@ -99,10 +99,11 @@ function showOpponentSelect() {
             });
 
             let container = document.getElementById('opponents-container');
-            container.innerHTML = '';
 
-            window.currentOpponents.forEach((opp, idx) => {
-                container.innerHTML += `
+            // One innerHTML write for all rows — assigning `innerHTML +=` inside the loop
+            // re-parsed and re-built the whole list on every iteration (needless layout work,
+            // and phones feel it).
+            container.innerHTML = window.currentOpponents.map((opp, idx) => `
                     <div class="opponent-row" onclick="startMatchWithOpponent(${idx})">
                         <div class="opponent-avatar card rarity-${opp.avatarRarity}">${
                             _bgRemovedCache[opp.avatarImg]
@@ -116,8 +117,7 @@ function showOpponentSelect() {
                         </div>
                         <div class="opponent-fight-btn">▶</div>
                     </div>
-                `;
-            });
+                `).join('');
 
             const myWinsEl = document.getElementById('my-wins');
             const myLossesEl = document.getElementById('my-losses');
@@ -147,8 +147,11 @@ function showOpponentSelect() {
         // how strong the opponent's overall tier is — real grinders show up more often at
         // higher ranks, instead of every opponent card sharing one flat, un-upgraded level.
         function rollUpgradeTier(p) {
-            const perfectChance = 0.03 + p * 0.27;
-            const proChance = 0.15 + p * 0.35;
+            // Both chances start at ZERO for a Rare-tier (p=0) matchup — a just-started
+            // player must never face Pro/Perfect Pro cards (the old flat +3%/+15% base gave
+            // ~2 out of 3 beginner opponents at least one), and phase in with tier from there.
+            const perfectChance = p * 0.30;
+            const proChance = p * 0.50;
             const roll = Math.random();
             if (roll < perfectChance) return 'perfect';
             if (roll < perfectChance + proChance) return 'pro';
@@ -209,6 +212,17 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
         // results once that multiplier is rounded to a real, achievable level (level can't
         // go below 1, so a rarity whose level-1 floor already exceeds the target will
         // overshoot — that overshoot is exactly what actualPower reports).
+        // N random DISTINCT cards from a pool — a real player's deck never holds the same
+        // wrestler twice (the old with-replacement draw could give an opponent duplicate
+        // cards). Only if the pool itself is smaller than n do repeats become unavoidable.
+        function sampleDistinctCards(pool, n) {
+            if (pool.length <= n) return Array.from({ length: n }, (_, i) => pool[i % pool.length]);
+            const copy = [...pool];
+            const out = [];
+            for (let i = 0; i < n; i++) out.push(copy.splice(Math.floor(Math.random() * copy.length), 1)[0]);
+            return out;
+        }
+
         function draftAttempt(rarity, targetPower) {
             let poolM = DB.filter(c => c.gender === 'M' && c.rarity === rarity && !c.ladderReward);
             let poolF = DB.filter(c => c.gender === 'F' && c.rarity === rarity && !c.ladderReward);
@@ -217,8 +231,8 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
             if (!poolF.length) poolF = DB.filter(c => c.gender === 'F' && !c.ladderReward);
             if (!poolS.length) poolS = DB.filter(c => c.gender === 'S' && !c.ladderReward);
 
-            const mCards = Array.from({ length: 4 }, () => poolM[Math.floor(Math.random() * poolM.length)]);
-            const fCards = Array.from({ length: 2 }, () => poolF[Math.floor(Math.random() * poolF.length)]);
+            const mCards = sampleDistinctCards(poolM, 4);
+            const fCards = sampleDistinctCards(poolF, 2);
             const sCard = poolS[Math.floor(Math.random() * poolS.length)];
 
             let baseSum = 0;
@@ -270,22 +284,55 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
             // level/upgrade — roll each card's tier independently (odds scale with the
             // opponent's overall power) instead of applying one shared lvlInfo to all 6, so a
             // deck can plausibly show a mix of plain, Pro (◆), and Perfect Pro (★) cards.
-            const flavored = levelableCards.map((c, i) => {
-                const tier = rollUpgradeTier(p);
-                const info = cardUpgradeInfo(best.rarity, tier, best.rawMultiplier);
-                const cardObj = { id: c.id, uid: 'o_'+i, level: info.level, xp: 0, upgradeType: info.upgradeType, phase: info.phase, comboMultiplier: info.comboMultiplier, locked: false };
-                return getStats(cardObj);
-            });
-            const flavoredTotal = flavored.reduce((s, c) => s + c.pow + c.tgh + c.spd + c.cha, 0) + supportTotal;
+            //
+            // BALANCE (the "their Perfect Pro towers over my whole deck" bug): a Pro card's
+            // multiplier can never go below MAX_STAT_RATIO (its level clamps at baseMax) and
+            // a Perfect Pro's never below its banked combine bonus — so against a target
+            // multiplier of ~1.0-1.3 an upgraded card lands FAR above the deck's solve, and
+            // the old build left every other card at full target level anyway (one monster
+            // card, zero compensation; the total-only guard couldn't see it). Now the PLAIN
+            // cards are re-solved to absorb exactly the upgrades' excess, so the deck total
+            // still lands on targetPower — a deck with a standout card pays for it with a
+            // visibly weaker rest of the roster. If even level-1 plain cards can't absorb it,
+            // upgrades are downgraded (perfect→pro→none) until the math genuinely works.
+            const rolls = levelableCards.map(() => rollUpgradeTier(p));
+            let flavored = null;
+            for (let attempt = 0; attempt < 16 && !flavored; attempt++) {
+                const upgradedStats = [];
+                let upgradedTotal = 0, plainBaseSum = 0;
+                levelableCards.forEach((c, i) => {
+                    if (rolls[i] === 'none') { plainBaseSum += c.pow + c.tgh + c.spd + c.cha; return; }
+                    const info = cardUpgradeInfo(best.rarity, rolls[i], best.rawMultiplier);
+                    const st = getStats({ id: c.id, uid: 'o_'+i, level: info.level, xp: 0, upgradeType: info.upgradeType, phase: info.phase, comboMultiplier: info.comboMultiplier, locked: false });
+                    upgradedStats[i] = st;
+                    upgradedTotal += st.pow + st.tgh + st.spd + st.cha;
+                });
 
-            // Fairness guard: even with cardUpgradeInfo's clamped solve, several cards can
-            // independently roll Pro/Perfect Pro and stack into a real mismatch — a level-1,
-            // just-started player facing 3 Perfect Pro cards was exactly this. If the
-            // flavored deck drifts outside this tier's allowed band, fall back to the plain,
-            // uniformly-leveled build (same lvlInfo for every card) that hits targetPower
-            // precisely — reliability over flavor whenever the two conflict.
+                // What the remaining plain cards must average so the WHOLE deck still hits
+                // targetPower despite the upgrades' floor-clamped excess.
+                const plainMult = plainBaseSum > 0 ? (targetPower - supportTotal - upgradedTotal) / plainBaseSum : 0;
+                if (plainMult < 0.999 && rolls.some(r => r !== 'none')) {
+                    // Even level-1 plain cards can't absorb the excess — soften the highest
+                    // upgrade one step (perfect→pro, pro→none) and re-solve.
+                    const di = rolls.indexOf('perfect') !== -1 ? rolls.indexOf('perfect') : rolls.findIndex(r => r === 'pro');
+                    rolls[di] = rolls[di] === 'perfect' ? 'pro' : 'none';
+                    continue;
+                }
+
+                const plainInfo = multiplierToLevel(best.rarity, Math.max(1, plainMult));
+                flavored = levelableCards.map((c, i) => {
+                    if (upgradedStats[i]) return upgradedStats[i];
+                    return getStats({ id: c.id, uid: 'o_'+i, level: plainInfo.level, xp: 0, upgradeType: plainInfo.upgradeType, phase: plainInfo.phase, locked: false });
+                });
+            }
+
+            // Fairness guard (final net): if the compensated build still drifts outside this
+            // tier's allowed band (e.g. so many upgrade rolls that plain cards bottomed out),
+            // fall back to the plain, uniformly-leveled build (same lvlInfo for every card)
+            // that hits targetPower precisely — reliability over flavor when the two conflict.
+            const flavoredTotal = flavored ? flavored.reduce((s, c) => s + c.pow + c.tgh + c.spd + c.cha, 0) + supportTotal : Infinity;
             const maxDev = maxPowerDeviation(p);
-            if (Math.abs(flavoredTotal - targetPower) <= targetPower * maxDev) {
+            if (flavored && Math.abs(flavoredTotal - targetPower) <= targetPower * maxDev) {
                 return [...flavored, supportBuilt];
             }
 

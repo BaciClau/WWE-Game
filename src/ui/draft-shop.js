@@ -193,7 +193,9 @@ function renderDraftBoard() {
         // from match.js) hands out one free card from a fixed rarity pool — no coins, no
         // shop UI — so it keeps its own small helper instead of going through the paid packs.
         function grantBonusPack(rarityArray) {
-            let pool = DB.filter(c => rarityArray.includes(c.rarity));
+            // !ladderReward, same as every other pool in the game — ladder exclusives must
+            // only ever come from the ladder, not leak out through the streak reward.
+            let pool = DB.filter(c => rarityArray.includes(c.rarity) && !c.ladderReward);
             let cardId = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)].id : 1;
             addCard(cardId); save();
             let s = getStats({uid:'preview', id: cardId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});

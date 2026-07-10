@@ -269,7 +269,16 @@ function updateUI() {
                 const topVal = vals.length > 0 ? vals[0][1] : 0;
                 const secondVal = vals.length > 1 ? vals[1][1] : 0;
                 const excels = topStat && (secondVal === 0 || (topVal - secondVal) / secondVal >= 0.05);
-                bonus = (excels && ab.stats.includes(topStat)) ? `${topStat.toUpperCase()} +20` : `${s1} +11, ${s2} +11`;
+                if (excels && ab.stats.includes(topStat)) {
+                    // Matches getAbilityBonus() in match.js exactly: the excelling stat pays
+                    // +20, but the ability's OTHER stat still pays +11 when it's the active
+                    // one — the old footer only showed the +20, so the player sometimes got
+                    // a (correct) +11 the card never advertised.
+                    const otherStat = ab.stats.find(k => k !== topStat);
+                    bonus = otherStat ? `${topStat.toUpperCase()} +20, ${otherStat.toUpperCase()} +11` : `${topStat.toUpperCase()} +20`;
+                } else {
+                    bonus = `${s1} +11, ${s2} +11`;
+                }
             }
             else if (rarity === 'UltraRare') bonus = `${s1} +17, ${s2} +17`;
             else if (rarity === 'Epic') bonus = `${s1} +25, ${s2} +25`;

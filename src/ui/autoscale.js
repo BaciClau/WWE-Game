@@ -24,7 +24,13 @@
 // mode was entered/exited — a small but constant, distracting resize. A normal scrollbar there
 // is the better tradeoff, same as the other list-heavy screens below.
 const AUTOSCALE_SCREEN_IDS = ['main-menu', 'opp-select-screen', 'match-screen'];
-const AUTOSCALE_MIN = 0.55;
+// 0.40, not the old 0.55: real portrait phones need ~0.50-0.53 for these screens (e.g. a
+// 360x640 device), and at 0.55 they fell into the "give up and scroll" branch — which set
+// the wrapper WIDER than the device, made mobile browsers auto-zoom-out (inflating
+// innerWidth past the 480px mobile-stylesheet breakpoint), and visibly wrecked the whole
+// layout. The floor now only catches genuinely pathological shapes (tiny landscape panes),
+// where an internal scrollbar beats unreadably microscopic text.
+const AUTOSCALE_MIN = 0.40;
 
 let _autoscaleRaf = null;
 let _autoscaleResizeObserver = null;
@@ -153,4 +159,8 @@ function _autoscaleWatchActiveScreen() {
 if (typeof ResizeObserver !== 'undefined') {
     window.addEventListener('resize', scheduleAutoScale);
     window.addEventListener('DOMContentLoaded', scheduleAutoScale);
+    // Mobile browsers resize the usable viewport when the URL bar / toolbars slide in and
+    // out (and on rotation) without always firing a window resize — visualViewport does.
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleAutoScale);
+    window.addEventListener('orientationchange', scheduleAutoScale);
 }

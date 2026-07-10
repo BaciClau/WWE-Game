@@ -157,12 +157,11 @@ function buyPack(packId) {
 
     setPackBuyButtonLoading(packId, true);
     try {
-        if (pack.free) player.lastFreePackClaim = Date.now();
-        else player.coins -= pack.cost;
-
         // BOARD PICKS sells Draft Picks directly — no cards to roll or reveal, so it just
         // credits the currency and confirms with a notification instead of the card modal.
         if (pack.picks) {
+            if (pack.free) player.lastFreePackClaim = Date.now();
+            else player.coins -= pack.cost;
             player.picks += pack.picks;
             save();
             renderStoreScreen();
@@ -171,13 +170,17 @@ function buyPack(packId) {
             return;
         }
 
+        // Roll the full pack FIRST, pay after: if anything in here throws, the player must
+        // not end up having paid (or burned the daily claim) for cards they never received.
         const pulledIds = [];
         for (let i = 0; i < pack.count; i++) {
             const rarity = rollPackRarity(pack.chances);
             const card = pickRandomCardOfRarity(rarity);
             pulledIds.push(card.id);
-            addCard(card.id);
         }
+        if (pack.free) player.lastFreePackClaim = Date.now();
+        else player.coins -= pack.cost;
+        pulledIds.forEach(id => addCard(id));
         save();
         renderStoreScreen();
         updateUI();

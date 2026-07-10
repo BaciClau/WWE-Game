@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- maximum-scale=1 + user-scalable=no: without them, any content that momentarily
+         overflows the layout viewport makes mobile browsers auto-zoom-out, inflating
+         window.innerWidth (e.g. 360 -> 508) — which turns OFF the max-width:480px mobile
+         stylesheet and feeds back into even wider content. It also disables double-tap
+         zoom, which rapid card-tapping during matches kept triggering by accident. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WWE SuperCard</title> 
     <link rel="stylesheet" href="src/styles.css">
 </head>

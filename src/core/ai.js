@@ -17,13 +17,22 @@ function shuffleCards(cards) {
     return [...cards].sort(() => Math.random() - 0.5);
 }
 
+// The real match format (see match.js nextRound): first to 3 round wins, hard cap of 5
+// rounds, plus one optional Overtime round. An earlier version of this file assumed a
+// 3-round match, which made hard/nightmare AI go all-in on round 3 and have no plan at
+// all for rounds 4-5 — the ones that actually decide most matches.
+const AI_TOTAL_ROUNDS = 5;
+
 function chooseAiPlay(match) {
     const aiMode = match.aiMode || 'normal';
     const activeStat = match.rule.stat;
     const cardsNeeded = match.rule.r;
-    const roundsLeft = 3 - match.round + 1;
+    const roundsLeft = Math.max(1, AI_TOTAL_ROUNDS - match.round + 1);
     const aiAhead = match.oScore > match.pScore;
     const aiBehind = match.oScore < match.pScore;
+    // A round the AI can't afford to coast through: the last regular round, Overtime, or
+    // any round where either side is one win away from taking the match.
+    const decisive = match.round >= AI_TOTAL_ROUNDS || match.pScore === 2 || match.oScore === 2 || !!match.overtimePlayed;
 
     const availableCards = match.oppHand.filter(c => c.gender === match.rule.g && !match.used.includes(c.uid));
     const availableSupport = match.oppHand.filter(c => c.gender === 'S' && !match.used.includes(c.uid));
@@ -42,15 +51,22 @@ function chooseAiPlay(match) {
         result.cards = sortByStat(availableCards, activeStat).slice(0, cardsNeeded);
         result.support = chooseBestSupportForStat(availableSupport, activeStat);
     } else if (aiMode === 'hard') {
-        result.cards = chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, match.round);
-        result.support = chooseHardSupport(availableSupport, activeStat, aiBehind, match.round);
+        result.cards = chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive);
+        result.support = chooseHardSupport(availableSupport, activeStat, aiBehind, decisive);
     } else {
         result.cards = chooseNightmareCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, match);
-        result.support = chooseNightmareSupport(availableSupport, activeStat, aiBehind, match.round);
+        result.support = chooseNightmareSupport(availableSupport, activeStat);
     }
 
     if (result.support) {
         result.supportBonus = result.support[activeStat] || 0;
+        // Never burn a support card for a +0 — it gets marked as used for the whole match
+        // (resolveRound pushes it into match.used) with literally nothing in return. This
+        // also covers easy AI's random pick landing on a support with 0 on the active stat.
+        if (result.supportBonus <= 0) {
+            result.support = null;
+            result.supportBonus = 0;
+        }
     }
 
     return result;
@@ -66,11 +82,11 @@ function chooseBestSupportForStat(availableSupport, activeStat) {
     return usefulSupport || null;
 }
 
-function chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, round) {
+function chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive) {
     const sortedByActiveStat = sortByStat(availableCards, activeStat);
     const sortedByTotal = [...availableCards].sort((a, b) => getCardTotal(b) - getCardTotal(a));
 
-    if (aiBehind || round === 3) {
+    if (aiBehind || decisive) {
         return sortedByActiveStat.slice(0, cardsNeeded);
     }
 
@@ -83,12 +99,12 @@ function chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBeh
     return sortedByActiveStat.slice(0, cardsNeeded);
 }
 
-function chooseHardSupport(availableSupport, activeStat, aiBehind, round) {
+function chooseHardSupport(availableSupport, activeStat, aiBehind, decisive) {
     const bestSupport = chooseBestSupportForStat(availableSupport, activeStat);
     if (!bestSupport) return null;
 
     const supportValue = bestSupport[activeStat] || 0;
-    if (aiBehind || round === 3 || supportValue > 50 || Math.random() < 0.2) return bestSupport;
+    if (aiBehind || decisive || supportValue > 50 || Math.random() < 0.2) return bestSupport;
     return null;
 }
 
@@ -113,9 +129,9 @@ function chooseNightmareCards(availableCards, activeStat, cardsNeeded, aiAhead, 
     return sortedByActiveStat.slice(0, cardsNeeded);
 }
 
-function chooseNightmareSupport(availableSupport, activeStat, aiBehind, round) {
-    const bestSupport = chooseBestSupportForStat(availableSupport, activeStat);
-    if (bestSupport) return bestSupport;
-    if (aiBehind && round === 3 && availableSupport.length > 0) return availableSupport[0];
-    return null;
+function chooseNightmareSupport(availableSupport, activeStat) {
+    // Only ever a support that actually helps on the active stat — the old fallback
+    // ("play ANY support when desperate") could only fire when no support had a bonus
+    // there, i.e. it burned the support card for +0.
+    return chooseBestSupportForStat(availableSupport, activeStat);
 }

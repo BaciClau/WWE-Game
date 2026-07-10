@@ -30,6 +30,12 @@
             height: 100vh; height: 100dvh;
             overflow: hidden;
             display: flex; flex-direction: column;
+            /* Phone hardening: no double-tap-zoom (300ms tap delay / accidental zooms while
+               rapid-tapping cards), no pull-to-refresh/rubber-band scroll chaining, and no
+               grey tap-flash on every button press. */
+            touch-action: manipulation;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
         }
         #app-viewport {
             flex: 1 1 auto; min-height: 0;
@@ -423,7 +429,13 @@
         .match-forfeit-row { display: none !important; }
         /* Squeeze the rest of the match screen's chrome too — these still carry their
            original full-size inline padding/margin/height, which needs !important to
-           override. Cards themselves are untouched; only the space around them shrinks. */
+           override. Cards themselves are untouched; only the space around them shrinks.
+           DESKTOP/TABLET ONLY: these !important rules used to be unconditional, which meant
+           they also silently BEAT the phone stylesheet's own match-screen values down in the
+           max-width:480px block (its .match-arena 50px / .card 86px sizes never applied) —
+           on phones the match screen kept a 320px arena and 158px hand cards, overflowing
+           the viewport no matter what auto-scale did. */
+        @media (min-width: 481px) {
         .match-round-box { padding: 6px 22px !important; }
         .match-score-col { font-size: 18px !important; }
         .match-score-col span { font-size: 30px !important; }
@@ -454,6 +466,7 @@
         #player-hand-area .card-ability-footer { height: 36px !important; padding: 2px 5px !important; }
         #player-hand-area .ability-footer-name-v2 { font-size: 10px !important; }
         #player-hand-area .ability-footer-bonus-v2 { font-size: 9px !important; }
+        }
         .match-arena {
             background:
                 radial-gradient(circle at 22px 20px, #c0392b 0 9px, transparent 10px),
@@ -593,7 +606,8 @@
                 linear-gradient(135deg, #2a0a0a, #0a0000 55%, #000);
             border: 2px solid; border-image: linear-gradient(135deg, #f1c40f, #7a1f1f, #f1c40f) 1;
             height: 90px; border-radius: 8px; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); transition: transform 0.2s, box-shadow 0.2s;
+            justify-content: center; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 10px rgba(241,196,15,0.18);
             position: relative; overflow: hidden; animation: draftCardPulse 2.6s ease-in-out infinite;
         }
         .draft-card::before {
@@ -618,9 +632,12 @@
         }
         .draft-card.revealed::before, .draft-card.revealed::after { content: none; }
 
+        /* Opacity, not box-shadow: 25 of these tiles pulse at once on the draft board, and
+           animating box-shadow made every one of them repaint every frame — the single
+           biggest constant paint cost in the game on phones. Opacity composites on the GPU. */
         @keyframes draftCardPulse {
-            0%, 100% { box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 0px rgba(241,196,15,0); }
-            50% { box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 0 14px rgba(241,196,15,0.3); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.82; }
         }
 
         /* SISTEM NOTIFICĂRI NOU */
@@ -766,14 +783,19 @@
             box-shadow: 0 0 25px #2ecc71, inset 0 0 15px rgba(46,204,113,0.2) !important;
             transform: translateY(-8px) scale(1.05);
         }
+        /* Static glow + a small transform "breathe" instead of animating box-shadow —
+           box-shadow keyframes force a full repaint of the card every frame, forever
+           (this runs the whole match), which is a real jank source on phones. transform
+           runs on the compositor instead. */
         .card.support-ready {
             border-color: #2ecc71 !important;
-            box-shadow: 0 0 12px #2ecc71 !important;
+            box-shadow: 0 0 16px #2ecc71, 0 0 30px rgba(46,204,113,0.35) !important;
             animation: supportPulse 1.5s ease-in-out infinite;
+            will-change: transform;
         }
         @keyframes supportPulse {
-            0%, 100% { box-shadow: 0 0 8px #2ecc71; }
-            50% { box-shadow: 0 0 20px #2ecc71, 0 0 35px rgba(46,204,113,0.4); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.035); }
         }
 
         /* CĂRȚI INDISPONIBILE ÎN LUPTĂ - mai întunecate */
@@ -1152,7 +1174,11 @@
                instead of overflowing the button's own rounded rect. */
             .opp-half-btn { padding: 0 10px; font-size: 12px; gap: 4px; }
             .opp-half-btn .dash-btn-icon { position: static; transform: none; font-size: 20px; }
-            .dash-btn.half { padding: 0 14px; }
+            /* Same treatment for the main menu's LOGIN BONUS / BULLETIN BOARD half-row: the
+               absolutely-positioned icon sat on top of the centered label on narrow phones
+               ("🗓️GIN BONUS"). In-flow icon + tighter text instead. */
+            .dash-btn.half { padding: 0 8px; font-size: 12px; gap: 6px; }
+            .dash-btn.half .dash-btn-icon { position: static; transform: none; font-size: 20px; }
 
             .section-title { font-size: 20px; }
 
