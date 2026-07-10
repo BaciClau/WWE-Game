@@ -421,6 +421,9 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 }
             }
 
+            // Per-card ability bonuses are remembered so the TEAM chemistry % (applied
+            // LAST, on the final numbers) can include them in its base.
+            const abilityBonusByUid = {};
             match.selected.forEach(u => {
                 let cardObj = player.inventory.find(c=>c.uid===u);
                 let cardStats = getStats(cardObj);
@@ -438,6 +441,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                         // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                         if (bonus > 0) {
                             pTot += bonus;
+                            abilityBonusByUid[cardStats.uid] = (abilityBonusByUid[cardStats.uid] || 0) + bonus;
                             // Flash + burst + on-card callout + the stat counting up all
                             // fire from the SEQUENTIAL activation queue below.
                             abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false, bumps: [{ uid: cardStats.uid, stat: match.rule.stat, delta: bonus }] });
@@ -445,27 +449,6 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     }
                 }
             });
-            // TAG TEAM ALIGNMENT (original 2014 mechanic): a matching pair fights as a real
-            // team, +10% on EVERY stat of each card; a mismatched pair pays -5% on every
-            // stat. Only the active stat's share counts toward the round total — but ALL
-            // four numbers animate up/down on both cards when the chemistry step plays.
-            if (match.rule.r === 2 && match.selected.length === 2) {
-                const pair = match.selected.map(u => getStats(player.inventory.find(c => c.uid === u)));
-                const matched = pair[0].alignment === pair[1].alignment;
-                const factor = matched ? 0.10 : -0.05;
-                const bumps = [];
-                pair.forEach(s => {
-                    ['pow','tgh','spd','cha'].forEach(k => {
-                        const d = Math.round(s[k] * factor);
-                        if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
-                        if (k === match.rule.stat) pTot += d;
-                    });
-                });
-                chemistryEvents.push({ kind: 'chemistry', bumps,
-                    text: matched ? '🤝 PERFECT TEAM! +10% ALL STATS' : '💢 BAD CHEMISTRY... -5% ALL STATS',
-                    color: matched ? '#2ecc71' : '#e74c3c' });
-            }
-
             // In a Tag Team round (2 cards per side), the support card backs up the whole
             // team, so its bonus counts double instead of a flat single-card add.
             const teamSupportMultiplier = match.rule.r === 2 ? 2 : 1;
@@ -477,6 +460,31 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // double-count it. Each card's number rises by its own undoubled share instead,
             // so the two on-card increases sum to the real total added to pTot.
             const perCardSupportBonus = match.supportBonus[match.rule.stat] || 0;
+
+            // TAG TEAM ALIGNMENT (original 2014 mechanic): a matching pair fights as a real
+            // team, +10% on EVERY stat of each card; a mismatched pair pays -5% on every
+            // stat. The TEAM bonus is ALWAYS applied LAST: the % is taken from each card's
+            // FINAL numbers this round (base + manager + support + ability), never from the
+            // raw base. Only the active stat's share counts toward the round total — but
+            // ALL four numbers animate up/down on both cards when the chemistry step plays.
+            if (match.rule.r === 2 && match.selected.length === 2) {
+                const pair = match.selected.map(u => getStats(player.inventory.find(c => c.uid === u)));
+                const matched = pair[0].alignment === pair[1].alignment;
+                const factor = matched ? 0.10 : -0.05;
+                const bumps = [];
+                pair.forEach(s => {
+                    ['pow','tgh','spd','cha'].forEach(k => {
+                        let eff = s[k] + (match.matchWideBonus[k] || 0);
+                        if (k === match.rule.stat) eff += perCardSupportBonus + (abilityBonusByUid[s.uid] || 0);
+                        const d = Math.round(eff * factor);
+                        if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
+                        if (k === match.rule.stat) pTot += d;
+                    });
+                });
+                chemistryEvents.push({ kind: 'chemistry', bumps,
+                    text: matched ? '🤝 PERFECT TEAM! +10% ALL STATS' : '💢 BAD CHEMISTRY... -5% ALL STATS',
+                    color: matched ? '#2ecc71' : '#e74c3c' });
+            }
             // Captured here, but the actual slide-in fires further below — AFTER
             // arena.innerHTML rebuilds the ring with this round's fighter cards. Firing it
             // this early would just get wiped out by that innerHTML replacement before the
@@ -501,26 +509,10 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 match.used.push(c.uid);
             });
 
-            // Same all-stats tag-team chemistry for the AI's pair (its deck cards carry
-            // alignments too — getStats stamps them on every fighter).
-            if (match.rule.r === 2 && oppP.length === 2) {
-                const matched = oppP[0].alignment === oppP[1].alignment;
-                const factor = matched ? 0.10 : -0.05;
-                const bumps = [];
-                oppP.forEach(c => {
-                    ['pow','tgh','spd','cha'].forEach(k => {
-                        const d = Math.round(c[k] * factor);
-                        if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
-                        if (k === activeStat) oTot += d;
-                    });
-                });
-                chemistryEvents.push({ kind: 'chemistry', bumps,
-                    text: matched ? '⚠️ ENEMY TEAM CHEMISTRY! +10%' : '💢 ENEMY BAD CHEMISTRY -5%',
-                    color: matched ? '#e74c3c' : '#f39c12' });
-            }
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
 
+            const aiAbilityByUid = {};
             oppP.forEach(c => {
                 const ab = ABILITIES[c.id];
                 if (ab && ab.stats.includes(activeStat) && Math.random() < aiPlay.abilityChance) {
@@ -529,10 +521,33 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                     if (bonus > 0) {
                         oTot += bonus;
+                        aiAbilityByUid[c.uid] = (aiAbilityByUid[c.uid] || 0) + bonus;
                         abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true, bumps: [{ uid: c.uid, stat: activeStat, delta: bonus }] });
                     }
                 }
             });
+
+            // Same all-stats tag-team chemistry for the AI's pair (its deck cards carry
+            // alignments too — getStats stamps them on every fighter). Same TEAM-bonus-last
+            // rule as the player: the % is taken from each AI card's final numbers this
+            // round (base + support + ability).
+            if (match.rule.r === 2 && oppP.length === 2) {
+                const matched = oppP[0].alignment === oppP[1].alignment;
+                const factor = matched ? 0.10 : -0.05;
+                const bumps = [];
+                oppP.forEach(c => {
+                    ['pow','tgh','spd','cha'].forEach(k => {
+                        let eff = c[k];
+                        if (k === activeStat) eff += aiPlay.supportBonus + (aiAbilityByUid[c.uid] || 0);
+                        const d = Math.round(eff * factor);
+                        if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
+                        if (k === activeStat) oTot += d;
+                    });
+                });
+                chemistryEvents.push({ kind: 'chemistry', bumps,
+                    text: matched ? '⚠️ ENEMY TEAM CHEMISTRY! +10%' : '💢 ENEMY BAD CHEMISTRY -5%',
+                    color: matched ? '#e74c3c' : '#f39c12' });
+            }
 
             // Cards whose stat actually got boosted this round (ability and/or support —
             // both add together into one total per card) show their real new number in
