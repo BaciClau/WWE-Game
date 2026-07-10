@@ -23,20 +23,22 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             nextRound();
         }
 
+        // Original WWE SuperCard 2014 format: EXACTLY 3 falls, all three played out
+        // regardless of who's leading (a 2-0 lead still plays fall 3 — a clean 3-0 sweep
+        // pays a bonus pick, see endMatch). A tied fall gives BOTH sides a point, so the
+        // final score can tie (e.g. 2-2) — that's what Overtime is for.
         function nextRound() {
             if (_matchOver) return;
-            if (match.pScore === 3 || match.oScore === 3) return endMatch(false);
-            if (match.round > 5) return handleStalemate();
+            if (match.round > 3) return handleStalemate();
             playRound();
         }
 
-        // Called whenever the match can't continue normally — the round-5 cap was hit, or
-        // there are no fighting cards left to play — while nobody has reached 3 wins yet.
-        // No coin flips: whoever's ahead just wins outright. If it's genuinely tied and we
-        // haven't had our one Overtime round yet, every card becomes available again and
-        // one final sudden-death round is played. If THAT also ties, the whole match ends
-        // in a real draw (10 picks, no win/loss recorded — it's not tracked anywhere, it's
-        // just a one-off outcome).
+        // Called after all 3 falls are played (or if there are somehow no fighting cards
+        // left). No coin flips: whoever's ahead just wins outright. If it's genuinely tied
+        // and we haven't had our one Overtime round yet, every card becomes available again
+        // and one final sudden-death round is played. If THAT also ties, the whole match
+        // ends in a real draw (10 picks, no win/loss recorded — it's not tracked anywhere,
+        // it's just a one-off outcome).
         function handleStalemate() {
             if (match.pScore !== match.oScore) return endMatch(false);
 
@@ -77,19 +79,25 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             let st = ['pow', 'tgh', 'spd', 'cha'][Math.floor(Math.random()*4)];
             match.rule = r; match.rule.stat = st;
 
-            // Banner tip luptă vizibil
+            // Round announcement, IN THE RING (like the original's stipulation reveal):
+            // one animated card in the arena's center carrying the round, the match type
+            // AND the active stat — the single source for all three. The old version split
+            // this across two static spots (a separate banner strip for the type + the
+            // score box for the stat), shown twice with no announcement moment at all.
+            // resolveRound()'s arena.innerHTML rewrite naturally clears it when the cards
+            // actually enter the ring.
             const isDivas = r.g === 'F';
-            const matchTypeBannerClass = isDivas ? 'divas' : 'superstar';
+            const introClass = isDivas ? 'divas' : (r.t === 'TAG TEAM' ? 'tag' : 'superstar');
             const matchTypeLabel = isDivas ? 'DIVAS MATCH' : (r.t === 'TAG TEAM' ? 'TAG TEAM MATCH' : 'SUPERSTAR MATCH');
-            const matchTypeBannerEl = document.getElementById('match-type-banner');
-            if (matchTypeBannerEl) {
-                matchTypeBannerEl.className = `match-type-banner ${matchTypeBannerClass}`;
-                matchTypeBannerEl.innerText = matchTypeLabel;
-                matchTypeBannerEl.style.display = 'block';
-            }
-
             const roundLabel = match.overtimePlayed ? 'OVERTIME' : `ROUND ${match.round}`;
-            document.getElementById('match-info').innerHTML = `${roundLabel}<br><span style="color:#fff; font-size:18px;">STAT: <span style="color:#f1c40f">${st.toUpperCase()}</span></span>`;
+            document.getElementById('arena-area').innerHTML = `
+                <div class="round-intro ${introClass}">
+                    <div class="round-intro-round">${roundLabel}</div>
+                    <div class="round-intro-type">${matchTypeLabel}</div>
+                    <div class="round-intro-stat">STAT: <span>${st.toUpperCase()}</span></div>
+                </div>`;
+
+            document.getElementById('match-info').innerHTML = roundLabel;
             document.getElementById('cards-to-pick').innerText = r.r;
             document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
 
@@ -252,7 +260,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     match.round++; nextRound();
                 });
             } else {
-                showRoundWinnerSpotlight(null, null, 'DRAW!', '#f1c40f', () => {
+                // Original 2014 rule: a tied fall awards one point to BOTH competitors —
+                // not a scoreless wash. This is also what makes 2-2 finals (→ Overtime)
+                // possible in a 3-fall match.
+                match.pScore++; match.oScore++;
+                document.getElementById('score-player').innerText = match.pScore;
+                document.getElementById('score-opp').innerText = match.oScore;
+                showRoundWinnerSpotlight(null, null, 'DRAW! +1 BOTH', '#f1c40f', () => {
                     match.round++; nextRound();
                 });
             }
@@ -394,6 +408,23 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     }
                 }
             });
+            // TAG TEAM ALIGNMENT (original 2014 mechanic): each fighter carries a FACE or
+            // HEEL alignment (the diamond on the card). A tag pair with MATCHING alignments
+            // fights as a real team: +10% on the active stat for each card; a mismatched
+            // pair pays a -5% chemistry penalty on each. Applied per-card so the number on
+            // the card shows the real total it fought with (green boost / red penalty).
+            if (match.rule.r === 2 && match.selected.length === 2) {
+                const pair = match.selected.map(u => getStats(player.inventory.find(c => c.uid === u)));
+                const factor = pair[0].alignment === pair[1].alignment ? 0.10 : -0.05;
+                pair.forEach(s => {
+                    const delta = Math.round(s[match.rule.stat] * factor);
+                    if (delta !== 0) {
+                        pTot += delta;
+                        playerCardBonus[s.uid] = (playerCardBonus[s.uid] || 0) + delta;
+                    }
+                });
+            }
+
             // In a Tag Team round (2 cards per side), the support card backs up the whole
             // team, so its bonus counts double instead of a flat single-card add.
             const teamSupportMultiplier = match.rule.r === 2 ? 2 : 1;
@@ -444,6 +475,19 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 oTot += c[activeStat];
                 match.used.push(c.uid);
             });
+
+            // Same tag-team alignment chemistry for the AI's pair (its deck cards carry
+            // alignments too — getStats stamps them on every fighter).
+            if (match.rule.r === 2 && oppP.length === 2) {
+                const factor = oppP[0].alignment === oppP[1].alignment ? 0.10 : -0.05;
+                oppP.forEach(c => {
+                    const delta = Math.round(c[activeStat] * factor);
+                    if (delta !== 0) {
+                        oTot += delta;
+                        aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + delta;
+                    }
+                });
+            }
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
             // Same fix as the player's side above: show each card its own undoubled share,

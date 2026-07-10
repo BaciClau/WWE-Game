@@ -1,6 +1,39 @@
 function getCardBase(card) { return DB.find(c => c.id === card.id); }
         function getCardRarity(card) { return getCardBase(card).rarity; }
 
+        // FACE/HEEL alignment (the original game's diamond indicator) — drives the Tag Team
+        // alignment mechanic from WWE SuperCard 2014: a matched tag pair gets +10% on the
+        // active stat, a mismatched one -5% (applied in resolveRound). Assignments follow the
+        // 2014-era on-screen personas; wrestlers not listed fall back to a stable id-parity
+        // coin flip so every card always has SOME consistent alignment. HEEL list is checked
+        // FIRST so e.g. a "Hollywood Hogan" entry would hit "hollywood" before "hogan".
+        const HEEL_NAMES = ['randy orton', 'seth rollins', 'triple h', 'kane', 'brock lesnar',
+            'paul heyman', 'rusev', 'lana', 'the miz', 'damien sandow', 'cesaro', 'bad news barrett',
+            'bray wyatt', 'luke harper', 'erick rowan', 'alberto del rio', 'jbl', 'david otunga',
+            'titus', 'heath slater', 'bo dallas', 'fandango', 'ryback', 'mcmahon', 'batista',
+            'tyson kidd', 'vader', 'yokozuna', 'razor ramon', 'roddy piper', 'mr. perfect',
+            'ted dibiase', 'rick rude', 'bobby heenan', 'big john studd', 'andre the giant',
+            'mr. fuji', 'jimmy hart', 'hollywood', 'kevin nash', 'nikki bella', 'cameron',
+            'eva marie', 'summer rae', 'layla', 'alicia fox', 'rosa mendes', 'tamina', 'eve',
+            'stephanie', 'paige', 'edge'];
+        const FACE_NAMES = ['john cena', 'daniel bryan', 'roman reigns', 'dean ambrose',
+            'dolph ziggler', 'rey mysterio', 'big e', 'kofi kingston', 'xavier woods', 'sheamus',
+            'mark henry', 'chris jericho', 'rob van dam', 'zack ryder', 'santino', 'jey uso',
+            'jimmy uso', 'r-truth', 'adam rose', 'darren young', 'khali', 'justin gabriel',
+            'jack swagger', 'goldust', 'cody rhodes', 'stardust', 'christian', 'big show',
+            'sting', 'booker t', 'ric flair', 'hulk hogan', 'ultimate warrior', 'macho man',
+            'randy savage', 'ricky steamboat', 'dusty rhodes', 'bruno sammartino',
+            'eddie guerrero', 'shawn michaels', 'stone cold', 'the rock', 'undertaker',
+            'jake roberts', 'sgt. slaughter', 'virgil', 'aj lee', 'natalya', 'naomi',
+            'brie bella', 'emma'];
+        function getCardAlignment(base) {
+            if (!base || base.gender === 'S') return null;
+            const n = base.name.toLowerCase();
+            if (HEEL_NAMES.some(x => n.includes(x))) return 'heel';
+            if (FACE_NAMES.some(x => n.includes(x))) return 'face';
+            return base.id % 2 === 0 ? 'face' : 'heel';
+        }
+
         // Nivel maxim fără upgrade, respectiv Pro/Perfect Pro, pentru raritatea cărții.
         function getBaseMaxLevel(card) {
             return LEVEL_CAPS[getCardRarity(card)] || UPGRADE.BASE_MAX;
@@ -100,6 +133,7 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             let multi = getStatMultiplier(card);
             return {
                 ...base, uid: card.uid,
+                alignment: getCardAlignment(base),
                 lvl: card.level,
                 xp: card.xp || 0,
                 xpNeeded: getXpNeeded(card),

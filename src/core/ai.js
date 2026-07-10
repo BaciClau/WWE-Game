@@ -17,11 +17,10 @@ function shuffleCards(cards) {
     return [...cards].sort(() => Math.random() - 0.5);
 }
 
-// The real match format (see match.js nextRound): first to 3 round wins, hard cap of 5
-// rounds, plus one optional Overtime round. An earlier version of this file assumed a
-// 3-round match, which made hard/nightmare AI go all-in on round 3 and have no plan at
-// all for rounds 4-5 — the ones that actually decide most matches.
-const AI_TOTAL_ROUNDS = 5;
+// The real match format (see match.js nextRound): the original 2014 rules — exactly 3
+// falls, all played out, tied falls scoring a point for BOTH sides, plus one optional
+// Overtime round on a tied final score.
+const AI_TOTAL_ROUNDS = 3;
 
 function chooseAiPlay(match) {
     const aiMode = match.aiMode || 'normal';
@@ -30,9 +29,9 @@ function chooseAiPlay(match) {
     const roundsLeft = Math.max(1, AI_TOTAL_ROUNDS - match.round + 1);
     const aiAhead = match.oScore > match.pScore;
     const aiBehind = match.oScore < match.pScore;
-    // A round the AI can't afford to coast through: the last regular round, Overtime, or
-    // any round where either side is one win away from taking the match.
-    const decisive = match.round >= AI_TOTAL_ROUNDS || match.pScore === 2 || match.oScore === 2 || !!match.overtimePlayed;
+    // A round the AI can't afford to coast through: the final fall or Overtime. (With all
+    // 3 falls always played, score-based urgency reduces to just "is this the last one".)
+    const decisive = match.round >= AI_TOTAL_ROUNDS || !!match.overtimePlayed;
 
     const availableCards = match.oppHand.filter(c => c.gender === match.rule.g && !match.used.includes(c.uid));
     const availableSupport = match.oppHand.filter(c => c.gender === 'S' && !match.used.includes(c.uid));

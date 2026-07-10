@@ -302,11 +302,15 @@ function updateUI() {
             // the real number a card will fight with before picking it, instead of having to
             // do the math themselves.
             const mwBonus = (matchWideMap && matchWideMap[key]) || 0;
-            const isBoosted = boosted === key || mwBonus > 0;
-            const isHighlight = !isBoosted && highlight === key;
             const val = stats[key] + (boosted === key ? boostedAmount : 0) + mwBonus;
+            // A NET NEGATIVE round delta (e.g. a mismatched tag pair's -5% alignment
+            // penalty outweighing any boosts) shows red, not green — the number on the
+            // card is the real total either way, only the color says which way it moved.
+            const isPenalty = boosted === key && (boostedAmount + mwBonus) < 0;
+            const isBoosted = !isPenalty && (boosted === key || mwBonus > 0);
+            const isHighlight = !isBoosted && !isPenalty && highlight === key;
             return `
-                <div class="stat-v2 ${isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : '')}">
+                <div class="stat-v2 ${isPenalty ? 'stat-penalty' : (isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : ''))}">
                     <div class="stat-v2-label">${label}</div>
                     <div class="stat-v2-value">${val}</div>
                 </div>`;
@@ -341,7 +345,7 @@ function updateUI() {
                     ${stats.locked ? '<div class="lock-badge">🔒</div>' : ''}
                     ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
                     <div class="card-header-v2">
-                        <div class="card-rarity-label">${stats.rarity}</div>
+                        <div class="card-rarity-label">${stats.rarity}${stats.alignment ? `<span class="align-diamond align-${stats.alignment}" title="${stats.alignment.toUpperCase()}"></span>` : ''}</div>
                         <div class="card-name-v2">${stats.name}</div>
                     </div>
                     <div class="card-body-v2 ${isSupport ? 'card-body-support-v2' : ''}">
