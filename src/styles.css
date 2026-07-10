@@ -55,7 +55,7 @@
            never intercept a click. */
         #version-badge {
             position: fixed; left: 6px; bottom: 4px;
-            font-family: Arial, sans-serif; font-size: 10px; color: rgba(255,255,255,0.22);
+            font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.5);
             pointer-events: none; user-select: none; z-index: 5; letter-spacing: 0.5px;
         }
 
