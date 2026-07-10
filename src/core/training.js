@@ -158,13 +158,85 @@ function getSacrificeXpEnhanced(uid, targetCard) {
         //     trained (base max level) at the moment of combining.
         //   - Otherwise, fusing works too, just yields a regular (weaker) Pro.
         // TRAIN only ever levels a card up via XP fodder — it never promotes on its own.
+        // Non-mutating projection of what feeding `addXp` into `card` would produce —
+        // powers the real-time "→ LVL X" readout and the AUTO selector's stop condition.
+        // A shallow copy is enough: processLevelUps only touches level/xp/maxLvl, and the
+        // level helpers only read id/upgradeType/phase, all present on the copy.
+        function simulateFeed(card, addXp) {
+            const sim = { ...card };
+            sim.xp = (sim.xp || 0) + addXp;
+            processLevelUps(sim);
+            const level = getEffectiveLevel(sim);
+            return { level, xp: sim.xp, xpNeeded: getXpNeeded(sim), maxed: level >= getEffectiveMax(sim) };
+        }
+
+        // AUTO fodder select: fills the sacrifice list with the CHEAPEST cards first —
+        // Common upward, and lowest XP value first within a rarity — adding only as many
+        // as the simulation says are needed to reach the chosen goal, not one more.
+        // mode 'one' is INCREMENTAL: it keeps whatever is already selected and each press
+        // stacks one more level on top of the current projection, until fodder runs out.
+        // mode 'max' rebuilds the selection from scratch for the full training cap.
+        // Locked, equipped and favorite cards are never touched.
+        function focusAutoSelectFodder(mode = 'max') {
+            const target = player.inventory.find(c => c.uid === tradeTarget);
+            if (!target || focusMode === 'combine') return;
+            if (getEffectiveLevel(target) >= getEffectiveMax(target)) return;
+
+            const xpOf = (uid) => {
+                const info = getSacrificeXpEnhanced(uid, target);
+                return info.xp + info.levelBonus;
+            };
+
+            let totalXp, goalLevel;
+            if (mode === 'one') {
+                totalXp = tradeSacrifices.reduce((s, u) => s + xpOf(u), 0);
+                const projected = simulateFeed(target, totalXp).level;
+                if (projected >= getEffectiveMax(target)) {
+                    showNotification('✅ Selection already reaches MAX level — nothing more to add.', 1800);
+                    return;
+                }
+                goalLevel = projected + 1;
+            } else {
+                tradeSacrifices = [];
+                totalXp = 0;
+                goalLevel = getEffectiveMax(target);
+            }
+
+            const ranked = player.inventory
+                .filter(c => c.uid !== tradeTarget && !c.locked && !isCardEquipped(c.uid)
+                    && c.uid !== player.favoriteUid && !tradeSacrifices.includes(c.uid))
+                .map(c => ({ uid: c.uid, rank: RARITIES.indexOf(getCardRarity(c)), value: xpOf(c.uid) }))
+                .sort((a, b) => a.rank - b.rank || a.value - b.value);
+
+            let added = 0;
+            for (const f of ranked) {
+                if (simulateFeed(target, totalXp).level >= goalLevel) break;
+                tradeSacrifices.push(f.uid);
+                totalXp += f.value;
+                added++;
+            }
+            if (tradeSacrifices.length === 0) {
+                showNotification('❌ No fodder cards available — locked, equipped and favorite cards are skipped.', 2200);
+            } else if (mode === 'one' && added === 0) {
+                showNotification('❌ Out of fodder — every available card is already selected.', 2000);
+            } else if (mode === 'one' && simulateFeed(target, totalXp).level < goalLevel) {
+                showNotification('⚠️ Not enough fodder left for a full extra level — added everything available.', 2200);
+            }
+            renderFocusFodderGrid();
+            updateFocusTrainStatus();
+        }
+
         function updateFocusTrainStatus() {
             const status = document.getElementById('focus-train-status');
             const btnFeed = document.getElementById('focus-btn-feed');
+            const btnAutoOne = document.getElementById('focus-btn-auto-one');
+            const btnAutoMax = document.getElementById('focus-btn-auto-max');
             const btnPro = document.getElementById('focus-btn-pro');
             const btnPerfectPro = document.getElementById('focus-btn-perfect-pro');
 
             btnFeed.style.display = 'none';
+            if (btnAutoOne) btnAutoOne.style.display = 'none';
+            if (btnAutoMax) btnAutoMax.style.display = 'none';
             btnPro.style.display = 'none';
             btnPerfectPro.style.display = 'none';
 
@@ -222,11 +294,27 @@ function getSacrificeXpEnhanced(uid, targetCard) {
                 return;
             }
 
+            // Real-time projection: the player should never have to do XP math themselves —
+            // every fodder tap re-runs the ACTUAL level-up simulation and shows exactly
+            // where the card lands (final level + progress into the next one).
+            const sim = simulateFeed(target, pending);
             let xpDesc = `+${pendingXP} XP`;
-            if (bonusXP > 0) xpDesc += ` <span style="color:#f1c40f">+${bonusXP} XP level bonus</span>`;
-            if (hasNormalUpgradeFodder) xpDesc += ` <span style="color:#e040fb">(2× from Pro fodder!)</span>`;
-            status.innerHTML = `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — XP: <strong>${target.xp}/${xpNeed}</strong> | fodder: <strong>${xpDesc}</strong> = <strong style="color:#2ecc71">${pending} XP total</strong>`;
+            if (bonusXP > 0) xpDesc += ` <span style="color:#f1c40f">+${bonusXP} bonus</span>`;
+            if (hasNormalUpgradeFodder) xpDesc += ` <span style="color:#e040fb">(2× Pro fodder!)</span>`;
+
+            const resultLine = sim.maxed
+                ? `<strong style="color:#2ecc71">LVL ${sim.level} — FULLY TRAINED! 🏆</strong>`
+                : `<strong style="color:#2ecc71">LVL ${sim.level}</strong> <span style="color:#aaa">(${sim.xp}/${sim.xpNeeded} XP toward LVL ${sim.level + 1})</span>`;
+
+            status.innerHTML = pending > 0
+                ? `<strong>${base.name}</strong> LVL ${effLv}/${effMax} ➜ ${resultLine}<br>` +
+                  `${tradeSacrifices.length} fodder card${tradeSacrifices.length === 1 ? '' : 's'}: ${xpDesc} = <strong style="color:#2ecc71">${pending} XP</strong>`
+                : `<strong>${base.name}</strong> LVL ${effLv}/${effMax} — XP: <strong>${target.xp}/${xpNeed}</strong><br>` +
+                  `Tap fodder below (or <strong>⚡ AUTO +1 LVL / AUTO MAX</strong>) — the resulting level shows here in real time.`;
+
             if (pending > 0) btnFeed.style.display = 'inline-flex';
+            if (btnAutoOne) btnAutoOne.style.display = 'inline-flex';
+            if (btnAutoMax) btnAutoMax.style.display = 'inline-flex';
         }
 
         // TRAIN-only — feeds fodder XP into the target. Never called in combine mode (the

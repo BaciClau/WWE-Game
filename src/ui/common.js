@@ -244,10 +244,25 @@ function updateUI() {
                     }
                 }
 
-                const dataUrl = outCanvas.toDataURL('image/png');
-                _bgRemovedCache[src] = dataUrl;
-                img.dataset.cardFitted = '1';
-                img.src = dataUrl;
+                // Blob URL, not a data URL: a data URL keeps the whole image as a ~200KB
+                // base64 string in the JS heap AND in every <img src> that uses it, and the
+                // browser re-decodes that string on every fresh render — with 100+ card
+                // photos that's tens of MB and constant decode work on phones. A blob URL
+                // is a tiny string pointing at pixels the browser stores once.
+                if (outCanvas.toBlob) {
+                    outCanvas.toBlob((blob) => {
+                        if (!blob) return;
+                        const url = URL.createObjectURL(blob);
+                        _bgRemovedCache[src] = url;
+                        img.dataset.cardFitted = '1';
+                        img.src = url;
+                    }, 'image/png');
+                } else {
+                    const dataUrl = outCanvas.toDataURL('image/png');
+                    _bgRemovedCache[src] = dataUrl;
+                    img.dataset.cardFitted = '1';
+                    img.src = dataUrl;
+                }
             } catch (e) { /* cross-origin image — leave it as-is */ }
         }
 
@@ -301,16 +316,18 @@ function updateUI() {
             // on the hand card itself, same as an in-round boost — so the player already sees
             // the real number a card will fight with before picking it, instead of having to
             // do the math themselves.
+            // Net per-stat delta: the all-stats map (manager buff, tag-team chemistry — which
+            // applies to EVERY stat, not just the played one) plus the active-stat-only extra
+            // (ability + support). Sign decides the color: green up, red down; the number on
+            // the card is always the real total it fights with.
             const mwBonus = (matchWideMap && matchWideMap[key]) || 0;
-            const val = stats[key] + (boosted === key ? boostedAmount : 0) + mwBonus;
-            // A NET NEGATIVE round delta (e.g. a mismatched tag pair's -5% alignment
-            // penalty outweighing any boosts) shows red, not green — the number on the
-            // card is the real total either way, only the color says which way it moved.
-            const isPenalty = boosted === key && (boostedAmount + mwBonus) < 0;
-            const isBoosted = !isPenalty && (boosted === key || mwBonus > 0);
-            const isHighlight = !isBoosted && !isPenalty && highlight === key;
+            const extra = (boosted === key ? boostedAmount : 0) + mwBonus;
+            const val = stats[key] + extra;
+            const isPenalty = extra < 0;
+            const isBoosted = extra > 0;
+            const isHighlight = extra === 0 && highlight === key;
             return `
-                <div class="stat-v2 ${isPenalty ? 'stat-penalty' : (isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : ''))}">
+                <div class="stat-v2 ${isPenalty ? 'stat-penalty' : (isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : ''))}" data-stat="${key}">
                     <div class="stat-v2-label">${label}</div>
                     <div class="stat-v2-value">${val}</div>
                 </div>`;

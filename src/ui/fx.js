@@ -105,6 +105,11 @@ function showRoundWinnerSpotlight(winnerSideId, loserSideId, resultLabel, result
     const loserSide = loserSideId && document.getElementById(loserSideId);
     const vsBadge = arena.querySelector('.vs-badge');
 
+    // CRITICAL: strip any still-attached animation classes first. slide-in-* used
+    // `animation ... forwards`, whose fill kept overriding `transform` FOREVER — which is
+    // why the winner zoom transition never actually showed on screen.
+    [winnerSide, loserSide].forEach(s => { if (s) s.classList.remove('slide-in-left', 'slide-in-right', 'anim-clash-left', 'anim-clash-right'); });
+
     if (vsBadge) vsBadge.classList.add('vs-badge-hidden');
     if (loserSide) loserSide.classList.add('round-loser-fade');
     if (winnerSide) winnerSide.classList.add('round-winner-spotlight');
@@ -121,7 +126,7 @@ function showRoundWinnerSpotlight(winnerSideId, loserSideId, resultLabel, result
         if (loserSide) loserSide.classList.remove('round-loser-fade');
         if (winnerSide) winnerSide.classList.remove('round-winner-spotlight');
         if (onDone) onDone();
-    }, 1400);
+    }, 2500); // unhurried — the zoom glides in over ~1s and the result stays readable
 }
 
 // Sărbătoare mare la câștigarea meciului — confetti multicolor din centrul ecranului + shake puternic.
@@ -135,66 +140,108 @@ function celebrateMatchWin() {
     setTimeout(() => spawnParticles(cx * 1.5, cy * 1.2, rainbow, 24, { spread: 180, size: 8, confetti: true }), 350);
 }
 
-// ============ POPUP MARE DE ABILITATE ============
-// Înlocuiește vechea notificare mică de jos cu un card mare, centrat pe ecran,
-// cu portretul personajului recadrat (fără bara de nivel/stats din poza originală).
+// ============ ACTIVĂRI PE CARTE, UNA CÂTE UNA ============
+// Replaces the old full-screen ability popup: the callout now appears centered ON the
+// card whose ability fired (attached to document.body — body is never transform-scaled,
+// so getBoundingClientRect coordinates line up at any auto-scale), together with the
+// flash + rarity burst on that same card.
 
-function showAbilityPopup(evt, onDone) {
-    let old = document.getElementById('ability-popup');
-    if (old) old.remove();
-
-    const rarity = evt.cardStats.rarity;
-    const glowColor = (RARITY_FX_COLORS[rarity] || RARITY_FX_COLORS.Common)[0];
-    const isAI = !!evt.isAI;
-    const isCombined = !!evt.isCombined;
-    const sideLabel = isCombined
-        ? (isAI ? '⚠️ OPPONENT COMBO!' : '💥 COMBINED BOOST!')
-        : (isAI ? '⚠️ OPPONENT ABILITY!' : '⚡ ABILITY ACTIVATED!');
-    const sideColor = isAI ? '#e74c3c' : '#2ecc71';
-
-    const el = document.createElement('div');
-    el.id = 'ability-popup';
-    el.className = 'ability-popup-overlay';
-    el.innerHTML = `
-        <div class="ability-popup-card rarity-${rarity}" style="box-shadow: 0 0 55px ${glowColor}, 0 20px 60px rgba(0,0,0,0.85);">
-            <div class="ability-popup-header" style="color:${sideColor}; border-color:${sideColor};">${sideLabel}</div>
-            <div class="ability-portrait" style="border-color:${glowColor}; box-shadow: 0 0 25px ${glowColor} inset;">
-                <img src="${evt.cardStats.img}" onload="fitCardImage(this)">
-            </div>
-            <div class="ability-popup-name">${evt.cardStats.name}</div>
-            <div class="ability-popup-move"><span class="ability-popup-icon">${evt.ab.icon}</span>${evt.ab.name}</div>
-            <div class="ability-popup-bonus">+${evt.bonus} ${evt.statName.toUpperCase()}</div>
-            <div class="ability-popup-desc">${evt.ab.desc}</div>
-            <div class="ability-popup-tap">TAP TO CONTINUE</div>
-        </div>
-    `;
-    document.body.appendChild(el);
-
-    requestAnimationFrame(() => {
-        const portrait = el.querySelector('.ability-portrait');
-        if (portrait) burstAtElement(portrait, rarity, { spread: 150 });
-    });
-
-    let done = false;
-    const finish = () => {
-        if (done) return;
-        done = true;
-        el.classList.add('ability-popup-out');
-        setTimeout(() => { el.remove(); if (onDone) onDone(); }, 220);
+// Animated stat change ON the in-ring card: the number visibly counts up (or down) to
+// its new value with a scale pop, and keeps the green boost / red penalty tint after.
+// This is what makes a boost READ as "my card just got stronger" instead of the final
+// number silently being there from the start.
+function animateStatBump(cardUid, statKey, delta, duration = 700) {
+    const el = document.querySelector('#card-' + cardUid + ' .stat-v2[data-stat="' + statKey + '"]');
+    if (!el || !delta) return;
+    const valEl = el.querySelector('.stat-v2-value');
+    if (!valEl) return;
+    const from = parseInt(valEl.innerText, 10) || 0;
+    const to = from + delta;
+    el.classList.remove('stat-highlight');
+    el.classList.add(delta > 0 ? 'stat-boosted' : 'stat-penalty', 'stat-bump');
+    const t0 = performance.now();
+    const tick = (now) => {
+        const p = Math.min(1, (now - t0) / duration);
+        valEl.innerText = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(tick);
+        else setTimeout(() => el.classList.remove('stat-bump'), 300);
     };
-    el.addEventListener('click', finish);
-    setTimeout(finish, 2300);
+    requestAnimationFrame(tick);
 }
 
-// Rulează popup-urile de abilitate unul câte unul (nu suprapuse), în ordinea activării.
-// onAllDone se apelează după ce ULTIMUL popup s-a închis — folosit ca să "înghețe"
-// gameplay-ul (nu se continuă runda) cât timp mai sunt abilități de arătat.
-function queueAbilityPopups(events, onAllDone) {
-    if (!events || events.length === 0) { if (onAllDone) onAllDone(); return; }
+// Tag-team chemistry announcement, floating top-center of the ring (green handshake for
+// a matched pair, red clash for a mismatched one) while both cards' stats animate.
+function showChemistryBadge(text, color) {
+    const arena = document.getElementById('arena-area');
+    if (!arena) return;
+    const el = document.createElement('div');
+    el.className = 'chemistry-badge';
+    el.style.color = color;
+    el.innerText = text;
+    arena.appendChild(el);
+    setTimeout(() => { el.classList.add('chemistry-badge-out'); setTimeout(() => el.remove(), 400); }, 1500);
+}
+
+function showCardActivationOverlay(evt, onDone) {
+    const el = document.getElementById('card-' + evt.cardStats.uid);
+    if (!el) { if (onDone) setTimeout(onDone, 50); return; }
+
+    el.classList.add('ability-active-flash');
+    burstAtElement(el, evt.cardStats.rarity);
+    setTimeout(() => el.classList.remove('ability-active-flash'), 900);
+
+    const rect = el.getBoundingClientRect();
+    const wrap = document.createElement('div');
+    wrap.className = 'card-ability-overlay' + (evt.isAI ? ' cao-ai' : '');
+    wrap.style.left = (rect.left + rect.width / 2) + 'px';
+    wrap.style.top = (rect.top + rect.height / 2) + 'px';
+    wrap.innerHTML = `
+        <div class="cao-icon">${evt.ab.icon}</div>
+        <div class="cao-name">${evt.ab.name}</div>
+        <div class="cao-bonus">+${evt.bonus} ${evt.statName.toUpperCase()}</div>`;
+    document.body.appendChild(wrap);
+    requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('cao-in')));
+
+    setTimeout(() => {
+        wrap.classList.remove('cao-in');
+        setTimeout(() => wrap.remove(), 350);
+    }, 1500);
+    setTimeout(() => { if (onDone) onDone(); }, 1900);
+}
+
+// Plays every activation of the round STRICTLY one at a time, on a slow, readable beat:
+// support/manager slides (with the support card's own flash+burst) and ability callouts.
+// onAllDone fires only after the LAST one has fully played — the clash waits for it.
+function playActivationsSequentially(list, onAllDone, isCancelled) {
+    if (!list || list.length === 0) { if (onAllDone) onAllDone(); return; }
     let i = 0;
     const next = () => {
-        if (i >= events.length) { if (onAllDone) onAllDone(); return; }
-        showAbilityPopup(events[i++], next);
+        // A cancelled round (forfeit mid-queue / a new match already started) stops cold —
+        // no more slides, callouts or stat bumps, and onAllDone (the clash) never fires.
+        if (isCancelled && isCancelled()) return;
+        if (i >= list.length) { if (onAllDone) onAllDone(); return; }
+        const a = list[i++];
+        // Every step carries the stat deltas it grants — the numbers on the affected
+        // cards count up/down IN SYNC with that step's own visual, one step at a time.
+        const applyBumps = () => { (a.bumps || []).forEach(b => animateStatBump(b.uid, b.stat, b.delta)); };
+        if (a.kind === 'support') {
+            showSupportBoostSlide(a.side, a.card, a.tag, a.icon || '🛠️');
+            const el = document.getElementById('card-' + a.card.uid);
+            if (el) {
+                el.classList.add('ability-active-flash');
+                burstAtElement(el, a.card.rarity);
+                setTimeout(() => el.classList.remove('ability-active-flash'), 900);
+            }
+            setTimeout(applyBumps, 500); // numbers rise as the slide settles in
+            setTimeout(next, 2100);
+        } else if (a.kind === 'chemistry') {
+            showChemistryBadge(a.text, a.color);
+            applyBumps();
+            setTimeout(next, 1800);
+        } else {
+            setTimeout(applyBumps, 350); // as the callout pops on the card
+            showCardActivationOverlay(a.evt, next);
+        }
     };
     next();
 }

@@ -1,4 +1,20 @@
-let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
+let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
+
+        // The original match screen's fall markers: one diamond per fall (3, plus a 4th for
+        // Overtime), colored by outcome from the PLAYER's perspective — green won, red lost,
+        // gold shared/draw — with the fall currently being fought pulsing white.
+        function renderFallPips() {
+            const el = document.getElementById('fall-pips');
+            if (!el) return;
+            const total = 3 + (match.overtimePlayed ? 1 : 0);
+            let html = '';
+            for (let i = 0; i < total; i++) {
+                const res = match.fallResults[i];
+                const isCurrent = !res && i === match.fallResults.length && !_matchOver;
+                html += `<span class="fall-pip ${res ? 'fall-' + res : ''} ${isCurrent ? 'fall-current' : ''}"${i === 3 ? ' title="OVERTIME"' : ''}></span>`;
+            }
+            el.innerHTML = html;
+        }
 
         // True from the moment endMatch() runs until the next match starts. The round flow
         // has several delayed callbacks in flight at any time (clash timers, the spotlight's
@@ -7,6 +23,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         // the match and run endMatch a second time (double loss recorded, a consolation pick
         // granted for a forfeited match, and a surprise screen jump to the draft board).
         let _matchOver = false;
+        // Generation counter: _matchOver alone can't stop a STALE round's delayed work once
+        // a NEW match has started (which resets _matchOver to false) — the activation queue
+        // can run for many seconds, and a player who forfeits mid-queue and jumps straight
+        // into another match would otherwise get the OLD round's clash (with the old totals)
+        // fired into the new match. Every match bumps the token; every round's delayed
+        // closures capture it and refuse to run if it no longer matches.
+        let _matchToken = 0;
 
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
@@ -15,9 +38,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // page load, the tab was closed/refreshed mid-match instead of ending normally.
             localStorage.setItem('sc_match_in_progress', '1');
             _matchOver = false;
+            _matchToken++;
             showScreen('match-screen');
-            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
+            match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
+            renderFallPips();
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
             nextRound();
@@ -30,6 +55,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         function nextRound() {
             if (_matchOver) return;
             if (match.round > 3) return handleStalemate();
+            // Dead-rubber guard: if even winning every remaining fall can't catch the
+            // opponent (i.e. 0-2 down going into fall 3), end the match NOW — the original
+            // played all three falls out, but a fall the player can gain NOTHING from is
+            // pure time waste. The mirrored case (player up 2-0) still plays fall 3: the
+            // clean-sweep bonus pick is on the line, and the round intro calls it out.
+            const remaining = 3 - match.round + 1;
+            if (match.pScore + remaining < match.oScore) return endMatch(false);
             playRound();
         }
 
@@ -90,14 +122,20 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             const introClass = isDivas ? 'divas' : (r.t === 'TAG TEAM' ? 'tag' : 'superstar');
             const matchTypeLabel = isDivas ? 'DIVAS MATCH' : (r.t === 'TAG TEAM' ? 'TAG TEAM MATCH' : 'SUPERSTAR MATCH');
             const roundLabel = match.overtimePlayed ? 'OVERTIME' : `ROUND ${match.round}`;
+            // Up 2-0 into the final fall: the match is already won, but the 3-0 sweep pays
+            // an extra Draft pick (see endMatch) — say so, so the fall doesn't feel dead.
+            const sweepLine = (match.pScore === 2 && match.oScore === 0)
+                ? '<div class="round-intro-sweep">🧹 WIN THIS FOR A CLEAN SWEEP — BONUS PICK!</div>' : '';
             document.getElementById('arena-area').innerHTML = `
                 <div class="round-intro ${introClass}">
                     <div class="round-intro-round">${roundLabel}</div>
                     <div class="round-intro-type">${matchTypeLabel}</div>
                     <div class="round-intro-stat">STAT: <span>${st.toUpperCase()}</span></div>
+                    ${sweepLine}
                 </div>`;
 
             document.getElementById('match-info').innerHTML = roundLabel;
+            renderFallPips();
             document.getElementById('cards-to-pick').innerText = r.r;
             document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
 
@@ -150,8 +188,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     if (!isAnySupportActiveThisRound) cardEl.classList.add('support-ready');
                     else cardEl.classList.add('battle-inactive');
                 } else if (isS) {
-                    // Carte selectata
-                    cardEl.style.cssText = "transform: translateY(-15px); border-color: #3498db !important; box-shadow: 0 10px 30px rgba(52, 152, 219, 0.8) !important;";
+                    // Carte selectata — clasă, nu stil inline, ca toggle-ul in-place de mai
+                    // jos și un full re-render să producă exact același aspect.
+                    cardEl.classList.add('card-selected');
                 } else if (!isActiveGender) {
                     // Carte de gen gresit — intunecata
                     cardEl.classList.add('battle-inactive');
@@ -212,11 +251,18 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         renderHand();
                     };
                 } else if (isActiveGender && !isU) {
+                    // Select/deselect happens IN PLACE — no renderHand() here. Rebuilding
+                    // the whole hand on every tap re-created every card node (image flash,
+                    // states snapping with no transition), which made picking cards feel
+                    // jumpy. Selection only ever changes THIS card's look, so toggling its
+                    // class (animated by .card's transition) is all that's needed.
                     div.onclick = () => {
-                        if(isS) match.selected = match.selected.filter(x=>x!==u);
-                        else if(match.selected.length < match.rule.r) match.selected.push(u);
+                        const already = match.selected.includes(u);
+                        if (already) match.selected = match.selected.filter(x => x !== u);
+                        else if (match.selected.length < match.rule.r) match.selected.push(u);
+                        else return; // hand full — ignore the tap, same as before
+                        cardEl.classList.toggle('card-selected', !already);
                         document.getElementById('btn-confirm-play').style.display = (match.selected.length === match.rule.r) ? 'flex' : 'none';
-                        renderHand();
                     };
                 }
                 h.appendChild(div);
@@ -238,6 +284,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             let arena = document.getElementById('arena-area');
             arena.onclick = null;
             arena.style.cursor = '';
+
+            match.fallResults.push(pTot > oTot ? 'win' : (oTot > pTot ? 'loss' : 'draw'));
+            renderFallPips();
 
             if (pTot > oTot) {
                 match.pScore++;
@@ -348,20 +397,16 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
             let pTot = 0, oTot = 0;
             let abilityEvents = [];
-            // Per-card extra bonus (ability and/or support) actually landed this round, so
-            // the arena card can show its real boosted number in green — not just a color
-            // change, and not a separate popup — everything that applies to a card adds up
-            // into the one number shown on it.
-            const playerCardBonus = {};
-            const aiCardBonus = {};
+            // Chemistry steps (tag rounds) — built here, PLAYED in the sequential queue,
+            // where each card's stats visibly count up/down as the step fires.
+            const chemistryEvents = [];
 
             // A manager-type support activated earlier this match permanently buffs every
             // card in the player's deck for the rest of the match (never the opponent's).
+            // It's persistent state (already shown green on the hand cards), so it stays
+            // baked into the arena render rather than replayed as an animation every round.
             const managerBonus = match.matchWideBonus[match.rule.stat] || 0;
-            if (managerBonus > 0) {
-                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + managerBonus; });
-                pTot += managerBonus * match.selected.length;
-            }
+            pTot += managerBonus * match.selected.length;
 
             // Captured here (same reason as playerSupportCardStats below), fired further down
             // AFTER the arena rebuilds — but only the FIRST round the manager is actually
@@ -393,36 +438,32 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                         if (bonus > 0) {
                             pTot += bonus;
-                            playerCardBonus[u] = (playerCardBonus[u] || 0) + bonus;
-                            abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false });
-                            // Flash animatie + particule colorate pe raritate, pe carte in arena
-                            setTimeout(() => {
-                                let el = document.getElementById('card-'+cardStats.uid);
-                                if (el) {
-                                    el.classList.add('ability-active-flash');
-                                    burstAtElement(el, cardStats.rarity);
-                                    setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
-                                }
-                            }, 700);
+                            // Flash + burst + on-card callout + the stat counting up all
+                            // fire from the SEQUENTIAL activation queue below.
+                            abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false, bumps: [{ uid: cardStats.uid, stat: match.rule.stat, delta: bonus }] });
                         }
                     }
                 }
             });
-            // TAG TEAM ALIGNMENT (original 2014 mechanic): each fighter carries a FACE or
-            // HEEL alignment (the diamond on the card). A tag pair with MATCHING alignments
-            // fights as a real team: +10% on the active stat for each card; a mismatched
-            // pair pays a -5% chemistry penalty on each. Applied per-card so the number on
-            // the card shows the real total it fought with (green boost / red penalty).
+            // TAG TEAM ALIGNMENT (original 2014 mechanic): a matching pair fights as a real
+            // team, +10% on EVERY stat of each card; a mismatched pair pays -5% on every
+            // stat. Only the active stat's share counts toward the round total — but ALL
+            // four numbers animate up/down on both cards when the chemistry step plays.
             if (match.rule.r === 2 && match.selected.length === 2) {
                 const pair = match.selected.map(u => getStats(player.inventory.find(c => c.uid === u)));
-                const factor = pair[0].alignment === pair[1].alignment ? 0.10 : -0.05;
+                const matched = pair[0].alignment === pair[1].alignment;
+                const factor = matched ? 0.10 : -0.05;
+                const bumps = [];
                 pair.forEach(s => {
-                    const delta = Math.round(s[match.rule.stat] * factor);
-                    if (delta !== 0) {
-                        pTot += delta;
-                        playerCardBonus[s.uid] = (playerCardBonus[s.uid] || 0) + delta;
-                    }
+                    ['pow','tgh','spd','cha'].forEach(k => {
+                        const d = Math.round(s[k] * factor);
+                        if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
+                        if (k === match.rule.stat) pTot += d;
+                    });
                 });
+                chemistryEvents.push({ kind: 'chemistry', bumps,
+                    text: matched ? '🤝 PERFECT TEAM! +10% ALL STATS' : '💢 BAD CHEMISTRY... -5% ALL STATS',
+                    color: matched ? '#2ecc71' : '#e74c3c' });
             }
 
             // In a Tag Team round (2 cards per side), the support card backs up the whole
@@ -431,17 +472,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             const playerSupportBonus = (match.supportBonus[match.rule.stat] || 0) * teamSupportMultiplier;
             pTot += playerSupportBonus;
 
-            // Support gets the same big popup treatment as an ability activation, and its
-            // bonus adds onto every fighter it backed up this round (same card can also
-            // carry an ability bonus on top — both add into the one number shown on it).
             // NOTE: playerSupportBonus is already doubled for Tag Team rounds (team-wide
-            // total) — showing that doubled amount on EACH of the 2 cards would visually
-            // double-count it (30+30 on-card vs the real 30 added to pTot). Each card shows
-            // its own undoubled share instead, so the two card displays sum to the real total.
+            // total) — animating that doubled amount onto EACH of the 2 cards would visually
+            // double-count it. Each card's number rises by its own undoubled share instead,
+            // so the two on-card increases sum to the real total added to pTot.
             const perCardSupportBonus = match.supportBonus[match.rule.stat] || 0;
-            if (playerSupportBonus > 0) {
-                match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + perCardSupportBonus; });
-            }
             // Captured here, but the actual slide-in fires further below — AFTER
             // arena.innerHTML rebuilds the ring with this round's fighter cards. Firing it
             // this early would just get wiped out by that innerHTML replacement before the
@@ -449,17 +484,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             let playerSupportCardStats = null;
             if (match.activeSupportUID && playerSupportBonus > 0) {
                 const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
-                if (supportCard) {
-                    playerSupportCardStats = getStats(supportCard);
-                    setTimeout(() => {
-                        let el = document.getElementById('card-' + playerSupportCardStats.uid);
-                        if (el) {
-                            el.classList.add('ability-active-flash');
-                            burstAtElement(el, playerSupportCardStats.rarity);
-                            setTimeout(() => el.classList.remove('ability-active-flash'), 700);
-                        }
-                    }, 700);
-                }
+                if (supportCard) playerSupportCardStats = getStats(supportCard);
             }
 
             // ---- AI CARD SELECTION ----
@@ -476,36 +501,25 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 match.used.push(c.uid);
             });
 
-            // Same tag-team alignment chemistry for the AI's pair (its deck cards carry
+            // Same all-stats tag-team chemistry for the AI's pair (its deck cards carry
             // alignments too — getStats stamps them on every fighter).
             if (match.rule.r === 2 && oppP.length === 2) {
-                const factor = oppP[0].alignment === oppP[1].alignment ? 0.10 : -0.05;
+                const matched = oppP[0].alignment === oppP[1].alignment;
+                const factor = matched ? 0.10 : -0.05;
+                const bumps = [];
                 oppP.forEach(c => {
-                    const delta = Math.round(c[activeStat] * factor);
-                    if (delta !== 0) {
-                        oTot += delta;
-                        aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + delta;
-                    }
+                    ['pow','tgh','spd','cha'].forEach(k => {
+                        const d = Math.round(c[k] * factor);
+                        if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
+                        if (k === activeStat) oTot += d;
+                    });
                 });
+                chemistryEvents.push({ kind: 'chemistry', bumps,
+                    text: matched ? '⚠️ ENEMY TEAM CHEMISTRY! +10%' : '💢 ENEMY BAD CHEMISTRY -5%',
+                    color: matched ? '#e74c3c' : '#f39c12' });
             }
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
-            // Same fix as the player's side above: show each card its own undoubled share,
-            // not the team-wide doubled total, so the displayed numbers don't double-count.
-            if (aiSupportBonus > 0) {
-                oppP.forEach(c => { aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + aiPlay.supportBonus; });
-            }
-
-            if (aiPlay.support && aiSupportBonus > 0) {
-                setTimeout(() => {
-                    let el = document.getElementById('card-' + aiPlay.support.uid);
-                    if (el) {
-                        el.classList.add('ability-active-flash');
-                        burstAtElement(el, aiPlay.support.rarity);
-                        setTimeout(() => el.classList.remove('ability-active-flash'), 700);
-                    }
-                }, 700);
-            }
 
             oppP.forEach(c => {
                 const ab = ABILITIES[c.id];
@@ -515,16 +529,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                     // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
                     if (bonus > 0) {
                         oTot += bonus;
-                        aiCardBonus[c.uid] = (aiCardBonus[c.uid] || 0) + bonus;
-                        abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true });
-                        setTimeout(() => {
-                            let el = document.getElementById('card-'+c.uid);
-                            if (el) {
-                                el.classList.add('ability-active-flash');
-                                burstAtElement(el, c.rarity);
-                                setTimeout(()=>el.classList.remove('ability-active-flash'), 700);
-                            }
-                        }, 700);
+                        abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true, bumps: [{ uid: c.uid, stat: activeStat, delta: bonus }] });
                     }
                 }
             });
@@ -532,46 +537,64 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // Cards whose stat actually got boosted this round (ability and/or support —
             // both add together into one total per card) show their real new number in
             // green right there on the card, instead of just a color change.
+            // Cards enter the ring showing their BASE stats (only the manager's permanent
+            // whole-deck buff is pre-applied — it's standing state, already green in hand).
+            // Every OTHER bonus lands during the sequential queue below, where the affected
+            // numbers visibly count up (or down) as each activation plays.
             let arena = document.getElementById('arena-area');
+            const managerMap = match.activeManagerUID ? match.matchWideBonus : null;
             arena.innerHTML = `
-                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', playerCardBonus[u] ? match.rule.stat : '', playerCardBonus[u] || 0)).join('')}</div>
+                <div class="arena-stat-tag">${activeStat.toUpperCase()}</div>
+                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', '', 0, managerMap)).join('')}</div>
                 <div class="vs-badge">VS</div>
-                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat, '', aiCardBonus[c.uid] ? activeStat : '', aiCardBonus[c.uid] || 0)).join('')}</div>
+                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat)).join('')}</div>
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
 
-            // Now that the ring actually has this round's cards in it, fire the support
-            // slide-in(s) — any earlier and arena.innerHTML above would've wiped them out.
-            if (playerSupportCardStats) showSupportBoostSlide('player', playerSupportCardStats, `+${playerSupportBonus} ${match.rule.stat.toUpperCase()}`);
-            if (aiPlay.support && aiSupportBonus > 0) showSupportBoostSlide('ai', aiPlay.support, `+${aiSupportBonus} ${activeStat.toUpperCase()}`);
-            if (managerCardStats) showSupportBoostSlide('player', managerCardStats, `${managerAddedText} TO DECK`, '🎙️');
+            // EVERYTHING that activated this round plays STRICTLY ONE AT A TIME, on an
+            // unhurried beat — manager signing, tag chemistry (stats animating on both
+            // cards), support boosts, then each ability with its callout ON its card.
+            const activations = [];
+            if (managerCardStats) activations.push({ kind: 'support', side: 'player', card: managerCardStats, tag: `${managerAddedText} TO DECK`, icon: '🎙️' });
+            chemistryEvents.forEach(e => activations.push(e));
+            if (playerSupportCardStats) activations.push({ kind: 'support', side: 'player', card: playerSupportCardStats, tag: `+${playerSupportBonus} ${match.rule.stat.toUpperCase()}`,
+                bumps: match.selected.map(u => ({ uid: u, stat: match.rule.stat, delta: perCardSupportBonus })) });
+            if (aiPlay.support && aiSupportBonus > 0) activations.push({ kind: 'support', side: 'ai', card: aiPlay.support, tag: `+${aiSupportBonus} ${activeStat.toUpperCase()}`,
+                bumps: oppP.map(c => ({ uid: c.uid, stat: activeStat, delta: aiPlay.supportBonus })) });
+            abilityEvents.forEach(evt => activations.push({ kind: 'ability', evt, bumps: evt.bumps }));
 
-            // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
-            // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să
-            // rămână "înghețat" cât timp se arată o abilitate activată.
+            const myToken = _matchToken;
+            const isStale = () => _matchOver || myToken !== _matchToken;
+
             const startClashSequence = () => {
+                if (isStale()) return; // this round's match ended (or a new one started) mid-queue
                 arena.style.cursor = 'pointer';
-                arena.onclick = () => skipClash(pTot, oTot);
+                arena.onclick = () => { if (!isStale()) skipClash(pTot, oTot); };
 
                 _clashTimer1 = setTimeout(() => {
                     _clashTimer1 = null;
                     let ap = document.getElementById('arena-player');
                     let ao = document.getElementById('arena-opp');
-                    if (ap) ap.classList.add('anim-clash-left');
-                    if (ao) ao.classList.add('anim-clash-right');
+                    // The slide-in classes must come OFF before the clash ones go on — both
+                    // set the `animation` property, and only one declaration can win.
+                    if (ap) { ap.classList.remove('slide-in-left'); ap.classList.add('anim-clash-left'); }
+                    if (ao) { ao.classList.remove('slide-in-right'); ao.classList.add('anim-clash-right'); }
                     arena.classList.add('impact-flash');
                     setTimeout(() => arena.classList.remove('impact-flash'), 500);
 
                     _clashTimer2 = setTimeout(() => {
                         _clashTimer2 = null;
-                        skipClash(pTot, oTot);
+                        if (!isStale()) skipClash(pTot, oTot);
                     }, 800);
-                }, 600);
+                }, 700);
             };
 
-            if (abilityEvents.length > 0) {
-                setTimeout(() => queueAbilityPopups(abilityEvents, startClashSequence), 700);
+            if (activations.length > 0) {
+                // Small breather after the cards slide in, then the queue; the clash only
+                // starts once the LAST activation has fully played out. isStale aborts the
+                // queue between steps if this round's match is gone by then.
+                setTimeout(() => playActivationsSequentially(activations, startClashSequence, isStale), 800);
             } else {
                 startClashSequence();
             }

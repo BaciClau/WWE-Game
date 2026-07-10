@@ -25,9 +25,12 @@ Static browser game — no build, no deps. All scripts are classic `<script src>
 - Ability popups (`#ability-popup`) block the round flow — click through them.
 - Hand cards live in `#player-hand-area` wrappers with `data-uid`; `renderHand()` rebuilds
   the DOM on every click, so re-query, never reuse element handles.
-- Round flow: select cards → `#btn-confirm-play` → optional popups → clash (click
-  `#arena-area` to skip) → ~1.4s spotlight → next round. "Selecting" state = arena has
-  exactly 1 child (the VS badge) and hand is rendered.
+- Round flow: select cards → `#btn-confirm-play` → SEQUENTIAL activation queue (~2s per
+  support slide / chemistry badge / on-card ability callout; arena skip-click is NOT
+  active during the queue) → clash (click `#arena-area` to skip) → ~2.5s winner-zoom
+  spotlight → round++ and next round. "Selecting" state = arena has exactly 1 child
+  (the round intro) and hand is rendered. Timing note for tests: score updates land at
+  clash resolution, but `match.round` only increments when the 2.5s spotlight ENDS.
 - Forfeit path: `#header-back-btn` on match screen → `#confirm-modal-yes-btn`.
 - Test money/picks: CODES button on main menu, code `baciclau` (+1M coins, +100 picks).
 - A useful match-state read: `{ match.rule, match.used, player.deck, player.picks,
@@ -46,7 +49,9 @@ mobile media query's values — scope desktop-only tweaks under `@media (min-wid
 
 ## Flows worth driving
 
-- Full match to the end (checks exactly ONE win/loss recorded, lands on draft board).
+- Full match to the end (checks exactly ONE win/loss recorded — or none on a true DRAW,
+  which the 3-falls format makes possible since a tied fall scores BOTH sides — lands on
+  draft board). Matches are exactly 3 falls + optional Overtime, never more.
 - Forfeit DURING round resolution (~250ms after SEND TO THE RING) — regression for the
   double-endMatch race; assert losses +1 exactly, picks unchanged, screen = opp-select.
 - Draft board pull + store pack buy (coins -cost, inventory +count).

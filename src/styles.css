@@ -328,9 +328,24 @@
             width: 172px; height: 247px; border-radius: 10px;
             position: relative; cursor: pointer; display: flex; flex-direction: column;
             box-shadow: 0 6px 15px rgba(0,0,0,0.8); overflow: hidden; border: 3px solid #fff;
-            transition: transform 0.2s; isolation: isolate;
+            /* border/shadow included so state changes (selected, support active) glide
+               instead of snapping — selection no longer rebuilds the hand, it just toggles
+               a class, and this transition is what makes that feel smooth. */
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; isolation: isolate;
         }
-        .card:hover { transform: scale(1.06); z-index: 10; }
+        /* hover:hover — on touch screens :hover "sticks" after a tap, leaving cards frozen
+           at 1.06x scale after every touch; only real pointers get the hover grow. */
+        @media (hover: hover) {
+            .card:hover { transform: scale(1.06); z-index: 10; }
+        }
+        /* Selected in the match hand — was an inline style stamped during a full re-render
+           of the hand on every tap (which made picking cards feel jumpy/flickery). Now a
+           class toggled in place, animated by the transition above. */
+        .card.card-selected {
+            transform: translateY(-15px);
+            border-color: #3498db !important;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.8) !important;
+        }
         .card.used { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
 
         /* Hexagon-tile overlay, shared by every rarity — pure CSS, no image asset. */
@@ -486,7 +501,6 @@
                 radial-gradient(circle at 22px calc(100% - 20px), #c0392b 0 9px, transparent 10px),
                 radial-gradient(circle at calc(100% - 22px) calc(100% - 20px), #c0392b 0 9px, transparent 10px),
                 linear-gradient(to bottom, transparent 15%, #c0392b 15%, #c0392b 16.5%, transparent 16.5%),
-                linear-gradient(to bottom, transparent 49.2%, #ecf0f1 49.2%, #ecf0f1 50.7%, transparent 50.7%),
                 linear-gradient(to bottom, transparent 83%, #2980b9 83%, #2980b9 84.5%, transparent 84.5%),
                 radial-gradient(ellipse at center, #3d3d3d 0%, #202020 65%, #0a0a0a 100%);
             border: 6px solid #7a1616; border-radius: 16px;
@@ -498,16 +512,84 @@
             font-size: 50px; font-style: italic; color: #e74c3c; text-shadow: 3px 3px 0 #fff, 0 0 30px red;
             font-weight: bold; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5;
         }
+
+        /* FALL MARKERS (score box) — one diamond per fall, green won / red lost / gold draw,
+           the fall in progress pulses white. The 2014 game showed match progress the same
+           way: per-fall markers, not just a bare number. */
+        #fall-pips { display: flex; gap: 9px; justify-content: center; margin-top: 7px; }
+        .fall-pip {
+            width: 11px; height: 11px; transform: rotate(45deg); border-radius: 2px;
+            background: #2b2b2b; border: 1px solid #555;
+        }
+        .fall-win { background: #2ecc71; border-color: #a8ffcf; box-shadow: 0 0 8px rgba(46,204,113,0.8); }
+        .fall-loss { background: #e74c3c; border-color: #ffb3ab; box-shadow: 0 0 8px rgba(231,76,60,0.8); }
+        .fall-draw { background: #f1c40f; border-color: #fff2b0; box-shadow: 0 0 8px rgba(241,196,15,0.8); }
+        .fall-current { border-color: #fff; animation: fallPipPulse 1.2s ease-in-out infinite; }
+        @keyframes fallPipPulse {
+            0%, 100% { transform: rotate(45deg) scale(1); }
+            50% { transform: rotate(45deg) scale(1.4); }
+        }
+
+        /* ARENA FURNITURE during a clash: the active stat pinned top-center of the ring and
+           each side's TEAM TOTAL as a big corner number — totals pop in (transform/opacity
+           only) right around the clash impact, then the winner's turns green and the loser's
+           greys out (skipClash applies the classes). */
+        .arena-stat-tag {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 6;
+            background: rgba(0,0,0,0.85); border: 1px solid #f1c40f; border-radius: 10px;
+            color: #f1c40f; font-weight: bold; letter-spacing: 3px; font-size: 14px;
+            padding: 2px 16px; animation: fadeIn 0.3s ease;
+        }
+        /* Stat count-up pop — added while a number is animating to its new value. */
+        .stat-v2.stat-bump { animation: statBump 0.7s ease; }
+        @keyframes statBump {
+            0%, 100% { transform: scale(1); }
+            40% { transform: scale(1.45); }
+        }
+
+        /* Tag-chemistry announcement floating at the top of the ring. */
+        .chemistry-badge {
+            position: absolute; left: 50%; top: 34px; transform: translateX(-50%) scale(1); z-index: 7;
+            font-size: 17px; font-weight: 900; letter-spacing: 1px; font-style: italic;
+            white-space: nowrap; text-shadow: 0 2px 4px #000, 0 0 14px currentColor;
+            animation: chemistryIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes chemistryIn {
+            from { transform: translateX(-50%) scale(0.3); opacity: 0; }
+            to { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        .chemistry-badge-out { opacity: 0; transition: opacity 0.4s ease; }
+
+        /* ABILITY CALLOUT ON THE CARD — replaces the old full-screen ability popup: a small
+           badge that pops up centered over the exact card whose ability fired. Attached to
+           document.body (never transform-scaled), positioned from getBoundingClientRect.
+           Transform/opacity only. */
+        .card-ability-overlay {
+            position: fixed; z-index: 9990; pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.25); opacity: 0;
+            min-width: 120px; max-width: 190px; text-align: center;
+            background: rgba(0,0,0,0.88); border: 2px solid #f1c40f; border-radius: 12px;
+            padding: 8px 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 22px rgba(241,196,15,0.45);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+        .card-ability-overlay.cao-in { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        .card-ability-overlay.cao-ai { border-color: #e74c3c; box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 22px rgba(231,76,60,0.45); }
+        .cao-icon { font-size: 26px; line-height: 1.1; }
+        .cao-name { font-size: 13px; font-weight: 900; letter-spacing: 1px; color: #fff; text-transform: uppercase; text-shadow: 1px 1px 2px #000; }
+        .cao-bonus { font-size: 16px; font-weight: 900; color: #2ecc71; text-shadow: 0 0 10px rgba(46,204,113,0.7); }
+        .card-ability-overlay.cao-ai .cao-bonus { color: #e74c3c; text-shadow: 0 0 10px rgba(231,76,60,0.7); }
         .arena-side { display: flex; gap: 10px; width: 45%; justify-content: center; z-index: 2;}
 
         /* Round-result reveal (showRoundWinnerSpotlight in fx.js) — the winning side's card(s)
            scale up with a spotlight glow, the losing side fades away, no popup text box. */
-        .vs-badge-hidden { opacity: 0; transition: opacity 0.25s ease; }
-        .round-loser-fade { opacity: 0.12; filter: grayscale(85%); transition: opacity 0.4s ease, filter 0.4s ease; }
+        .vs-badge-hidden { opacity: 0; transition: opacity 0.4s ease; }
+        /* Slow, fluent reveal: the loser melts away and the winner glides up over ~1s —
+           deliberately unhurried so the result actually registers before the next round. */
+        .round-loser-fade { opacity: 0.12; filter: grayscale(85%); transition: opacity 1s ease, filter 1s ease; }
         .round-winner-spotlight {
             position: relative; z-index: 6;
-            transform: scale(1.25);
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: scale(1.32);
+            transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .round-winner-spotlight::before {
             content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -521,8 +603,10 @@
             100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.15); }
         }
         .round-result-badge {
-            position: absolute; left: 50%; top: 6px; transform: translateX(-50%); z-index: 7;
-            font-size: 20px; font-weight: 900; letter-spacing: 1px; font-style: italic;
+            /* Dead-center of the ring (the VS badge hides during the reveal, so the spot is
+               free) — it used to sit at the very top, crowding the round markers above. */
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9;
+            font-size: 26px; font-weight: 900; letter-spacing: 1px; font-style: italic;
             text-shadow: 0 2px 4px #000, 0 0 14px currentColor; white-space: nowrap;
             animation: fadeIn 0.3s ease;
         }
@@ -568,8 +652,11 @@
         @keyframes clashRight { 0% { transform: translateX(0) scale(1); } 30% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 50% { transform: translateX(10px) scale(1); } 70% { transform: translateX(-60px) scale(1.1) rotate(-5deg); } 100% { transform: translateX(0) scale(1); } }
         .anim-clash-left { animation: clashLeft 0.8s ease-in-out; }
         .anim-clash-right { animation: clashRight 0.8s ease-in-out; }
-        .slide-in-left { animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* NO `forwards` fill: the final keyframe equals the natural resting state anyway,
+           and a filled animation keeps overriding `transform` forever — it was silently
+           killing the winner-zoom transition applied later to the same element. */
+        .slide-in-left { animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .slide-in-right { animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes slideInLeft { 0% { transform: translateX(-150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
         @keyframes slideInRight { 0% { transform: translateX(150%) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -633,11 +720,13 @@
             background-size: 250% 100%; background-position: 150% 0; transition: background-position 0.6s ease-out;
             pointer-events: none;
         }
-        .draft-card:hover {
-            border-image: linear-gradient(135deg, #fff2b0, #f1c40f, #fff2b0) 1;
-            transform: translateY(-4px); box-shadow: 0 10px 18px rgba(241, 196, 15, 0.35);
+        @media (hover: hover) {
+            .draft-card:hover {
+                border-image: linear-gradient(135deg, #fff2b0, #f1c40f, #fff2b0) 1;
+                transform: translateY(-4px); box-shadow: 0 10px 18px rgba(241, 196, 15, 0.35);
+            }
+            .draft-card:hover::after { background-position: -50% 0; }
         }
-        .draft-card:hover::after { background-position: -50% 0; }
         .draft-card.revealed {
             background: #111; border: 2px solid #2ecc71; cursor: default; transform: none; animation: none;
             box-shadow: inset 0 0 10px #000, 0 0 10px rgba(46,204,113,0.35);
@@ -795,19 +884,13 @@
             box-shadow: 0 0 25px #2ecc71, inset 0 0 15px rgba(46,204,113,0.2) !important;
             transform: translateY(-8px) scale(1.05);
         }
-        /* Static glow + a small transform "breathe" instead of animating box-shadow —
-           box-shadow keyframes force a full repaint of the card every frame, forever
-           (this runs the whole match), which is a real jank source on phones. transform
-           runs on the compositor instead. */
+        /* Fully STATIC green glow — no pulse at all. The old box-shadow pulse repainted
+           every frame (phone jank), and the transform "breathe" that replaced it made the
+           card visibly wobble the whole match, which read as annoying rather than inviting.
+           A steady glow + border says "tap me" just as well, standing still. */
         .card.support-ready {
             border-color: #2ecc71 !important;
             box-shadow: 0 0 16px #2ecc71, 0 0 30px rgba(46,204,113,0.35) !important;
-            animation: supportPulse 1.5s ease-in-out infinite;
-            will-change: transform;
-        }
-        @keyframes supportPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.035); }
         }
 
         /* CĂRȚI INDISPONIBILE ÎN LUPTĂ - mai întunecate */
@@ -819,53 +902,56 @@
         }
         .card.battle-inactive:hover { transform: none !important; }
 
-        /* POPUP MARE — ABILITATE ACTIVATĂ */
-        .ability-popup-overlay {
-            position: fixed; inset: 0; z-index: 9996;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
-            animation: abilityPopupFadeIn 0.25s ease-out; cursor: pointer;
+        /* ANUNȚ RUNDĂ ÎN RING — replaces the old static match-type banner strip: one animated
+           card in the arena center announcing round + match type + active stat together (the
+           single place all three live now). Animations are transform/opacity only (GPU). */
+        .round-intro {
+            /* margin:auto — the arena is a flex row with justify-content:space-between,
+               so a lone child needs auto margins to actually sit dead-center in the ring. */
+            position: relative; z-index: 3; text-align: center; margin: auto;
+            padding: 14px 34px; border-radius: 14px; border: 2px solid;
+            background: rgba(0,0,0,0.72);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            animation: roundIntroPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .ability-popup-overlay.ability-popup-out { animation: abilityPopupFadeOut 0.22s ease-in forwards; }
-        @keyframes abilityPopupFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes abilityPopupFadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-        .ability-popup-card {
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            padding: 18px 28px 22px; border-radius: 22px; max-width: 320px; text-align: center;
-            animation: abilityPopupPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        @keyframes roundIntroPop {
+            0% { transform: scale(0.2) rotate(-4deg); opacity: 0; }
+            65% { transform: scale(1.12) rotate(1deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
         }
-        @keyframes abilityPopupPop {
-            0% { transform: scale(0.35) rotate(-5deg); opacity: 0; }
-            70% { transform: scale(1.08) rotate(1deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0); }
+        .round-intro-round {
+            font-size: 15px; font-weight: bold; letter-spacing: 4px; color: #f1c40f;
+            text-shadow: 1px 1px 2px #000; margin-bottom: 2px;
         }
-        .ability-popup-header {
-            font-family: 'Oswald', sans-serif; font-weight: bold; letter-spacing: 3px; font-size: 15px;
-            border: 2px solid; border-radius: 20px; padding: 3px 16px; text-transform: uppercase;
-            text-shadow: 0 0 10px currentColor; animation: abilityHeaderPulse 1s ease-in-out infinite;
+        .round-intro-type {
+            font-size: 30px; font-weight: 900; font-style: italic; letter-spacing: 2px;
+            text-transform: uppercase; text-shadow: 2px 2px 4px #000, 0 0 18px currentColor;
+            animation: roundIntroTypePulse 1.6s ease-in-out infinite;
         }
-        @keyframes abilityHeaderPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-        /* Portret mare, recadrat: fără bara de nivel de jos, fără statsurile din dreapta — doar caracterul */
-        .ability-portrait {
-            width: 260px; height: 204px; border-radius: 14px; overflow: hidden;
-            margin: 4px 0; border: 2px solid #f1c40f;
+        @keyframes roundIntroTypePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        .round-intro-stat {
+            font-size: 16px; font-weight: bold; letter-spacing: 2px; color: #fff;
+            text-shadow: 1px 1px 2px #000; margin-top: 4px;
         }
-        .ability-portrait img {
-            width: 140%; max-width: none; height: 204px;
-            object-fit: cover; object-position: top; display: block;
+        .round-intro-stat span { color: #f1c40f; font-size: 20px; }
+        .round-intro-sweep {
+            margin-top: 8px; padding: 4px 10px; border-radius: 8px;
+            background: rgba(241,196,15,0.15); border: 1px dashed #f1c40f;
+            font-size: 13px; font-weight: bold; letter-spacing: 1px; color: #ffe9a0;
+            animation: roundIntroTypePulse 1.2s ease-in-out infinite;
         }
-        .ability-popup-name { color: #fff; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 3px #000; }
-        .ability-popup-move { color: #f1c40f; font-size: 17px; font-weight: bold; letter-spacing: 1px; }
-        .ability-popup-icon { margin-right: 6px; }
-        .ability-popup-bonus {
-            background: rgba(46,204,113,0.15); border: 1px solid #2ecc71; color: #7CFCA0;
-            font-size: 22px; font-weight: bold; padding: 4px 18px; border-radius: 8px; letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(46,204,113,0.6);
-        }
-        .ability-popup-desc { color: #ccc; font-size: 13px; font-style: italic; max-width: 280px; }
-        .ability-popup-tap { color: #777; font-size: 10px; letter-spacing: 2px; margin-top: 2px; }
+        .round-intro.divas { border-color: #ff69b4; }
+        .round-intro.divas .round-intro-type { color: #ffb3da; }
+        .round-intro.divas .round-intro-type::before { content: "👯 "; }
+        .round-intro.divas .round-intro-type::after { content: " 👯"; }
+        .round-intro.superstar { border-color: #3498db; }
+        .round-intro.superstar .round-intro-type { color: #aad4f5; }
+        .round-intro.superstar .round-intro-type::before { content: "🤼 "; }
+        .round-intro.superstar .round-intro-type::after { content: " 🤼"; }
+        .round-intro.tag { border-color: #f1c40f; }
+        .round-intro.tag .round-intro-type { color: #ffe9a0; }
+        .round-intro.tag .round-intro-type::before { content: "🤝 "; }
+        .round-intro.tag .round-intro-type::after { content: " 🤝"; }
 
         /* CAMERA SHAKE — la victorie / explozii Survivor */
         @keyframes cameraShake {
@@ -1211,6 +1297,16 @@
             .match-arena { min-height: 50px; padding: 6px; margin: 6px 0; }
             .vs-badge { font-size: 20px; }
             .match-confirm-spacer { height: 38px !important; margin: 6px 0 !important; }
+            /* Arena furniture scaled down for phones. */
+            #fall-pips { gap: 6px; margin-top: 4px; }
+            .fall-pip { width: 8px; height: 8px; }
+            .arena-stat-tag { font-size: 10px; padding: 1px 10px; letter-spacing: 2px; top: 4px; }
+            .chemistry-badge { font-size: 11px; top: 22px; }
+            .card-ability-overlay { min-width: 100px; max-width: 150px; padding: 6px 8px; }
+            .cao-icon { font-size: 20px; }
+            .cao-name { font-size: 10px; }
+            .cao-bonus { font-size: 13px; }
+
             /* Round-intro announcement scaled down for phones. */
             .round-intro { padding: 8px 14px; }
             .round-intro-round { font-size: 10px; letter-spacing: 2px; }

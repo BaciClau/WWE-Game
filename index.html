@@ -170,7 +170,10 @@
 
         <div class="match-round-box" style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px 30px; border-radius: 15px; border: 1px solid #c0392b;">
             <div class="match-score-col" style="font-size: 24px; color: #f1c40f;">YOU <br><span id="score-player" style="font-size: 50px; font-weight:bold;">0</span></div>
-            <div id="match-info" style="font-size: 24px; color: #f1c40f; text-align: center; text-shadow: 2px 2px #000;">ROUND 1</div>
+            <div style="text-align: center;">
+                <div id="match-info" style="font-size: 24px; color: #f1c40f; text-shadow: 2px 2px #000;">ROUND 1</div>
+                <div id="fall-pips"></div>
+            </div>
             <div class="match-score-col" style="font-size: 24px; color: #e74c3c; text-align:right;">AI <br><span id="score-opp" style="font-size: 50px; font-weight:bold;">0</span></div>
         </div>
 
@@ -256,6 +259,8 @@
                 <div id="focus-train-status" class="focus-train-status"></div>
                 <div id="focus-fodder-grid" class="card-container"></div>
                 <div class="card-focus-train-actions">
+                    <button id="focus-btn-auto-one" class="menu-btn" style="display:none; flex-direction:row;" onclick="focusAutoSelectFodder('one')">⚡ AUTO +1 LVL</button>
+                    <button id="focus-btn-auto-max" class="menu-btn" style="display:none; flex-direction:row;" onclick="focusAutoSelectFodder('max')">⚡ AUTO MAX</button>
                     <button id="focus-btn-feed" class="menu-btn btn-play" style="display:none; flex-direction:row;" onclick="focusFeedSacrifices()">🔄 FEED XP</button>
                     <button id="focus-btn-pro" class="menu-btn" style="display:none; flex-direction:row;" onclick="focusPromoteNormal()">⬆️ PRO (MAX 15)</button>
                     <button id="focus-btn-perfect-pro" class="menu-btn btn-play" style="display:none; flex-direction:row;" onclick="focusPromotePerfect()">★ PERFECT PRO (MAX 20)</button>
