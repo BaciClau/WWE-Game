@@ -287,10 +287,15 @@ function updateUI() {
             return parts.length ? parts.join(', ') : 'NA';
         }
 
-        function statBlock(label, key, stats, boosted, boostedAmount, highlight) {
-            const isBoosted = boosted === key;
+        function statBlock(label, key, stats, boosted, boostedAmount, highlight, matchWideMap) {
+            // A signed manager's permanent whole-deck bonus (matchWideMap) shows green right
+            // on the hand card itself, same as an in-round boost — so the player already sees
+            // the real number a card will fight with before picking it, instead of having to
+            // do the math themselves.
+            const mwBonus = (matchWideMap && matchWideMap[key]) || 0;
+            const isBoosted = boosted === key || mwBonus > 0;
             const isHighlight = !isBoosted && highlight === key;
-            const val = isBoosted ? stats[key] + boostedAmount : stats[key];
+            const val = stats[key] + (boosted === key ? boostedAmount : 0) + mwBonus;
             return `
                 <div class="stat-v2 ${isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : '')}">
                     <div class="stat-v2-label">${label}</div>
@@ -298,7 +303,7 @@ function updateUI() {
                 </div>`;
         }
 
-        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="", boostedAmount=0) {
+        function renderHTMLCard(stats, selectable=false, highlight="", extraClass="", boosted="", boostedAmount=0, matchWideMap=null) {
             const isSupport = stats.gender === 'S';
             let lvlText = '';
             if (!isSupport) {
@@ -316,10 +321,10 @@ function updateUI() {
 
             const statsColHTML = isSupport ? '' : `
                 <div class="card-stats-col-v2">
-                    ${statBlock('POW', 'pow', stats, boosted, boostedAmount, highlight)}
-                    ${statBlock('TGH', 'tgh', stats, boosted, boostedAmount, highlight)}
-                    ${statBlock('SPD', 'spd', stats, boosted, boostedAmount, highlight)}
-                    ${statBlock('CHA', 'cha', stats, boosted, boostedAmount, highlight)}
+                    ${statBlock('POW', 'pow', stats, boosted, boostedAmount, highlight, matchWideMap)}
+                    ${statBlock('TGH', 'tgh', stats, boosted, boostedAmount, highlight, matchWideMap)}
+                    ${statBlock('SPD', 'spd', stats, boosted, boostedAmount, highlight, matchWideMap)}
+                    ${statBlock('CHA', 'cha', stats, boosted, boostedAmount, highlight, matchWideMap)}
                 </div>`;
 
             return `
@@ -332,7 +337,9 @@ function updateUI() {
                     </div>
                     <div class="card-body-v2 ${isSupport ? 'card-body-support-v2' : ''}">
                         <div class="card-image-col-v2 ${isSupport ? 'card-image-col-support-v2' : ''}">
-                            <img src="${stats.img}" onload="fitCardImage(this)">
+                            ${_bgRemovedCache[stats.img]
+                                ? `<img src="${_bgRemovedCache[stats.img]}" data-card-fitted="1">`
+                                : `<img src="${stats.img}" onload="fitCardImage(this)">`}
                             ${isSupport ? '' : `<div class="card-score-v2">${lvlText}</div>`}
                         </div>
                         ${statsColHTML}

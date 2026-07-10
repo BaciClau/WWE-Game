@@ -107,12 +107,20 @@
             box-shadow: 0 6px 15px rgba(0,0,0,0.6); transition: all 0.2s;
         }
         .opponent-row:hover { transform: translateY(-3px); border-color: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.8); }
-        .opponent-avatar {
-            width: 84px; height: 84px; border-radius: 12px; background: #000;
-            border: 2px solid var(--wwe-red); display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; overflow: hidden;
+        .opponent-avatar { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        /* Also carries class="card" + a rarity-X class (own avatar card's rarity, Common..
+           Survivor — never the opponent's overall deck tier) so it gets the exact same
+           rarity-colored background and hex-tile overlay as any other card in the game (see
+           .card/.rarity-X above). This override just re-shrinks it back down from .card's
+           full 172x247 size to the small round avatar this row actually needs; a small
+           padding is left so that background+hex actually peeks out as a colored frame around
+           the photo, instead of being fully hidden behind it. */
+        .opponent-avatar.card {
+            width: 84px; height: 84px; border-radius: 12px; border: 2px solid var(--wwe-red);
+            padding: 4px; box-sizing: border-box; cursor: default;
         }
-        .opponent-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .opponent-avatar.card:hover { transform: none; }
+        .opponent-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; border-radius: 8px; }
         .opponent-info { flex: 1; display: flex; flex-direction: column; gap: 6px; }
         .opponent-name { font-size: 26px; font-weight: bold; color: #fff; letter-spacing: 1px; }
         .opponent-tier { font-size: 15px; font-weight: bold; font-family: Arial; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 0 6px currentColor; }
@@ -200,6 +208,29 @@
         .dash-card.dash-rarity-Epic      { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(204,119,0,0.85) 85%, rgba(204,119,0,0.85) 100%); }
         .dash-card.dash-rarity-Legendary { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(255,204,0,0.85) 85%, rgba(255,204,0,0.85) 100%); }
         .dash-card.dash-rarity-Survivor  { background-color: #000; background-image: linear-gradient(90deg, transparent 40%, rgba(204,0,0,0.85) 85%, rgba(204,0,0,0.85) 100%); }
+        /* Same hex-tile overlay every regular .card gets (see .card::before) — added here so
+           the champ card reads as a real card and not just a photo backdrop. .dash-card is
+           overflow:visible on purpose (lets the card-stack icon spill past the gold border),
+           so this pseudo-element clips itself via its own border-radius instead of relying on
+           the parent's overflow. */
+        .dash-card::before {
+            content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+            border-radius: 4px;
+            /* Same left-transparent → right-solid stops as the rarity color fade above it, so
+               the hex texture only shows up where the color does instead of sitting flat and
+               visible across the whole card regardless of the fade. */
+            mask-image: linear-gradient(90deg, transparent 40%, black 85%, black 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 40%, black 85%, black 100%);
+            background-image:
+                linear-gradient(30deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(150deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(30deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(150deg, rgba(255,255,255,0.05) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,0.05) 87.5%, rgba(255,255,255,0.05)),
+                linear-gradient(60deg, rgba(255,255,255,0.07) 25%, transparent 25.5%, transparent 75%, rgba(255,255,255,0.07) 75%, rgba(255,255,255,0.07)),
+                linear-gradient(60deg, rgba(255,255,255,0.07) 25%, transparent 25.5%, transparent 75%, rgba(255,255,255,0.07) 75%, rgba(255,255,255,0.07));
+            background-size: 22px 38px;
+            background-position: 0 0, 0 0, 11px 19px, 11px 19px, 0 0, 11px 19px;
+        }
         .dash-card-photo-clip { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; z-index: 1; }
         .dash-card-logo {
             position: absolute; left: 0; top: 0; bottom: 0; width: 46%; z-index: 2; pointer-events: none;
@@ -492,6 +523,7 @@
             padding: 2px 4px; font-size: 9px; font-weight: bold; color: #f1c40f; white-space: nowrap;
             overflow: hidden; text-overflow: ellipsis;
         }
+
 
         /* Bright radial burst behind the VS badge at the exact moment the cards clash —
            timed to fire alongside .anim-clash-left/.anim-clash-right in match.js. */
@@ -1130,7 +1162,7 @@
             .opponent-row { padding: 10px 12px; gap: 10px; }
             .opponent-info { min-width: 0; }
             .opponent-name, .opponent-wl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .opponent-avatar { width: 46px; height: 46px; }
+            .opponent-avatar.card { width: 46px; height: 46px; padding: 3px; }
             .opponent-fight-btn { width: 36px; height: 36px; font-size: 16px; }
 
             /* MY CARDS: the nav arrows / card / menu buttons row was a fixed 3-column desktop

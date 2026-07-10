@@ -87,6 +87,11 @@ function showOpponentSelect() {
                     aiMode: b.aiMode,
                     name: generateGamerTag(),
                     avatarImg: avatarCard.img,
+                    // The AVATAR CARD's own rarity (Common..Survivor) — deliberately NOT the
+                    // opponent's overall deck tier (Rare+/Ultra Rare++/etc.), a different scale
+                    // entirely. Drives the same per-rarity card background the avatar photo
+                    // sits in, same as any other card in the game.
+                    avatarRarity: avatarCard.rarity,
                     wl: generateOpponentWL(tier.name),
                     tierName: tier.name,
                     tierColor: tier.color,
@@ -99,7 +104,11 @@ function showOpponentSelect() {
             window.currentOpponents.forEach((opp, idx) => {
                 container.innerHTML += `
                     <div class="opponent-row" onclick="startMatchWithOpponent(${idx})">
-                        <div class="opponent-avatar"><img src="${opp.avatarImg}" alt=""></div>
+                        <div class="opponent-avatar card rarity-${opp.avatarRarity}">${
+                            _bgRemovedCache[opp.avatarImg]
+                                ? `<img src="${_bgRemovedCache[opp.avatarImg]}" data-card-fitted="1" alt="">`
+                                : `<img src="${opp.avatarImg}" onload="fitCardImage(this)" alt="">`
+                        }</div>
                         <div class="opponent-info">
                             <div class="opponent-name">${opp.name}</div>
                             <div class="opponent-tier" style="color:${opp.tierColor};">${opp.tierName}</div>
@@ -146,11 +155,12 @@ function showOpponentSelect() {
             return 'none';
         }
 
-        // Builds one card's level/upgrade state for a rolled tier. 'none' aims for roughly
-        // avgMultiplier (whatever the deck's baseline solve arrived at); Pro/Perfect Pro pick
-        // a random level within their own real range instead, so a card flagged as trained
-        // actually LOOKS trained (random progress through that tier) rather than just being
-        // power-scaled to hit an exact target.
+        // Builds one card's level/upgrade state for a rolled tier, SOLVING for whatever level
+        // within that tier's real range gets closest to avgMultiplier — instead of a fully
+        // random level, which is what let a level-1-power matchup roll a maxed Perfect Pro
+        // card (~2.95x) with nothing to hold it back. Clamping to each tier's own range means
+        // Pro/Perfect can still only overshoot by AT MOST that tier's own floor above target
+        // (bounded), never by the tier's full ceiling (unbounded).
         function cardUpgradeInfo(rarity, tier, avgMultiplier) {
             const baseMax = LEVEL_CAPS[rarity] || UPGRADE.BASE_MAX;
             const proMax = PRO_LEVEL_CAPS[rarity] || (baseMax + 5);
@@ -160,16 +170,28 @@ function showOpponentSelect() {
                 // real one always banks close to MAX_STAT_RATIO — matches that baseline.
                 const banked = UPGRADE.MAX_STAT_RATIO + UPGRADE.COMBINE_BASE_BONUS;
                 const stretchMax = Math.max(1, proMax - baseMax);
-                const level = Math.floor(Math.random() * (stretchMax + 1));
-                return { level, upgradeType: 'perfect', phase: 2, comboMultiplier: banked };
+                let lvl = Math.round(((avgMultiplier - banked) / (UPGRADE.PERFECT_STAT_RATIO - 1)) * stretchMax);
+                lvl = Math.max(0, Math.min(stretchMax, lvl));
+                return { level: lvl, upgradeType: 'perfect', phase: 2, comboMultiplier: banked };
             }
             if (tier === 'pro') {
-                const level = Math.min(proMax, baseMax + Math.floor(Math.random() * (proMax - baseMax + 1)));
-                return { level, upgradeType: 'normal', phase: 1, comboMultiplier: 1 };
+                let lvl = Math.round((avgMultiplier - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1));
+                lvl = Math.max(baseMax, Math.min(proMax, lvl));
+                return { level: lvl, upgradeType: 'normal', phase: 1, comboMultiplier: 1 };
             }
             let lv = Math.round((avgMultiplier - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1));
             lv = Math.max(1, Math.min(baseMax, lv || 1));
             return { level: lv, upgradeType: null, phase: 1, comboMultiplier: 1 };
+        }
+
+        // How far the ACTUAL built deck is allowed to drift from targetPower, as a fraction —
+        // tight at low tiers (a level-1 player's very first matches must stay genuinely close,
+        // ±10% at Rare) and looser at high tiers (±25% at Survivor++, where players have more
+        // varied builds/training to account for). Requested directly: "la rare sa fie -10/+10,
+        // faci tu calculele pentru celelalte tiere sa fie fair" — linear interpolation between
+        // those two anchors across all 18 TIERS steps.
+        function maxPowerDeviation(p) {
+            return 0.10 + p * 0.15;
         }
 
         // Same tier lookup as calculateDeckTier(), but for an arbitrary stat total instead of
@@ -237,21 +259,39 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
                 }
             }
 
-            // Real players don't have every card in their roster at the exact same
-            // level/upgrade — roll each card's tier independently (odds scale with the
-            // opponent's overall power) instead of applying one shared lvlInfo to all 6,
-            // so a deck can plausibly show a mix of plain, Pro (◆), and Perfect Pro (★) cards.
+            const supportBuilt = getStats({ id: best.sCard.id, uid: 'o_6', level: 1, xp: 0, upgradeType: null, phase: 1, locked: false });
+            const supportTotal = supportBuilt.pow + supportBuilt.tgh + supportBuilt.spd + supportBuilt.cha;
+            const levelableCards = [...best.mCards, ...best.fCards];
+
             const tierIdx = TIERS.findIndex(t => t.name === getTierForPower(targetPower).name);
             const p = Math.max(0, tierIdx) / (TIERS.length - 1);
 
-            const levelableCards = [...best.mCards, ...best.fCards];
-            const built = levelableCards.map((c, i) => {
+            // Real players don't have every card in their roster at the exact same
+            // level/upgrade — roll each card's tier independently (odds scale with the
+            // opponent's overall power) instead of applying one shared lvlInfo to all 6, so a
+            // deck can plausibly show a mix of plain, Pro (◆), and Perfect Pro (★) cards.
+            const flavored = levelableCards.map((c, i) => {
                 const tier = rollUpgradeTier(p);
                 const info = cardUpgradeInfo(best.rarity, tier, best.rawMultiplier);
                 const cardObj = { id: c.id, uid: 'o_'+i, level: info.level, xp: 0, upgradeType: info.upgradeType, phase: info.phase, comboMultiplier: info.comboMultiplier, locked: false };
                 return getStats(cardObj);
             });
-            const supportBuilt = getStats({ id: best.sCard.id, uid: 'o_6', level: 1, xp: 0, upgradeType: null, phase: 1, locked: false });
+            const flavoredTotal = flavored.reduce((s, c) => s + c.pow + c.tgh + c.spd + c.cha, 0) + supportTotal;
 
+            // Fairness guard: even with cardUpgradeInfo's clamped solve, several cards can
+            // independently roll Pro/Perfect Pro and stack into a real mismatch — a level-1,
+            // just-started player facing 3 Perfect Pro cards was exactly this. If the
+            // flavored deck drifts outside this tier's allowed band, fall back to the plain,
+            // uniformly-leveled build (same lvlInfo for every card) that hits targetPower
+            // precisely — reliability over flavor whenever the two conflict.
+            const maxDev = maxPowerDeviation(p);
+            if (Math.abs(flavoredTotal - targetPower) <= targetPower * maxDev) {
+                return [...flavored, supportBuilt];
+            }
+
+            const built = levelableCards.map((c, i) => {
+                const cardObj = { id: c.id, uid: 'o_'+i, level: best.lvlInfo.level, xp: 0, upgradeType: best.lvlInfo.upgradeType, phase: best.lvlInfo.phase, locked: false };
+                return getStats(cardObj);
+            });
             return [...built, supportBuilt];
         }

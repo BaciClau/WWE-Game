@@ -66,7 +66,6 @@ const TIERS = [
         const UPGRADE = {
             BASE_MAX: 10,
             NORMAL_MAX: 15,
-            PERFECT_MAX: 20,
             XP_BASE: 25,
             // CurrentStat = Base + (Max - Base) * (Level / MaxLevel), unde Max = Base * MAX_STAT_RATIO
             // și MaxLevel e nivelul maxim fără upgrade al rarității (LEVEL_CAPS).

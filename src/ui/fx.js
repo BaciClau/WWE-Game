@@ -74,14 +74,20 @@ function burstAtElement(el, rarity, options = {}) {
 // Support card activation, in-ring — replaces the old big showAbilityPopup overlay: the actual
 // support card (art + stats, same renderHTMLCard as everywhere else) slides in from the left
 // under the activating side's fighter card(s), sits for a beat, then slides back out the way
-// it came. Non-blocking (doesn't pause the clash sequence).
-function showSupportBoostSlide(side, cardStats, statName, bonus) {
+// it came. Non-blocking (doesn't pause the clash sequence). tagText is the full label shown
+// under the card (e.g. "+15 POW" for a one-round support boost, or "+9 POW, +9 CHA TO DECK"
+// for a manager signing) — callers format it since a manager can affect several stats at once.
+function showSupportBoostSlide(side, cardStats, tagText, icon = '🛠️') {
     const arena = document.getElementById('arena-area');
     if (!arena) return;
+    // Remove any slide already in flight for this same side first — without this, spamming
+    // the trigger (e.g. rapidly toggling a manager on/off) piles up one overlapping slide per
+    // click, each with its own independent timers, instead of ever cleanly replacing itself.
+    arena.querySelectorAll('.support-boost-slide-' + side).forEach(el => el.remove());
     const wrap = document.createElement('div');
     wrap.className = 'support-boost-slide support-boost-slide-' + side;
     wrap.innerHTML = renderHTMLCard(cardStats) +
-        `<div class="support-boost-slide-tag">🛠️ +${bonus} ${statName.toUpperCase()}</div>`;
+        `<div class="support-boost-slide-tag">${icon} ${tagText}</div>`;
     arena.appendChild(wrap);
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('support-boost-slide-in')));
     setTimeout(() => {

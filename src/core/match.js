@@ -1,4 +1,4 @@
-let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
+let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, overtimePlayed: false };
 
         function startMatchWithOpponent(idx) {
             let oppData = window.currentOpponents[idx];
@@ -7,7 +7,7 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             // page load, the tab was closed/refreshed mid-match instead of ending normally.
             localStorage.setItem('sc_match_in_progress', '1');
             showScreen('match-screen');
-            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
+            match = { round: 1, pScore: 0, oScore: 0, hand: [...player.deck.M, ...player.deck.F, ...player.deck.S], oppHand: oppData.deck, used: [], selected: [], activeSupportUID: null, activeManagerUID: null, managerLockedIn: false, managerSlideShown: false, supportBonus: {pow:0, tgh:0, spd:0, cha:0}, matchWideBonus: {pow:0, tgh:0, spd:0, cha:0}, aiMode: oppData.aiMode || 'normal', overtimePlayed: false };
             document.getElementById('score-player').innerText = "0"; document.getElementById('score-opp').innerText = "0";
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
@@ -40,7 +40,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function playRound() {
-            match.selected = []; match.activeSupportUID = null; match.activeManagerUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
+            // activeManagerUID is deliberately NOT reset here — a signed manager buffs the
+            // deck for the REST OF THE MATCH (see matchWideBonus), not just the round it was
+            // played in, so its "signed" state (and the card's "TO DECK" footer text) must
+            // survive every subsequent round until the player explicitly un-signs it. Regular
+            // support cards (activeSupportUID/supportBonus) ARE meant to be a one-round boost,
+            // so those still reset every round.
+            match.selected = []; match.activeSupportUID = null; match.supportBonus = {pow:0, tgh:0, spd:0, cha:0};
             document.getElementById('arena-area').innerHTML = '<div class="vs-badge">VS</div>';
             document.getElementById('btn-confirm-play').style.display = 'none';
 
@@ -90,15 +96,32 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 let isSupportActivated = (match.activeSupportUID === u);
                 let isManagerActivated = (match.activeManagerUID === u);
                 let isAnySupportActiveThisRound = !!match.activeSupportUID || !!match.activeManagerUID;
+                let isManagerCard = isSupportCard && !!DB.find(x => x.id === cardObj.id).manager;
 
+                // Fighter cards show their manager-boosted stats in green right in hand — the
+                // real number they'll fight with — never the manager card itself (it doesn't
+                // benefit from its own signing bonus).
                 let div = document.createElement('div');
-                div.innerHTML = renderHTMLCard(s, false, match.rule.stat);
+                div.innerHTML = renderHTMLCard(s, false, match.rule.stat, '', '', 0, isSupportCard ? null : match.matchWideBonus);
                 let cardEl = div.children[0];
+                div.style.position = 'relative';
+                div.dataset.uid = u;
 
-                if (isU && !isSupportActivated && !isManagerActivated) {
-                    // Carte deja folosita in rundele anterioare
+                // A manager card's footer always reads "TO DECK" — it's describing what
+                // signing it DOES (a permanent whole-deck buff), not a state that only
+                // appears once you've actually signed it — so this runs regardless of
+                // isManagerActivated, unlike the old signed-only version.
+                if (isManagerCard) {
+                    const bonusEl = cardEl.querySelector('.ability-footer-bonus-v2');
+                    if (bonusEl && !bonusEl.innerText.endsWith('TO DECK')) bonusEl.innerText = bonusEl.innerText + ' TO DECK';
+                }
+
+                if ((isU && !isSupportActivated) || isManagerActivated) {
+                    // Carte deja folosita in rundele anterioare — un manager semnat conteaza
+                    // ca "folosit" din prima clipa (gri), spre deosebire de support-ul normal
+                    // care ramane cu contur verde cat timp poate fi inca declickat.
                     cardEl.classList.add('used');
-                } else if (isSupportActivated || isManagerActivated) {
+                } else if (isSupportActivated) {
                     // Support activat — contur verde (poate fi declickat inapoi)
                     cardEl.classList.add('support-active');
                 } else if (isSupportCard) {
@@ -123,8 +146,11 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                         document.getElementById('support-status').innerText = "Tap your Support card to activate it this round!";
                         renderHand();
                     };
-                } else if (isManagerActivated) {
+                } else if (isManagerActivated && !match.managerLockedIn) {
                     // Click din nou pe manager-ul deja activ = anuleaza buff-ul permanent adaugat
+                    // — doar inainte ca vreo runda sa se fi rezolvat cu el activ (vezi
+                    // managerLockedIn in resolveRound()); dupa aceea ramane semnat tot meciul,
+                    // fara optiune de undo (ar anula retroactiv o runda deja jucata).
                     div.onclick = () => {
                         match.used = match.used.filter(x => x !== u);
                         ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] -= s[k]; });
@@ -145,7 +171,12 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                             ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] += s[k]; });
                             const added = ['pow','tgh','spd','cha'].filter(k => s[k] > 0).map(k => `+${s[k]} ${k.toUpperCase()}`).join(', ');
                             document.getElementById('support-status').innerHTML = `<span style="color:#f1c40f">🎙️ ${s.name} SIGNED! ${added} to your whole roster for the rest of the match! (tap again to undo)</span>`;
-                            showNotification(`🎙️ MANAGER SIGNED!<br>${s.name} boosts your ENTIRE roster: ${added} for the rest of the match!`, 2400);
+                            renderHand();
+                            // No slide here at the moment of signing — it plays instead the
+                            // first time a round actually resolves with the manager active
+                            // (see resolveRound()/managerSlideShown), same as when the manager
+                            // is truly "played" in the ring rather than just selected.
+                            return;
                         } else {
                             match.activeSupportUID = u; match.used.push(u);
                             match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
@@ -272,6 +303,13 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
         }
 
         function resolveRound() {
+            // A manager's buff is permanent for the rest of the match the moment a round
+            // actually resolves with it active — once THAT'S happened, un-signing must no
+            // longer be possible (it would retroactively cancel a buff that already decided
+            // an earlier round's outcome). Before this point (same round, not yet resolved)
+            // the "tap again to undo" option is still fair game.
+            if (match.activeManagerUID) match.managerLockedIn = true;
+
             let pTot = 0, oTot = 0;
             let abilityEvents = [];
             // Per-card extra bonus (ability and/or support) actually landed this round, so
@@ -287,6 +325,19 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
             if (managerBonus > 0) {
                 match.selected.forEach(u => { playerCardBonus[u] = (playerCardBonus[u] || 0) + managerBonus; });
                 pTot += managerBonus * match.selected.length;
+            }
+
+            // Captured here (same reason as playerSupportCardStats below), fired further down
+            // AFTER the arena rebuilds — but only the FIRST round the manager is actually
+            // played/resolved, via managerSlideShown, not every round after that.
+            let managerCardStats = null, managerAddedText = '';
+            if (match.activeManagerUID && !match.managerSlideShown) {
+                const managerCard = player.inventory.find(c => c.uid === match.activeManagerUID);
+                if (managerCard) {
+                    managerCardStats = getStats(managerCard);
+                    managerAddedText = ['pow','tgh','spd','cha'].filter(k => managerCardStats[k] > 0).map(k => `+${managerCardStats[k]} ${k.toUpperCase()}`).join(', ');
+                    match.managerSlideShown = true;
+                }
             }
 
             match.selected.forEach(u => {
@@ -426,8 +477,9 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
 
             // Now that the ring actually has this round's cards in it, fire the support
             // slide-in(s) — any earlier and arena.innerHTML above would've wiped them out.
-            if (playerSupportCardStats) showSupportBoostSlide('player', playerSupportCardStats, match.rule.stat, playerSupportBonus);
-            if (aiPlay.support && aiSupportBonus > 0) showSupportBoostSlide('ai', aiPlay.support, activeStat, aiSupportBonus);
+            if (playerSupportCardStats) showSupportBoostSlide('player', playerSupportCardStats, `+${playerSupportBonus} ${match.rule.stat.toUpperCase()}`);
+            if (aiPlay.support && aiSupportBonus > 0) showSupportBoostSlide('ai', aiPlay.support, `+${aiSupportBonus} ${activeStat.toUpperCase()}`);
+            if (managerCardStats) showSupportBoostSlide('player', managerCardStats, `${managerAddedText} TO DECK`, '🎙️');
 
             // Secvența de "clash" (animație + rezolvare rundă) — pornește DOAR după ce
             // popup-urile de abilitate (dacă există) s-au terminat, ca gameplay-ul să
@@ -473,7 +525,10 @@ let match = { round: 1, pScore: 0, oScore: 0, hand: [], oppHand: [], used: [], s
                 player.winStreak = 0; player.losses = (player.losses || 0) + 1; save();
                 incrementMission('play_exhibition');
                 let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
-                showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+                // Unlike win/loss/draw, a forfeit earns zero picks — sending the player to the
+                // draft board (nothing new to spend) was pointless. Back to Exhibition instead,
+                // with a fresh set of opponents, so they can jump straight into another match.
+                showNotification(`🏳️ You forfeited the match. Defeat!${resetNote}`, 2500, () => { showScreen('opp-select-screen'); showOpponentSelect(); });
                 return;
             }
 
