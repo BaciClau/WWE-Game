@@ -174,11 +174,18 @@ const DUPLICATE_ID_REMAP = {
                 // (startMatchWithOpponent sets it, endMatch clears it on every real outcome —
                 // forfeit/draw/win/loss) — count it as a forfeit instead of silently dropping
                 // the player back at the main menu with no explanation and no consequence.
-                if (localStorage.getItem('sc_match_in_progress') === '1') {
+                const inProgress = localStorage.getItem('sc_match_in_progress');
+                if (inProgress) {
                     localStorage.removeItem('sc_match_in_progress');
-                    player.winStreak = 0;
-                    player.losses = (player.losses || 0) + 1;
-                    showNotification('🏳️ You left a match in progress — it was counted as a forfeit.', 2800);
+                    if (inProgress === 'pcc') {
+                        // A PCC match never touches the Exhibition record — abandoning one just
+                        // costs the points it might have earned.
+                        showNotification('🏳️ You left a People\'s Champion match in progress — no points earned.', 2800);
+                    } else {
+                        player.winStreak = 0;
+                        player.losses = (player.losses || 0) + 1;
+                        showNotification('🏳️ You left a match in progress — it was counted as a forfeit.', 2800);
+                    }
                 }
                 if (!player.nickname) {
                     promptNickname(function(name) {

@@ -61,6 +61,21 @@ function checkTierMissions() {
     }
 }
 
+// The Daily Sweep unlocks only when every OTHER repeatable mission has been CLAIMED (not
+// just reached) — called after every claim and on daily reset. Progress-based like any
+// other mission, so the existing render/claim flow needs no special cases.
+function checkDailySweep() {
+    const sweep = MISSIONS.find(m => m.type === 'daily_sweep');
+    if (!sweep || player.completedMissions.includes(sweep.id)) return;
+    const others = MISSIONS.filter(m => m.repeatable && m.type !== 'daily_sweep');
+    const allClaimed = others.length > 0 && others.every(m => player.completedMissions.includes(m.id));
+    const val = allClaimed ? 1 : 0;
+    if ((player.missionProgress[sweep.id] || 0) !== val) {
+        player.missionProgress[sweep.id] = val;
+        save(false);
+    }
+}
+
 function claimMissionReward(missionId) {
     const mission = MISSIONS.find(m => m.id === missionId);
     if (!mission) return;
@@ -95,6 +110,7 @@ function claimMissionReward(missionId) {
     }
 
     player.completedMissions.push(missionId);
+    checkDailySweep();
     save();
     updateUI();
     if (typeof updateMissionsUI === 'function') updateMissionsUI();

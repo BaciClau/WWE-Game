@@ -83,10 +83,12 @@ const TIERS = [
         // Recompense pentru streak de victorii consecutive (reset la orice înfrângere/forfeit).
         // Meciurile nu mai dau coins deloc (nici de bază, nici bonus) — singura sursă de coins
         // e din misiuni. Streak-ul dă doar picks suplimentare, pe un ciclu de 10 victorii care
-        // se repetă la nesfârșit: 3→+1, 5→+2, 7→+4, 10→+10, 13→+1, 15→+2, ... (cheia e
-        // streak % 10, cu 10/20/30... mapate la 0).
+        // se repetă la nesfârșit: 3→+1, 5→+2, 7→+3, 10→+6, 13→+1, ... (cheia e streak % 10,
+        // cu 10/20/30... mapate la 0). Temperat de la 1/2/4/10 (+17/ciclu): impreuna cu cele
+        // 2 picks pe victorie si pack-ul gratuit la fiecare 10, vechiul ciclu dadea ~37 de
+        // picks la 10 victorii — prea mult ca sa mai conteze orice alta sursa.
         const STREAK_REWARDS = {
-            pickBonusSchedule: { 3: 1, 5: 2, 7: 4, 0: 10 },
+            pickBonusSchedule: { 3: 1, 5: 2, 7: 3, 0: 6 },
             freePackEvery: 10,   // Pack gratuit (Rare/SuperRare)
             freePackRarities: ['Rare', 'SuperRare']
         };

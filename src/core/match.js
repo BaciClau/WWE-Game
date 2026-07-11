@@ -104,6 +104,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             if(availM.length >= 1) rules.push({ t: 'SINGLES', r: 1, g: 'M' });
             if(availM.length >= 2) rules.push({ t: 'TAG TEAM', r: 2, g: 'M' });
             if(availF.length >= 1) rules.push({ t: 'DIVAS', r: 1, g: 'F' });
+            if(availF.length >= 2) rules.push({ t: 'TAG TEAM', r: 2, g: 'F' });
 
             if (rules.length === 0) return handleStalemate();
 
@@ -119,8 +120,9 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // resolveRound()'s arena.innerHTML rewrite naturally clears it when the cards
             // actually enter the ring.
             const isDivas = r.g === 'F';
-            const introClass = isDivas ? 'divas' : (r.t === 'TAG TEAM' ? 'tag' : 'superstar');
-            const matchTypeLabel = isDivas ? 'DIVAS MATCH' : (r.t === 'TAG TEAM' ? 'TAG TEAM MATCH' : 'SUPERSTAR MATCH');
+            const isTag = r.t === 'TAG TEAM';
+            const introClass = isDivas ? 'divas' : (isTag ? 'tag' : 'superstar');
+            const matchTypeLabel = isDivas ? (isTag ? 'DIVAS TAG TEAM MATCH' : 'DIVAS MATCH') : (isTag ? 'TAG TEAM MATCH' : 'SUPERSTAR MATCH');
             const roundLabel = match.overtimePlayed ? 'OVERTIME' : `ROUND ${match.round}`;
             // Up 2-0 into the final fall: the match is already won, but the 3-0 sweep pays
             // an extra Draft pick (see endMatch) — say so, so the fall doesn't feel dead.
@@ -138,6 +140,11 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             renderFallPips();
             document.getElementById('cards-to-pick').innerText = r.r;
             document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
+            // The active stat is made readable ON the hand cards themselves: this attribute
+            // drives CSS that dims every OTHER stat block (like the played-card grey-out),
+            // so the round's stat is the only number that pops — no matter how many green
+            // manager-boost tints are lighting up the rest of the card.
+            document.getElementById('player-hand-area').dataset.activeStat = st;
 
             renderHand();
         }
@@ -159,9 +166,13 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
 
                 // Fighter cards show their manager-boosted stats in green right in hand — the
                 // real number they'll fight with — never the manager card itself (it doesn't
-                // benefit from its own signing bonus).
+                // benefit from its own signing bonus). But ONLY once the manager has actually
+                // activated in the ring (its slide played during a resolve): before that, a
+                // freshly-signed manager's boost showing up all over the hand looked like the
+                // bonus applied before the card was ever played.
+                const showManagerBonus = !isSupportCard && match.managerSlideShown;
                 let div = document.createElement('div');
-                div.innerHTML = renderHTMLCard(s, false, match.rule.stat, '', '', 0, isSupportCard ? null : match.matchWideBonus);
+                div.innerHTML = renderHTMLCard(s, false, match.rule.stat, '', '', 0, showManagerBonus ? match.matchWideBonus : null);
                 let cardEl = div.children[0];
                 div.style.position = 'relative';
                 div.dataset.uid = u;
@@ -212,6 +223,10 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     // managerLockedIn in resolveRound()); dupa aceea ramane semnat tot meciul,
                     // fara optiune de undo (ar anula retroactiv o runda deja jucata).
                     div.onclick = () => {
+                        // Re-check at click time: this handler is bound at render, BEFORE the
+                        // round resolves — without this a tap during the resolve animations
+                        // could still un-sign a manager that just got locked in.
+                        if (match.managerLockedIn) return;
                         match.used = match.used.filter(x => x !== u);
                         ['pow','tgh','spd','cha'].forEach(k => { match.matchWideBonus[k] -= s[k]; });
                         match.activeManagerUID = null;
@@ -557,7 +572,13 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // Every OTHER bonus lands during the sequential queue below, where the affected
             // numbers visibly count up (or down) as each activation plays.
             let arena = document.getElementById('arena-area');
-            const managerMap = match.activeManagerUID ? match.matchWideBonus : null;
+            // The manager's buff is pre-baked into the arena render ONLY from its second
+            // resolved round on (standing state by then, already green in hand). The FIRST
+            // time it resolves (managerCardStats set → its slide is about to play), cards
+            // enter the ring at base stats and the buff counts up during the slide, same as
+            // every other activation — otherwise the boost was visible before the manager
+            // card ever "activated" in the ring.
+            const managerMap = (match.activeManagerUID && !managerCardStats) ? match.matchWideBonus : null;
             arena.innerHTML = `
                 <div class="arena-stat-tag">${activeStat.toUpperCase()}</div>
                 <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', '', 0, managerMap)).join('')}</div>
@@ -571,13 +592,29 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // unhurried beat — manager signing, tag chemistry (stats animating on both
             // cards), support boosts, then each ability with its callout ON its card.
             const activations = [];
-            if (managerCardStats) activations.push({ kind: 'support', side: 'player', card: managerCardStats, tag: `${managerAddedText} TO DECK`, icon: '🎙️' });
-            chemistryEvents.forEach(e => activations.push(e));
+            if (managerCardStats) {
+                // First resolve with the manager: the arena cards entered at base stats (see
+                // managerMap above), so the buff lands here, animating up on every played
+                // card's affected stats as the signing slide plays.
+                const managerBumps = [];
+                match.selected.forEach(u => {
+                    ['pow','tgh','spd','cha'].forEach(k => {
+                        const d = match.matchWideBonus[k] || 0;
+                        if (d !== 0) managerBumps.push({ uid: u, stat: k, delta: d });
+                    });
+                });
+                activations.push({ kind: 'support', side: 'player', card: managerCardStats, tag: `${managerAddedText} TO DECK`, icon: '🎙️', bumps: managerBumps });
+            }
             if (playerSupportCardStats) activations.push({ kind: 'support', side: 'player', card: playerSupportCardStats, tag: `+${playerSupportBonus} ${match.rule.stat.toUpperCase()}`,
                 bumps: match.selected.map(u => ({ uid: u, stat: match.rule.stat, delta: perCardSupportBonus })) });
             if (aiPlay.support && aiSupportBonus > 0) activations.push({ kind: 'support', side: 'ai', card: aiPlay.support, tag: `+${aiSupportBonus} ${activeStat.toUpperCase()}`,
                 bumps: oppP.map(c => ({ uid: c.uid, stat: activeStat, delta: aiPlay.supportBonus })) });
             abilityEvents.forEach(evt => activations.push({ kind: 'ability', evt, bumps: evt.bumps }));
+            // TEAM CHEMISTRY PLAYS LAST — same order the math already uses (its % is taken
+            // from each card's FINAL numbers: base + manager + support + ability). Playing it
+            // any earlier meant the on-card numbers kept moving AFTER the chemistry step,
+            // which read as stats being added/subtracted after the team bonus was "done".
+            chemistryEvents.forEach(e => activations.push(e));
 
             const myToken = _matchToken;
             const isStale = () => _matchOver || myToken !== _matchToken;
@@ -630,6 +667,11 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // state.js where a still-set flag on load means the tab was closed/refreshed while
             // a match was in progress.
             localStorage.removeItem('sc_match_in_progress');
+
+            // People's Champion Challenge matches settle through their own rewards path —
+            // event points only, never picks/wins/losses/streak (see endPccMatch in pcc.js).
+            if (window._pccMatch && window._pccMatch.active) return endPccMatch(forfeit, isDraw);
+
             let priorStreak = player.winStreak || 0;
 
             if(forfeit) {
@@ -645,12 +687,12 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             }
 
             if (isDraw) {
-                // Genuine draw after Overtime — rare enough that it's worth a flat 10-pick
-                // reward, but it doesn't touch wins/losses/streak at all; it's not tracked
-                // as its own stat anywhere, just a one-off result.
-                player.picks += 10; save();
+                // Genuine draw after Overtime — pays a bit more than a win (3 picks vs 2)
+                // as a novelty, but nowhere near the old 10: that was 5x a WIN for an
+                // outcome the player doesn't even control. Doesn't touch wins/losses/streak.
+                player.picks += 3; save();
                 incrementMission('play_exhibition');
-                showNotification(`🤝 MATCH DRAW!<br>Even Overtime couldn't decide it — you received 10 Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
+                showNotification(`🤝 MATCH DRAW!<br>Even Overtime couldn't decide it — you received 3 Draft picks.`, 3000, () => { showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
 

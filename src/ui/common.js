@@ -56,6 +56,8 @@ function updateUI() {
             let tierInfo = calculateDeckTier();
             renderTierDisplay(tierInfo);
 
+            if (typeof updatePccDashStatus === 'function') updatePccDashStatus();
+
             if (tierInfo.name !== player.lastTierName) {
                 const tierNames = TIERS.map(t => t.name);
                 const newIdx = tierNames.indexOf(tierInfo.name);
@@ -358,7 +360,7 @@ function updateUI() {
                 </div>`;
 
             return `
-                <div class="card rarity-${stats.rarity} ${stats.ladderReward ? 'ladder-reward' : ''} ${extraClass}" onclick="${selectable ? `openCardFocus('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
+                <div class="card rarity-${stats.rarity} ${stats.pcc ? 'pcc-reward' : (stats.ladderReward ? 'ladder-reward' : '')} ${extraClass}" onclick="${selectable ? `openCardFocus('${stats.uid}')` : ''}" id="card-${stats.uid||stats.id}">
                     ${stats.locked ? '<div class="lock-badge">🔒</div>' : ''}
                     ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
                     <div class="card-header-v2">

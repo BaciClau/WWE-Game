@@ -3,10 +3,19 @@
 // card identity" rule the pack shop and draft board already follow.
 const MISSIONS = [
     // --- Daily (repeatable, reset every 24h — see checkDailyReset() in core/missions.js) ---
-    { id: 'daily_play_30', title: 'Get In The Ring', description: 'Play 30 Exhibition matches', type: 'play_exhibition', target: 30, reward: { coins: 50 }, repeatable: true },
-    { id: 'daily_win_10', title: 'Quick Victories', description: 'Win 10 Exhibition matches', type: 'win_exhibition', target: 10, reward: { coins: 75 }, repeatable: true },
-    { id: 'daily_draft_50', title: 'Board Regular', description: 'Use 50 Draft picks', type: 'draft_picks', target: 50, reward: { picks: 1 }, repeatable: true },
-    { id: 'daily_win_20', title: 'Dominant Day', description: 'Win 20 Exhibition matches', type: 'win_exhibition', target: 20, reward: { coins: 100, picks: 1 }, repeatable: true },
+    // Sized as a solid daily DRIP, never the main chase: clearing the whole board plus the
+    // sweep bonus pays ~650 coins (≈ one Super Rare pack) and 7 picks — a nice boost on top
+    // of normal play, achievable in one relaxed session without grinding FOR the missions.
+    { id: 'daily_play_10', title: 'Get In The Ring', description: 'Play 10 Exhibition matches', type: 'play_exhibition', target: 10, reward: { coins: 100 }, repeatable: true },
+    { id: 'daily_win_5', title: 'Quick Victories', description: 'Win 5 Exhibition matches', type: 'win_exhibition', target: 5, reward: { coins: 100 }, repeatable: true },
+    { id: 'daily_win_15', title: 'On A Roll', description: 'Win 15 Exhibition matches', type: 'win_exhibition', target: 15, reward: { coins: 150, picks: 1 }, repeatable: true },
+    { id: 'daily_win_25', title: 'Dominant Day', description: 'Win 25 Exhibition matches', type: 'win_exhibition', target: 25, reward: { picks: 2 }, repeatable: true },
+    { id: 'daily_draft_30', title: 'Board Regular', description: 'Use 30 Draft picks', type: 'draft_picks', target: 30, reward: { picks: 1 }, repeatable: true },
+    { id: 'daily_train_3', title: 'Gym Session', description: 'Train cards 3 times', type: 'train_card', target: 3, reward: { coins: 75 }, repeatable: true },
+    { id: 'daily_pcc_3', title: "For The People", description: "Play 3 People's Champion matches", type: 'play_pcc', target: 3, reward: { coins: 125 }, repeatable: true },
+    // The sweep: checkDailySweep() (core/missions.js) marks it complete once every OTHER
+    // daily above has been CLAIMED — clearing the whole board pays a real bonus on top.
+    { id: 'daily_sweep', title: '🧹 DAILY SWEEP', description: 'Claim every other daily mission today', type: 'daily_sweep', target: 1, reward: { coins: 300, picks: 3 }, repeatable: true },
 
     // --- One-time ---
     { id: 'once_play_1', title: 'First Bell', description: 'Play your first match', type: 'play_exhibition', target: 1, reward: { coins: 100 }, repeatable: false },

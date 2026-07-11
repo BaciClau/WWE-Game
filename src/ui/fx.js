@@ -151,7 +151,12 @@ function celebrateMatchWin() {
 // This is what makes a boost READ as "my card just got stronger" instead of the final
 // number silently being there from the start.
 function animateStatBump(cardUid, statKey, delta, duration = 700) {
-    const el = document.querySelector('#card-' + cardUid + ' .stat-v2[data-stat="' + statKey + '"]');
+    // Always the ARENA copy of the card: the same uid also exists in the hand below (the
+    // played cards stay rendered there, greyed out), so an unscoped lookup could animate
+    // the number on the wrong, off-view copy and leave the in-ring one frozen.
+    const arena = document.getElementById('arena-area');
+    const sel = '#card-' + cardUid + ' .stat-v2[data-stat="' + statKey + '"]';
+    const el = (arena && arena.querySelector(sel)) || document.querySelector(sel);
     if (!el || !delta) return;
     const valEl = el.querySelector('.stat-v2-value');
     if (!valEl) return;
@@ -183,8 +188,18 @@ function showChemistryBadge(text, color) {
 }
 
 function showCardActivationOverlay(evt, onDone) {
-    const el = document.getElementById('card-' + evt.cardStats.uid);
+    // Same arena-first lookup as animateStatBump: the played card's uid also exists in the
+    // hand below — anchoring the callout to THAT copy put it way below the ring (sometimes
+    // fully off-screen), with the flash/burst on the wrong card too.
+    const arena = document.getElementById('arena-area');
+    const el = (arena && arena.querySelector('#card-' + evt.cardStats.uid)) || document.getElementById('card-' + evt.cardStats.uid);
     if (!el) { if (onDone) setTimeout(onDone, 50); return; }
+
+    // If the ring is scrolled out of view (small screens scroll to reach the hand), bring
+    // it back first — otherwise the callout lands at off-screen coordinates and the whole
+    // activation plays invisibly.
+    const preRect = el.getBoundingClientRect();
+    if (preRect.top < 0 || preRect.bottom > window.innerHeight) el.scrollIntoView({ block: 'center' });
 
     el.classList.add('ability-active-flash');
     burstAtElement(el, evt.cardStats.rarity);
@@ -193,13 +208,18 @@ function showCardActivationOverlay(evt, onDone) {
     const rect = el.getBoundingClientRect();
     const wrap = document.createElement('div');
     wrap.className = 'card-ability-overlay' + (evt.isAI ? ' cao-ai' : '');
-    wrap.style.left = (rect.left + rect.width / 2) + 'px';
-    wrap.style.top = (rect.top + rect.height / 2) + 'px';
     wrap.innerHTML = `
         <div class="cao-icon">${evt.ab.icon}</div>
         <div class="cao-name">${evt.ab.name}</div>
         <div class="cao-bonus">+${evt.bonus} ${evt.statName.toUpperCase()}</div>`;
     document.body.appendChild(wrap);
+    // Clamp the callout fully on-screen: it's centered on the card, so a card hugging the
+    // ring's left/right edge (tag rounds on phones) pushed half the badge past the viewport.
+    const halfW = wrap.offsetWidth / 2, halfH = wrap.offsetHeight / 2, pad = 6;
+    const cx = Math.min(Math.max(rect.left + rect.width / 2, pad + halfW), window.innerWidth - pad - halfW);
+    const cy = Math.min(Math.max(rect.top + rect.height / 2, pad + halfH), window.innerHeight - pad - halfH);
+    wrap.style.left = cx + 'px';
+    wrap.style.top = cy + 'px';
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('cao-in')));
 
     setTimeout(() => {
@@ -226,7 +246,10 @@ function playActivationsSequentially(list, onAllDone, isCancelled) {
         const applyBumps = () => { (a.bumps || []).forEach(b => animateStatBump(b.uid, b.stat, b.delta)); };
         if (a.kind === 'support') {
             showSupportBoostSlide(a.side, a.card, a.tag, a.icon || '🛠️');
-            const el = document.getElementById('card-' + a.card.uid);
+            // Flash the slide's own in-ring copy of the support card, not the greyed-out
+            // duplicate still sitting in the hand (same uid, same element id).
+            const arena = document.getElementById('arena-area');
+            const el = (arena && arena.querySelector('#card-' + a.card.uid)) || document.getElementById('card-' + a.card.uid);
             if (el) {
                 el.classList.add('ability-active-flash');
                 burstAtElement(el, a.card.rarity);

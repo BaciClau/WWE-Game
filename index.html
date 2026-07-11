@@ -55,6 +55,11 @@
                 <div class="dash-exhibition-record">WINS: <span id="hub-wins">0</span>&nbsp;&nbsp;LOSSES: <span id="hub-losses">0</span></div>
             </button>
 
+            <button class="dash-exhibition pcc-dash-btn" onclick="enterPccScreen()">
+                <div class="dash-exhibition-title">🏆 PEOPLE'S CHAMPION</div>
+                <div class="dash-exhibition-record" id="pcc-dash-status"></div>
+            </button>
+
             <button class="dash-btn" onclick="showScreen('card-list-screen'); renderCardList()">
                 <span class="dash-btn-icon">🃏</span><span>MY CARDS</span>
             </button>
@@ -160,6 +165,10 @@
                 <button class="dash-btn" onclick="showScreen('card-catalog-screen'); enterCardCatalog()"><span class="dash-btn-icon">📖</span><span>CATALOG</span></button>
             </div>
         </div>
+    </div>
+
+    <div id="pcc-screen" class="screen">
+        <div id="pcc-content"></div>
     </div>
 
     <div id="match-screen" class="screen">
@@ -298,6 +307,7 @@
     </div>
 
         <script src="src/data/cards.js"></script>
+    <script src="src/data/pcc.js"></script>
     <script src="src/data/abilities.js"></script>
     <script src="src/data/missions.js"></script>
     <script src="src/core/display-version.js"></script>
@@ -314,10 +324,12 @@
     <script src="src/ui/opponents.js"></script>
     <script src="src/core/ai.js"></script>
     <script src="src/core/match.js"></script>
+    <script src="src/core/pcc.js"></script>
     <script src="src/ui/draft-shop.js"></script>
     <script src="src/ui/store-screen.js"></script>
     <script src="src/ui/catalog-screen.js"></script>
     <script src="src/ui/missions-screen.js"></script>
+    <script src="src/ui/pcc-screen.js"></script>
     <script src="src/main.js"></script>
 </body>
 </html>

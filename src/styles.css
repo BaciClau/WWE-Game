@@ -438,6 +438,27 @@
             border: 3px solid #ffd700;
             box-shadow: 0 0 6px 2px #fff6c8, inset 0 0 12px rgba(255,215,0,0.5);
         }
+        /* People's Champion exclusives — event-card frame like the original SuperCard event
+           reprints: its OWN two-tone identity (championship red melting into gold) instead of
+           the standard rarity frame, so it can never be mistaken for a plain Legendary. The
+           ring is a live gradient (border-box layer under a padding-box interior — the only
+           gradient-border technique that keeps the border-radius) and it slowly BREATHES:
+           the two colors slide into each other and back, forever. */
+        .card.pcc-reward {
+            --rc: #ffcc00;
+            border: 3px solid transparent;
+            background:
+                linear-gradient(135deg, #46100e, #1d0b26) padding-box,
+                linear-gradient(120deg, #e01025, #ff9800, #ffe08a, #ff9800, #e01025) border-box;
+            background-size: 100% 100%, 320% 320%;
+            animation: pccFrameShift 4.5s ease-in-out infinite;
+            box-shadow: 0 0 14px rgba(255,120,20,0.7), inset 0 0 14px rgba(224,16,37,0.35);
+        }
+        @keyframes pccFrameShift {
+            0%   { background-position: 0 0, 0% 40%; }
+            50%  { background-position: 0 0, 100% 60%; }
+            100% { background-position: 0 0, 0% 40%; }
+        }
 
         .card-ability-footer {
             height: 42px; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -540,6 +561,20 @@
             color: #f1c40f; font-weight: bold; letter-spacing: 3px; font-size: 14px;
             padding: 2px 16px; animation: fadeIn 0.3s ease;
         }
+        /* ROUND-STAT FOCUS ON THE HAND CARDS: playRound() stamps the active stat on
+           #player-hand-area (data-active-stat), and every OTHER stat block on the hand
+           cards dims out — same treatment as an already-played card. With an active
+           manager tinting several stats green, the round's stat (colored: orange
+           highlight, or green/red when boosted) was drowning in the noise; now it's the
+           only number at full brightness while picking. Arena cards are untouched — all
+           four stats matter there when tag chemistry animates them. */
+        #player-hand-area[data-active-stat="pow"] .stat-v2:not([data-stat="pow"]),
+        #player-hand-area[data-active-stat="tgh"] .stat-v2:not([data-stat="tgh"]),
+        #player-hand-area[data-active-stat="spd"] .stat-v2:not([data-stat="spd"]),
+        #player-hand-area[data-active-stat="cha"] .stat-v2:not([data-stat="cha"]) {
+            opacity: 0.28; filter: grayscale(65%);
+        }
+
         /* Stat count-up pop — added while a number is animating to its new value. */
         .stat-v2.stat-bump { animation: statBump 0.7s ease; }
         @keyframes statBump {
@@ -1340,3 +1375,110 @@
            is the safety net for any window too short to fit the full-size layout: that ONE
            screen scrolls internally (header stays put) rather than the whole page, and rather
            than every card in the game being permanently smaller than it should be. */
+
+        /* ============ PEOPLE'S CHAMPION CHALLENGE ============ */
+        /* Main-menu banner: same footprint as the Exhibition banner but in the event's own
+           championship red/gold, so it reads as the SPECIAL thing on the dashboard. */
+        .pcc-dash-btn {
+            height: 84px; margin-top: 12px;
+            background:
+                linear-gradient(0deg, rgba(20,0,0,0.92), rgba(60,4,4,0.55) 55%, rgba(20,0,0,0.7)),
+                radial-gradient(ellipse at center, #7a1616 0%, #2a0505 80%);
+            border: 3px solid #e74c3c;
+        }
+        .pcc-dash-btn .dash-exhibition-title { font-size: 26px; color: #f1c40f; text-shadow: 2px 2px 0 #000, 0 0 18px rgba(231,76,60,0.9); }
+        .pcc-dash-btn .dash-exhibition-record { color: #ffb3ab; }
+
+        .pcc-banner {
+            background:
+                linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.8)),
+                radial-gradient(ellipse at 50% 0%, #6d1111 0%, #1a0404 75%);
+            border: 3px solid #e74c3c; border-radius: 16px;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,0,0,0.7);
+            padding: 16px 12px 14px; text-align: center; margin-bottom: 16px;
+        }
+        .pcc-title {
+            font-size: 26px; font-weight: 900; font-style: italic; letter-spacing: 2px;
+            color: #f1c40f; text-shadow: 2px 2px 0 #000, 0 0 22px rgba(231,76,60,0.8);
+        }
+        .pcc-tagline { font-size: 13px; letter-spacing: 4px; color: #ffb3ab; margin-top: 2px; font-weight: bold; }
+        .pcc-matchup { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 14px 0 8px; }
+        .pcc-vs {
+            font-size: 44px; font-style: italic; font-weight: 900; color: #e74c3c;
+            text-shadow: 2px 2px 0 #fff, 0 0 24px red; flex-shrink: 0;
+        }
+        .pcc-side { position: relative; }
+        .pcc-side-label {
+            margin-top: 6px; font-size: 11px; font-weight: 900; letter-spacing: 1px; color: #ccc;
+            background: rgba(0,0,0,0.65); border: 1px solid #555; border-radius: 6px; padding: 2px 6px;
+        }
+        .pcc-side-chosen .pcc-side-label { color: #f1c40f; border-color: #f1c40f; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .pcc-side-chosen .card { box-shadow: 0 0 18px 4px rgba(241,196,15,0.8); }
+        /* The poster cards render at normal card size but scaled down to fit two-up + VS. */
+        .pcc-poster-card { zoom: 0.78; }
+
+        .pcc-vote-race { max-width: 460px; margin: 10px auto 0; }
+        .pcc-vote-names { display: flex; justify-content: space-between; font-size: 12px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+        .pcc-vote-bar {
+            height: 16px; border-radius: 8px; overflow: hidden; margin: 4px 0;
+            background: linear-gradient(90deg, #922, #611); border: 1px solid #000;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.7);
+        }
+        .pcc-vote-fill {
+            height: 100%; background: linear-gradient(90deg, #f1c40f, #ff9800);
+            box-shadow: 0 0 10px rgba(241,196,15,0.7); transition: width 0.6s ease;
+        }
+        .pcc-vote-counts { display: flex; justify-content: space-between; font-size: 11px; color: #bbb; font-family: Arial; }
+        .pcc-vote-mine { margin-top: 6px; font-size: 12px; color: #2ecc71; font-family: Arial; }
+        .pcc-countdown { margin-top: 10px; font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #fff; }
+
+        .pcc-panel {
+            background: rgba(0,0,0,0.6); border: 1px solid #444; border-radius: 14px;
+            padding: 14px; margin-bottom: 14px;
+        }
+        .pcc-panel-title { font-size: 16px; font-weight: 900; letter-spacing: 1px; color: #f1c40f; margin-bottom: 10px; }
+        .pcc-panel-note { font-size: 12px; color: #999; font-family: Arial; margin-top: 8px; line-height: 1.5; }
+        .pcc-break-panel { text-align: center; padding: 30px 14px; }
+
+        .pcc-pick-row { display: flex; gap: 12px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+        .pcc-pick-btn { flex-direction: row; padding: 14px 22px; font-size: 16px; }
+
+        .pcc-stats-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .pcc-stat-box {
+            flex: 1; text-align: center; background: rgba(0,0,0,0.6); border: 1px solid #c0392b;
+            border-radius: 12px; padding: 8px 4px;
+        }
+        .pcc-stat-num { font-size: 30px; font-weight: 900; color: #f1c40f; }
+        .pcc-stat-label { font-size: 10px; letter-spacing: 2px; color: #aaa; font-weight: bold; }
+
+        .pcc-opp-points {
+            font-size: 26px; font-weight: 900; color: #f1c40f; text-shadow: 0 0 12px rgba(241,196,15,0.6);
+            margin-right: 10px; flex-shrink: 0;
+        }
+        .pcc-opp-label { color: #ffb3ab; }
+
+        .pcc-tier-track { display: flex; gap: 8px; flex-wrap: wrap; }
+        .pcc-tier-chip {
+            flex: 1; min-width: 90px; position: relative; text-align: center;
+            border: 2px solid #555; border-radius: 10px; padding: 8px 4px;
+            background: rgba(0,0,0,0.5); opacity: 0.65;
+        }
+        .pcc-tier-rarity { font-size: 12px; font-weight: 900; letter-spacing: 0.5px; }
+        .pcc-tier-req { font-size: 11px; color: #bbb; font-family: Arial; margin-top: 2px; }
+        .pcc-tier-check {
+            position: absolute; top: -8px; right: -6px; background: #2ecc71; color: #fff;
+            width: 20px; height: 20px; border-radius: 50%; font-size: 12px; line-height: 20px;
+            border: 2px solid #0a0a0a;
+        }
+        .pcc-tier-earned { opacity: 1; box-shadow: 0 0 12px rgba(46,204,113,0.4); border-color: #2ecc71; }
+        .rarity-chip-SuperRare .pcc-tier-rarity { color: #00bcd4; }
+        .rarity-chip-Epic .pcc-tier-rarity { color: #b366ff; }
+        .rarity-chip-Legendary .pcc-tier-rarity { color: #f1c40f; }
+        .rarity-chip-Survivor .pcc-tier-rarity { color: #e74c3c; }
+
+        @media (max-width: 480px) {
+            .pcc-title { font-size: 19px; }
+            .pcc-poster-card { zoom: 0.52; }
+            .pcc-vs { font-size: 30px; }
+            .pcc-dash-btn .dash-exhibition-title { font-size: 20px; }
+        }
