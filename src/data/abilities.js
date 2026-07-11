@@ -421,4 +421,27 @@ const ABILITIES = {
             909: { name: "S.T.F.", stats: ['pow','cha'], icon: '💪', desc: "S.T.F.!" }
         };
 
+        // ============ PEOPLE'S CHAMPION CHALLENGE EXCLUSIVES ============
+        // pcc.js generates the 4 rarity copies of each champion (id = 950 + championIndex*4
+        // + tierIndex) but never touches ABILITIES — without an entry here getAbilityInfo()
+        // (common.js) falls through to its "NA" footer, same as any other card with no
+        // ability. Every copy of a champion shares their real signature move; only the
+        // bonus MAGNITUDE scales with rarity, via the same getAbilityBonus() table (match.js)
+        // every other card already uses — no special-casing needed there.
+        const PCC_ABILITY_BY_KEY = {
+            rock:   { name: "People's Elbow",       stats: ['cha','pow'], icon: '🎙️', desc: 'If ya smellll...!' },
+            cena:   { name: "Attitude Adjustment",  stats: ['cha','pow'], icon: '🏆', desc: 'Never give up!' },
+            hogan:  { name: "Leg Drop of Doom",     stats: ['cha','tgh'], icon: '🦵', desc: "Whatcha gonna do, brother?!" },
+            savage: { name: "Flying Elbow Drop",    stats: ['cha','spd'], icon: '🐍', desc: 'Ooooh yeah!' },
+            brock:  { name: "F-5",                  stats: ['pow','tgh'], icon: '🌪️', desc: 'Beast Incarnate!' },
+            taker:  { name: "Tombstone Piledriver", stats: ['cha','tgh'], icon: '⚰️', desc: 'Rest In Peace.' },
+            austin: { name: "Stone Cold Stunner",   stats: ['cha','tgh'], icon: '🍺', desc: 'Austin 3:16!' },
+            hhh:    { name: "Pedigree",             stats: ['cha','tgh'], icon: '👑', desc: 'The Cerebral Assassin!' },
+        };
+        PCC_CHAMPIONS.forEach((ch, ci) => {
+            for (let ti = 0; ti < 4; ti++) {
+                ABILITIES[PCC_CARD_ID_BASE + ci * 4 + ti] = PCC_ABILITY_BY_KEY[ch.key];
+            }
+        });
+
         // TIERS UPDATED WITH + AND ++

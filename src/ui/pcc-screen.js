@@ -43,20 +43,34 @@ function _pccVoteBarHTML(info) {
         </div>`;
 }
 
-function _pccRewardTrackHTML(s) {
+// The reward showcase, original-style: the ACTUAL champion cards you're fighting for,
+// rendered at every tier — not just rarity names. The one your points currently earn
+// glows with a check; everything above it stays visible but dimmed, as the chase.
+function _pccRewardTrackHTML(s, info) {
     let earnedIdx = -1;
     PCC_REWARD_TIERS.forEach((t, i) => { if (s.points >= t.points) earnedIdx = i; });
-    const chips = PCC_REWARD_TIERS.map((t, i) => `
-        <div class="pcc-tier-chip rarity-chip-${t.rarity} ${i <= earnedIdx ? 'pcc-tier-earned' : ''}">
-            <div class="pcc-tier-rarity">${t.rarity}</div>
-            <div class="pcc-tier-req">${t.points} PTS</div>
-            ${i <= earnedIdx ? '<div class="pcc-tier-check">✔</div>' : ''}
-        </div>`).join('');
+    const champKey = s.side === 'a' ? info.matchup.a : info.matchup.b;
+    const cards = PCC_REWARD_TIERS.map((t, i) => {
+        const cardId = getPccCardId(champKey, t.rarity);
+        const stats = getStats({ uid: 'pcc_rw_' + i, id: cardId, level: 1, xp: 0, upgradeType: null, phase: 1, locked: false });
+        const earned = i <= earnedIdx;
+        return `
+            <div class="pcc-reward-card ${earned ? 'pcc-reward-earned' : 'pcc-reward-locked'}">
+                <div class="pcc-reward-card-scale">${renderHTMLCard(stats)}</div>
+                <div class="pcc-reward-req ${earned ? 'pcc-reward-req-earned' : ''}">${earned ? '✔ ' : ''}${t.points} PTS</div>
+            </div>`;
+    }).join('');
+    const nextTier = PCC_REWARD_TIERS[earnedIdx + 1];
+    const progressLine = earnedIdx === PCC_REWARD_TIERS.length - 1
+        ? `<div class="pcc-reward-progress" style="color:#f1c40f;">🏆 MAXED OUT — the ${PCC_REWARD_TIERS[earnedIdx].rarity} card is yours at the final bell!`
+            + `</div>`
+        : `<div class="pcc-reward-progress">${nextTier.points - s.points} more point${nextTier.points - s.points === 1 ? '' : 's'} to the <b style="color:#f1c40f;">${nextTier.rarity}</b> card</div>`;
     return `
         <div class="pcc-panel">
-            <div class="pcc-panel-title">🏆 YOUR CHAMPION CARD (at event end)</div>
-            <div class="pcc-tier-track">${chips}</div>
-            <div class="pcc-panel-note">Win the community vote to claim the full tier — if your side loses, the reward drops one tier.</div>
+            <div class="pcc-panel-title">🏆 END-OF-EVENT REWARDS — YOUR CHAMPION CARD</div>
+            <div class="pcc-reward-track">${cards}</div>
+            ${progressLine}
+            <div class="pcc-panel-note">Delivered when the event ends. Win the community vote to claim the full tier — if your side loses, the reward drops one tier (below ${PCC_REWARD_TIERS[0].rarity}: ${PCC_LOSER_CONSOLATION_PICKS} consolation picks). Milestone rewards below are yours to keep either way.</div>
         </div>`;
 }
 

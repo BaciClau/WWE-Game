@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [] };
+let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null };
 
 // One-time data cleanup: several DB ids were exact duplicate entries (same wrestler, same
 // rarity, same stats — copy-pasted by mistake) and have been removed from src/data/cards.js.
@@ -87,7 +87,7 @@ const DUPLICATE_ID_REMAP = {
         }
 
         function freshStart(nickname) {
-            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [] };
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -159,6 +159,8 @@ const DUPLICATE_ID_REMAP = {
                 if (player.missionProgress === undefined) player.missionProgress = {};
                 if (player.completedMissions === undefined) player.completedMissions = [];
                 if (player.lastDailyReset === undefined) player.lastDailyReset = null;
+                if (player.loginStreak === undefined) player.loginStreak = 0;
+                if (player.lastLoginClaim === undefined) player.lastLoginClaim = null;
                 if (player.discoveredCardIds === undefined) {
                     // Backfill from current inventory so cards already owned before this
                     // feature existed don't regress to "?" in the Catalog.

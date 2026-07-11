@@ -286,6 +286,17 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
 
         let _clashTimer1 = null, _clashTimer2 = null;
 
+        // Bumps the big score number with a quick pop (see .score-pop in styles.css) so a
+        // scored fall lands with weight instead of the digit silently changing.
+        function setScoreWithPop(elId, value) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            el.innerText = value;
+            el.classList.remove('score-pop');
+            void el.offsetWidth; // restart the animation even on back-to-back falls
+            el.classList.add('score-pop');
+        }
+
         // An exact tie on the active stat is a real draw — neither side scores a point,
         // the round just moves on.
         function skipClash(pTot, oTot) {
@@ -305,7 +316,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
 
             if (pTot > oTot) {
                 match.pScore++;
-                document.getElementById('score-player').innerText = match.pScore;
+                setScoreWithPop('score-player', match.pScore);
                 cameraShake(false);
                 let arenaPlayer = document.getElementById('arena-player');
                 let bestRarity = match.selected.reduce((best, u) => {
@@ -319,7 +330,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 });
             } else if (oTot > pTot) {
                 match.oScore++;
-                document.getElementById('score-opp').innerText = match.oScore;
+                setScoreWithPop('score-opp', match.oScore);
                 showRoundWinnerSpotlight('arena-opp', 'arena-player', 'ROUND LOSS...', '#e74c3c', () => {
                     match.round++; nextRound();
                 });
@@ -328,8 +339,8 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 // not a scoreless wash. This is also what makes 2-2 finals (→ Overtime)
                 // possible in a 3-fall match.
                 match.pScore++; match.oScore++;
-                document.getElementById('score-player').innerText = match.pScore;
-                document.getElementById('score-opp').innerText = match.oScore;
+                setScoreWithPop('score-player', match.pScore);
+                setScoreWithPop('score-opp', match.oScore);
                 showRoundWinnerSpotlight(null, null, 'DRAW! +1 BOTH', '#f1c40f', () => {
                     match.round++; nextRound();
                 });

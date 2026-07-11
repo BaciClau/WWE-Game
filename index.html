@@ -76,8 +76,9 @@
                 <span class="dash-btn-icon">🎯</span><span>MISSIONS</span>
             </button>
             <div class="dash-btn-row">
-                <button class="dash-btn half" onclick="showNotification('🚧 Coming soon!', 1500)">
+                <button class="dash-btn half" onclick="openLoginBonusModal()">
                     <span class="dash-btn-icon">📅</span><span>LOGIN BONUS</span>
+                    <span id="login-bonus-dot" class="dash-btn-dot" style="display:none;"></span>
                 </button>
                 <button class="dash-btn dash-btn-reverse half" onclick="showScreen('draft-board-screen'); enterDraftBoard()">
                     <span class="dash-btn-icon">📰</span><span>BULLETIN BOARD</span>
@@ -306,6 +307,16 @@
         </div>
     </div>
 
+    <div id="login-bonus-modal" class="pull-modal-overlay" onclick="if(event.target===this) closeLoginBonusModal()">
+        <div class="pull-modal-box">
+            <h2 class="pull-title">📅 DAILY LOGIN BONUS</h2>
+            <div id="login-bonus-track" class="login-bonus-track"></div>
+            <div id="login-bonus-note" class="login-bonus-note"></div>
+            <button id="login-bonus-claim-btn" class="menu-btn btn-play pull-continue-btn" style="display:none;"></button>
+            <button class="menu-btn pull-continue-btn" onclick="closeLoginBonusModal()">✖ CLOSE</button>
+        </div>
+    </div>
+
         <script src="src/data/cards.js"></script>
     <script src="src/data/pcc.js"></script>
     <script src="src/data/abilities.js"></script>
@@ -317,6 +328,7 @@
     <script src="src/core/training.js"></script>
     <script src="src/core/deck.js"></script>
     <script src="src/core/missions.js"></script>
+    <script src="src/core/login-bonus.js"></script>
     <script src="src/ui/common.js"></script>
     <script src="src/ui/autoscale.js"></script>
     <script src="src/ui/fx.js"></script>

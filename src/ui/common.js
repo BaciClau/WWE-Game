@@ -57,6 +57,7 @@ function updateUI() {
             renderTierDisplay(tierInfo);
 
             if (typeof updatePccDashStatus === 'function') updatePccDashStatus();
+            if (typeof updateLoginBonusDashDot === 'function') updateLoginBonusDashDot();
 
             if (tierInfo.name !== player.lastTierName) {
                 const tierNames = TIERS.map(t => t.name);
