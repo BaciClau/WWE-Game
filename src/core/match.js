@@ -526,9 +526,9 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // so the two on-card increases sum to the real total added to pTot.
             const perCardSupportBonus = k => match.supportBonus[k] || 0;
 
-            // TAG TEAM CHEMISTRY (original 4-style system, see CHEM_MATRIX in cards.js):
-            // the pair's two styles decide the factor — +10% perfect / +5% good / -5% clash
-            // — applied to EVERY stat of each card. Two IDENTICAL styles are a flat 0: no
+            // TAG TEAM CHEMISTRY (original half-diamond system, see getChemFactor in
+            // cards.js): complementary halves +10% / clashing colors -5% — applied to
+            // EVERY stat of each card. Two IDENTICAL halves are a flat 0: no
             // stat moves at all, the badge just says so. The TEAM bonus is ALWAYS applied
             // LAST: the % is taken from each card's FINAL numbers this round (base + manager
             // + support + ability), never from the raw base. Only the required stats' share
@@ -541,12 +541,11 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     pair.forEach(s => {
                         ['pow','tgh','spd','cha'].forEach(k => {
                             let eff = s[k] + (match.matchWideBonus[k] || 0);
-                            // Support only ever touches a REQUIRED stat, but an ability can now
-                            // land on either of its own two stats regardless of what's required
-                            // (see the ability block above) — its bonus is a real, already-
-                            // applied number on the card by the time chemistry fires, so it
-                            // always counts here, required or not.
-                            if (isReq(k)) eff += perCardSupportBonus(k);
+                            // Support and abilities both land VISIBLY on every stat they touch
+                            // (required or not — only the required share scores; see below), so
+                            // by the time chemistry fires those bonuses are real, already-applied
+                            // numbers on the card and its % is taken from them on all four stats.
+                            eff += perCardSupportBonus(k);
                             eff += (abilityBonusByUid[s.uid] || {})[k] || 0;
                             const d = Math.round(eff * factor);
                             if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
@@ -565,7 +564,8 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // this early would just get wiped out by that innerHTML replacement before the
             // browser ever paints it.
             let playerSupportCardStats = null;
-            if (match.activeSupportUID && playerSupportBonus > 0) {
+            const supportTotalAllStats = ['pow','tgh','spd','cha'].reduce((s, k) => s + perCardSupportBonus(k), 0);
+            if (match.activeSupportUID && supportTotalAllStats > 0) {
                 const supportCard = player.inventory.find(c => c.uid === match.activeSupportUID);
                 if (supportCard) playerSupportCardStats = getStats(supportCard);
             }
@@ -626,7 +626,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     oppP.forEach(c => {
                         ['pow','tgh','spd','cha'].forEach(k => {
                             let eff = c[k];
-                            if (isReq(k)) eff += aiSupportPerStat(k);
+                            eff += aiSupportPerStat(k);
                             eff += (aiAbilityByUid[c.uid] || {})[k] || 0;
                             const d = Math.round(eff * factor);
                             if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
@@ -684,20 +684,23 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 activations.push({ kind: 'support', side: 'player', card: managerCardStats, tag: `${managerAddedText} TO DECK`, icon: '🎙️', bumps: managerBumps });
             }
             if (playerSupportCardStats) {
+                // The support's FULL boost shows on the played cards — every stat it gives
+                // counts up green, exactly like ability procs. Only the required stats'
+                // share is in pTot above; the rest is honest feedback, not score.
                 const supportBumps = [];
-                match.selected.forEach(u => reqStats.forEach(k => {
+                match.selected.forEach(u => ['pow','tgh','spd','cha'].forEach(k => {
                     if (perCardSupportBonus(k) > 0) supportBumps.push({ uid: u, stat: k, delta: perCardSupportBonus(k) });
                 }));
-                const supportTag = reqStats.filter(k => perCardSupportBonus(k) > 0)
+                const supportTag = ['pow','tgh','spd','cha'].filter(k => perCardSupportBonus(k) > 0)
                     .map(k => `+${perCardSupportBonus(k) * teamSupportMultiplier} ${k.toUpperCase()}`).join(', ');
                 activations.push({ kind: 'support', side: 'player', card: playerSupportCardStats, tag: supportTag, bumps: supportBumps });
             }
             if (aiPlay.support && aiSupportBonus > 0) {
                 const aiBumps = [];
-                oppP.forEach(c => reqStats.forEach(k => {
+                oppP.forEach(c => ['pow','tgh','spd','cha'].forEach(k => {
                     if (aiSupportPerStat(k) > 0) aiBumps.push({ uid: c.uid, stat: k, delta: aiSupportPerStat(k) });
                 }));
-                const aiTag = reqStats.filter(k => aiSupportPerStat(k) > 0)
+                const aiTag = ['pow','tgh','spd','cha'].filter(k => aiSupportPerStat(k) > 0)
                     .map(k => `+${aiSupportPerStat(k) * teamSupportMultiplier} ${k.toUpperCase()}`).join(', ');
                 activations.push({ kind: 'support', side: 'ai', card: aiPlay.support, tag: aiTag, bumps: aiBumps });
             }

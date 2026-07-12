@@ -1468,13 +1468,21 @@
         }
         .pcc-opp-label { color: #ffb3ab; }
 
-        /* End-of-event reward showcase — the four ACTUAL champion cards (SR→Survivor),
+        /* End-of-event reward showcase — the ACTUAL champion cards at every tier,
            original-style, instead of text chips. Real renderHTMLCard output scaled down via
            zoom (affects layout footprint, so the row wraps/centers correctly, unlike
            transform:scale which leaves ghost space). Locked tiers stay visible but cold. */
         .pcc-reward-track { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .pcc-reward-card { text-align: center; }
-        .pcc-reward-card-scale { zoom: 0.52; }
+        .pcc-reward-card-scale { zoom: 0.52; position: relative; }
+        /* ×2 tiers pay two copies of the same card — Perfect Pro material */
+        .pcc-reward-x2 {
+            position: absolute; top: -6px; right: -6px; z-index: 3;
+            font-family: Arial; font-weight: 900; font-size: 24px; color: #fff;
+            background: linear-gradient(135deg, #e040fb, #7b1fa2);
+            border: 2px solid #fff; border-radius: 10px; padding: 1px 8px;
+            box-shadow: 0 0 12px rgba(224,64,251,0.8);
+        }
         .pcc-reward-locked .pcc-reward-card-scale { filter: grayscale(70%) brightness(0.55); }
         .pcc-reward-earned .pcc-reward-card-scale .card { box-shadow: 0 0 22px 6px rgba(46,204,113,0.65); }
         .pcc-reward-req {

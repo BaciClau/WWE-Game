@@ -115,14 +115,18 @@ function settlePccIfNeeded(onDone) {
     player.pcc = { cycle: info.cycleIdx, side: null, points: 0, wins: 0, losses: 0, claimedMilestones: [] };
 
     if (tierIdx >= 0) {
-        const cardId = getPccCardId(champKey, PCC_REWARD_TIERS[tierIdx].rarity);
-        addCard(cardId);
+        // ×2 tiers pay the SAME card twice — duplicates are deliberately the prize:
+        // combine them yourself for the Pro/Perfect Pro (see training.js).
+        const tier = PCC_REWARD_TIERS[tierIdx];
+        const cardId = getPccCardId(champKey, tier.rarity);
+        const grantedIds = Array(tier.copies || 1).fill(cardId);
+        grantedIds.forEach(id => addCard(id));
         save();
         const headline = mySideWon
             ? `🏆 ${champ.name.toUpperCase()} IS THE PEOPLE'S CHAMPION!`
             : `😤 Your side lost the vote... but your effort still counts.`;
         showNotification(`${headline}<br><span style="font-size:14px;color:#bbb;">${summary}</span>`, 3200, () => {
-            showCardSummaryModal([cardId], "PEOPLE'S CHAMPION REWARD", () => onDone(true));
+            showCardSummaryModal(grantedIds, "PEOPLE'S CHAMPION REWARD", () => onDone(true));
         });
     } else {
         // Lost the vote at the lowest tier — picks-only consolation.

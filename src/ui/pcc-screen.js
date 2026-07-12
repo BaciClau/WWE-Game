@@ -56,21 +56,22 @@ function _pccRewardTrackHTML(s, info) {
         const earned = i <= earnedIdx;
         return `
             <div class="pcc-reward-card ${earned ? 'pcc-reward-earned' : 'pcc-reward-locked'}">
-                <div class="pcc-reward-card-scale">${renderHTMLCard(stats)}</div>
+                <div class="pcc-reward-card-scale">${renderHTMLCard(stats)}${t.copies === 2 ? '<div class="pcc-reward-x2">×2</div>' : ''}</div>
                 <div class="pcc-reward-req ${earned ? 'pcc-reward-req-earned' : ''}">${earned ? '✔ ' : ''}${t.points} PTS</div>
             </div>`;
     }).join('');
+    const tierName = t => t.rarity + (t.copies === 2 ? ' ×2 (Perfect Pro!)' : '');
     const nextTier = PCC_REWARD_TIERS[earnedIdx + 1];
     const progressLine = earnedIdx === PCC_REWARD_TIERS.length - 1
-        ? `<div class="pcc-reward-progress" style="color:#f1c40f;">🏆 MAXED OUT — the ${PCC_REWARD_TIERS[earnedIdx].rarity} card is yours at the final bell!`
+        ? `<div class="pcc-reward-progress" style="color:#f1c40f;">🏆 MAXED OUT — the ${tierName(PCC_REWARD_TIERS[earnedIdx])} is yours at the final bell!`
             + `</div>`
-        : `<div class="pcc-reward-progress">${nextTier.points - s.points} more point${nextTier.points - s.points === 1 ? '' : 's'} to the <b style="color:#f1c40f;">${nextTier.rarity}</b> card</div>`;
+        : `<div class="pcc-reward-progress">${nextTier.points - s.points} more point${nextTier.points - s.points === 1 ? '' : 's'} to the <b style="color:#f1c40f;">${tierName(nextTier)}</b> card</div>`;
     return `
         <div class="pcc-panel">
             <div class="pcc-panel-title">🏆 END-OF-EVENT REWARDS — YOUR CHAMPION CARD</div>
             <div class="pcc-reward-track">${cards}</div>
             ${progressLine}
-            <div class="pcc-panel-note">Delivered when the event ends. Win the community vote to claim the full tier — if your side loses, the reward drops one tier (below ${PCC_REWARD_TIERS[0].rarity}: ${PCC_LOSER_CONSOLATION_PICKS} consolation picks). Milestone rewards below are yours to keep either way.</div>
+            <div class="pcc-panel-note">Delivered when the event ends — you get the highest tier you reached. ×2 tiers drop TWO copies of the card: combine them yourself for a Perfect Pro. Win the community vote to claim the full tier — if your side loses, the reward drops one tier (below ${PCC_REWARD_TIERS[0].rarity}: ${PCC_LOSER_CONSOLATION_PICKS} consolation picks). Milestone rewards below are yours to keep either way.</div>
         </div>`;
 }
 
@@ -154,9 +155,20 @@ function claimPccMilestone(i) {
     const parts = [];
     if (m.picks) { player.picks += m.picks; parts.push(`+${m.picks} Picks`); }
     if (m.coins) { player.coins += m.coins; parts.push(`+${m.coins.toLocaleString()} Coins`); }
+    // Random Superstar of the given rarity from the NORMAL pool — exclusives (Ladder/
+    // PCC) and support cards never drop here.
+    let randomCardId = null;
+    if (m.randomCard) {
+        const pool = DB.filter(c => c.rarity === m.randomCard && c.gender !== 'S' && !c.ladderReward);
+        if (pool.length > 0) randomCardId = pool[Math.floor(Math.random() * pool.length)].id;
+        if (randomCardId !== null) addCard(randomCardId);
+    }
     save();
     if (m.pack) {
         grantBonusPack(m.pack);
+    } else if (randomCardId !== null) {
+        showCardSummaryModal([randomCardId], '🎁 MILESTONE REWARD', () => renderPccScreen(false));
+        return;
     } else {
         showNotification(`🎁 MILESTONE CLAIMED!<br>${parts.join(' • ')}`, 2200);
     }

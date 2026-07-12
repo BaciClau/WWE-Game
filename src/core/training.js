@@ -354,6 +354,19 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             }
         }
 
+        // Multiplier a card has ACTUALLY earned so far — getStatMultiplier() plus the
+        // partial XP already fed toward its next level, converted to its fractional share
+        // of a level's stat growth. Used by the combines below so mid-level training is
+        // never thrown away when the level resets.
+        function earnedMultiplier(c) {
+            let m = getStatMultiplier(c);
+            const need = getXpNeeded(c);
+            if (need > 0 && c.xp > 0) {
+                m += (Math.min(c.xp, need) / need) * (UPGRADE.MAX_STAT_RATIO - 1) / (getBaseMaxLevel(c) - 1);
+            }
+            return m;
+        }
+
         // Both promotions now require COMBINE mode with exactly one duplicate selected —
         // matching WWE SuperCard's real mechanic (two identical cards fuse into one Pro/
         // Perfect Pro card; the duplicate is consumed). Perfect Pro additionally requires
@@ -365,13 +378,15 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const dup = player.inventory.find(c => c.uid === tradeSacrifices[0]);
             if (!dup) return;
 
-            // Bank the average pre-combine multiplier of both cards BEFORE resetting the
-            // level — matching the real game's "the higher the level of the two cards when
-            // you combine them, the better the effect will be": the level number drops back
-            // to 1, but the stats at that LVL 1 stay elevated instead of falling to raw base.
-            // COMBINE_BASE_BONUS is a small guaranteed floor on top — even combining two
-            // level-1 duplicates gives "a minimal stat boost" in the real game, not zero.
-            const banked = (getStatMultiplier(target) + getStatMultiplier(dup)) / 2 + UPGRADE.COMBINE_BASE_BONUS;
+            // Bank the BETTER of the two cards' earned multipliers (partial XP included)
+            // BEFORE resetting the level — the level number drops back to 1, but the stats
+            // must NEVER end up below what either card already had: averaging here meant a
+            // LVL 6 fused with a LVL 1 came out WEAKER than the LVL 6 went in, with all its
+            // training silently lost. "The higher the level of the two cards when you
+            // combine them, the better the effect will be" still holds (a stronger pair
+            // banks a higher multiplier); COMBINE_BASE_BONUS is the small guaranteed boost
+            // on top — even two level-1 duplicates come out ahead, matching the real game.
+            const banked = Math.max(earnedMultiplier(target), earnedMultiplier(dup)) + UPGRADE.COMBINE_BASE_BONUS;
             consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'normal';
@@ -396,8 +411,9 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             if (!targetMaxed || !dupMaxed) return; // Perfect Pro needs BOTH cards fully trained
 
             // Same banking as focusPromoteNormal — both cards are required to already be
-            // maxed here, so this will typically land right around MAX_STAT_RATIO.
-            const banked = (getStatMultiplier(target) + getStatMultiplier(dup)) / 2 + UPGRADE.COMBINE_BASE_BONUS;
+            // maxed here, so this lands right at MAX_STAT_RATIO + COMBINE_BASE_BONUS
+            // (which is exactly what the opponent simulation in opponents.js assumes).
+            const banked = Math.max(earnedMultiplier(target), earnedMultiplier(dup)) + UPGRADE.COMBINE_BASE_BONUS;
             consumeSacrifices();
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'perfect';

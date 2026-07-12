@@ -52,20 +52,24 @@ const PCC_MATCHUPS = [
 // If your side LOSES the community vote you drop exactly one tier (SuperRare → a
 // picks-only consolation) — performance still pays, but crowning the champ pays more.
 // Calibrated against the real economy (packs cost 100-1,500 coins, an Exhibition win
-// pays 2 picks): the champion card must NEVER out-pace the rest of the game's grind.
-// The first pass here (3/15/35/75) failed that test badly — a barely-Rare deck walked
-// away with an Epic after literally 3 wins, which made both the Ladder Rewards
-// (thousands of wins) and the whole training/combine loop feel pointless. These
-// thresholds are the original-PCC philosophy instead: the top cards belong to players
-// who effectively LIVE in the event for its 66 hours — Survivor is 32 wins against the
-// hardest (+5) opponent, Legendary 18, and even the entry SuperRare card asks for a
-// real session, not a coffee break. The event still helps a lot — but you contribute
-// accordingly.
+// pays 2 picks, the Ladder Reward Survivors sit behind tens of thousands of wins):
+// the champion card must NEVER out-pace the rest of the game's grind. Two earlier
+// passes (3/15/35/75, then 12/40/90/160) both failed that test — even the second one
+// handed the game's strongest rarity to anyone with ~32 wins vs the +5 opponent, half
+// a win per hour of a 66h event. This scale is the real thing: wins-vs-the-+5 reads
+// roughly 3 / 12 / 40 / 100 / 220 / 450. The ceiling is humane-impossible math: of
+// the 66h, people sleep ~8h a night, leaving ~48 waking hours — 450 wins is ~9.4
+// wins EVERY waking hour, start to finish, against the nightmare AI. The Survivor at
+// ~220 already means genuinely living in the event; the ×2 tiers drop a DUPLICATE of
+// the same card, the raw material for a self-made Perfect Pro: the top of the track
+// is for the obsessed, not the curious.
 const PCC_REWARD_TIERS = [
-    { points: 12,  rarity: 'SuperRare' },
-    { points: 40,  rarity: 'Epic' },
-    { points: 90,  rarity: 'Legendary' },
-    { points: 160, rarity: 'Survivor' },
+    { points: 15,   rarity: 'SuperRare' },
+    { points: 60,   rarity: 'Epic' },
+    { points: 200,  rarity: 'Legendary' },
+    { points: 500,  rarity: 'Legendary', copies: 2 },
+    { points: 1100, rarity: 'Survivor' },
+    { points: 2250, rarity: 'Survivor', copies: 2 },
 ];
 const PCC_LOSER_CONSOLATION_PICKS = 3;
 
@@ -73,13 +77,18 @@ const PCC_LOSER_CONSOLATION_PICKS = 3;
 // from the event screen the moment the threshold is reached. Sized as a nice daily
 // drip (a pack's worth of coins here, a few picks there), never a jackpot — and
 // stretched across the SAME scale as the card tiers, so they pace the whole grind
-// instead of all landing in the first hour.
+// instead of all landing in the first hour. The deep ones pay a RANDOM card from the
+// normal pool of that rarity (never the exclusives) — a real prize for the long climb
+// that still can't compete with the champion card it's pacing you toward.
 const PCC_MILESTONES = [
-    { points: 5,   label: '3 Draft Picks',           picks: 3 },
-    { points: 15,  label: '300 Coins',               coins: 300 },
-    { points: 30,  label: 'Free Pack (Rare/SR)',     pack: ['Rare', 'SuperRare'] },
-    { points: 60,  label: '5 Draft Picks',           picks: 5 },
-    { points: 110, label: '500 Coins + 2 Picks',     coins: 500, picks: 2 },
+    { points: 5,    label: '3 Draft Picks',           picks: 3 },
+    { points: 15,   label: '300 Coins',               coins: 300 },
+    { points: 40,   label: 'Free Pack (Rare/SR)',     pack: ['Rare', 'SuperRare'] },
+    { points: 90,   label: '5 Draft Picks',           picks: 5 },
+    { points: 160,  label: '600 Coins + 2 Picks',     coins: 600, picks: 2 },
+    { points: 300,  label: 'Random EPIC Superstar',   randomCard: 'Epic' },
+    { points: 700,  label: 'Random LEGENDARY Superstar', randomCard: 'Legendary' },
+    { points: 1600, label: '1,500 Coins + 5 Picks',   coins: 1500, picks: 5 },
 ];
 
 // The three standing opponents: points paid on a WIN, power relative to the player's
@@ -100,15 +109,19 @@ const PCC_OPPONENT_SLOTS = [
 // like the Ladder exclusives; `pcc: true` drives their own styling and lets the event
 // find each champion's card set by id range: 950 + championIndex*4 + tierIndex.
 const PCC_CARD_ID_BASE = 950;
+// One card per champion per RARITY (not per tier — several tiers can pay the same
+// rarity, the ×2 ones as duplicates). Keeps ids stable at 950 + championIndex*4 +
+// rarityIndex, exactly as before, so existing saves keep their cards.
+const PCC_CARD_RARITIES = ['SuperRare', 'Epic', 'Legendary', 'Survivor'];
 (function generatePccCards() {
     const mults = { SuperRare: 1.34, Epic: 2.78, Legendary: 4.45, Survivor: 7.3 };
     PCC_CHAMPIONS.forEach((ch, ci) => {
-        PCC_REWARD_TIERS.forEach((tier, ti) => {
-            const m = mults[tier.rarity];
+        PCC_CARD_RARITIES.forEach((rarity, ti) => {
+            const m = mults[rarity];
             DB.push({
                 id: PCC_CARD_ID_BASE + ci * 4 + ti,
                 name: ch.name,
-                rarity: tier.rarity,
+                rarity: rarity,
                 gender: 'M',
                 pow: Math.round(ch.base.pow * m), tgh: Math.round(ch.base.tgh * m),
                 spd: Math.round(ch.base.spd * m), cha: Math.round(ch.base.cha * m),
@@ -122,7 +135,7 @@ const PCC_CARD_ID_BASE = 950;
 function getPccChampion(key) { return PCC_CHAMPIONS.find(c => c.key === key); }
 function getPccCardId(championKey, rarity) {
     const ci = PCC_CHAMPIONS.findIndex(c => c.key === championKey);
-    const ti = PCC_REWARD_TIERS.findIndex(t => t.rarity === rarity);
+    const ti = PCC_CARD_RARITIES.indexOf(rarity);
     if (ci === -1 || ti === -1) return null;
     return PCC_CARD_ID_BASE + ci * 4 + ti;
 }
