@@ -425,15 +425,22 @@
            treatment as the green boost so the card always shows its real fighting number. */
         .stat-penalty { background: rgba(231,76,60,0.45); box-shadow: 0 0 8px rgba(231,76,60,0.8); }
 
-        /* FACE/HEEL alignment diamond (original game's tag-chemistry indicator) — sits next
-           to the rarity label on every fighter card. Blue = FACE, red = HEEL. */
+        /* CHEMISTRY HALF-DIAMOND (original Season 1 system) — sits next to the rarity label
+           on every fighter card. Only HALF the diamond is filled: BLUE splits left/right,
+           GOLD splits top/bottom. Two halves that visibly COMPLETE one diamond = +10%,
+           identical halves = 0%, different colors = -5%. The element is a square rotated
+           45°, so each visual half maps to a corner-to-corner gradient in local coords:
+           visual LEFT = local bottom-left triangle, visual TOP = local top-left, etc. */
         .align-diamond {
-            display: inline-block; width: 7px; height: 7px; margin-left: 5px;
+            display: inline-block; width: 9px; height: 9px; margin-left: 5px;
             transform: rotate(45deg); border-radius: 1px;
-            border: 1px solid rgba(255,255,255,0.7); vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.8); vertical-align: middle;
+            background-color: rgba(0,0,0,0.55); /* the empty half stays dark, so the filled half pops */
         }
-        .align-face { background: #3498db; }
-        .align-heel { background: #e74c3c; }
+        .chem-blue-l { background-image: linear-gradient(to top right,   #3498db 50%, transparent 50%); }
+        .chem-blue-r { background-image: linear-gradient(to bottom left, #3498db 50%, transparent 50%); }
+        .chem-gold-t { background-image: linear-gradient(to bottom right, #f1c40f 50%, transparent 50%); }
+        .chem-gold-b { background-image: linear-gradient(to top left,    #f1c40f 50%, transparent 50%); }
 
         .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
         /* Same top-right spot as .star (Perfect Pro) — top-left used to sit right on top of
@@ -571,19 +578,13 @@
             color: #f1c40f; font-weight: bold; letter-spacing: 3px; font-size: 14px;
             padding: 2px 16px; animation: fadeIn 0.3s ease;
         }
-        /* ROUND-STAT FOCUS ON THE HAND CARDS: playRound() stamps the active stat on
-           #player-hand-area (data-active-stat), and every OTHER stat block on the hand
-           cards dims out — same treatment as an already-played card. With an active
-           manager tinting several stats green, the round's stat (colored: orange
-           highlight, or green/red when boosted) was drowning in the noise; now it's the
-           only number at full brightness while picking. Arena cards are untouched — all
-           four stats matter there when tag chemistry animates them. */
-        #player-hand-area[data-active-stat="pow"] .stat-v2:not([data-stat="pow"]),
-        #player-hand-area[data-active-stat="tgh"] .stat-v2:not([data-stat="tgh"]),
-        #player-hand-area[data-active-stat="spd"] .stat-v2:not([data-stat="spd"]),
-        #player-hand-area[data-active-stat="cha"] .stat-v2:not([data-stat="cha"]) {
-            opacity: 0.28; filter: grayscale(65%);
-        }
+        /* ROUND-STAT FOCUS ON THE HAND CARDS: renderHand() marks every stat block that is
+           NOT required this round (two-stat rounds keep BOTH bright) with .stat-dim — same
+           treatment as an already-played card. With an active manager tinting several stats
+           green, the required numbers were drowning in the noise; now they're the only ones
+           at full brightness while picking. Arena cards are untouched — all four stats
+           matter there when tag chemistry animates them. */
+        #player-hand-area .stat-v2.stat-dim { opacity: 0.28; filter: grayscale(65%); }
 
         /* Stat count-up pop — added while a number is animating to its new value. */
         .stat-v2.stat-bump { animation: statBump 0.7s ease; }
@@ -1467,30 +1468,33 @@
         }
         .pcc-opp-label { color: #ffb3ab; }
 
-        .pcc-tier-track { display: flex; gap: 8px; flex-wrap: wrap; }
-        .pcc-tier-chip {
-            flex: 1; min-width: 90px; position: relative; text-align: center;
-            border: 2px solid #555; border-radius: 10px; padding: 8px 4px;
-            background: rgba(0,0,0,0.5); opacity: 0.65;
+        /* End-of-event reward showcase — the four ACTUAL champion cards (SR→Survivor),
+           original-style, instead of text chips. Real renderHTMLCard output scaled down via
+           zoom (affects layout footprint, so the row wraps/centers correctly, unlike
+           transform:scale which leaves ghost space). Locked tiers stay visible but cold. */
+        .pcc-reward-track { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .pcc-reward-card { text-align: center; }
+        .pcc-reward-card-scale { zoom: 0.52; }
+        .pcc-reward-locked .pcc-reward-card-scale { filter: grayscale(70%) brightness(0.55); }
+        .pcc-reward-earned .pcc-reward-card-scale .card { box-shadow: 0 0 22px 6px rgba(46,204,113,0.65); }
+        .pcc-reward-req {
+            margin-top: 5px; display: inline-block; font-size: 11px; font-weight: 900;
+            letter-spacing: 1px; color: #bbb; font-family: Arial;
+            background: rgba(0,0,0,0.6); border: 1px solid #555; border-radius: 6px; padding: 2px 8px;
         }
-        .pcc-tier-rarity { font-size: 12px; font-weight: 900; letter-spacing: 0.5px; }
-        .pcc-tier-req { font-size: 11px; color: #bbb; font-family: Arial; margin-top: 2px; }
-        .pcc-tier-check {
-            position: absolute; top: -8px; right: -6px; background: #2ecc71; color: #fff;
-            width: 20px; height: 20px; border-radius: 50%; font-size: 12px; line-height: 20px;
-            border: 2px solid #0a0a0a;
+        .pcc-reward-req-earned { color: #2ecc71; border-color: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.4); }
+        .pcc-reward-progress {
+            text-align: center; font-size: 13px; color: #ccc; font-family: Arial;
+            margin-top: 10px; font-weight: bold;
         }
-        .pcc-tier-earned { opacity: 1; box-shadow: 0 0 12px rgba(46,204,113,0.4); border-color: #2ecc71; }
-        .rarity-chip-SuperRare .pcc-tier-rarity { color: #00bcd4; }
-        .rarity-chip-Epic .pcc-tier-rarity { color: #b366ff; }
-        .rarity-chip-Legendary .pcc-tier-rarity { color: #f1c40f; }
-        .rarity-chip-Survivor .pcc-tier-rarity { color: #e74c3c; }
 
         @media (max-width: 480px) {
             .pcc-title { font-size: 19px; }
             .pcc-poster-card { zoom: 0.52; }
             .pcc-vs { font-size: 30px; }
             .pcc-dash-btn .dash-exhibition-title { font-size: 20px; }
+            /* 2x2 grid of reward cards on phones: 0.44 zoom ≈ 76px each, two per row. */
+            .pcc-reward-card-scale { zoom: 0.44; }
         }
 
         /* ============ LIFE LAYER — ambient & feedback animations ============ */

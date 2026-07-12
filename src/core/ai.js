@@ -9,8 +9,14 @@ function getCardTotal(card) {
     return card.pow + card.tgh + card.spd + card.cha;
 }
 
-function sortByStat(cards, stat) {
-    return [...cards].sort((a, b) => b[stat] - a[stat]);
+// A card's value THIS round — two-stat rounds sum both required stats, so the AI
+// weighs cards (and support) exactly the way the resolver will score them.
+function roundStatValue(card, statKeys) {
+    return statKeys.reduce((s, k) => s + (card[k] || 0), 0);
+}
+
+function sortByRoundValue(cards, statKeys) {
+    return [...cards].sort((a, b) => roundStatValue(b, statKeys) - roundStatValue(a, statKeys));
 }
 
 function shuffleCards(cards) {
@@ -24,7 +30,7 @@ const AI_TOTAL_ROUNDS = 3;
 
 function chooseAiPlay(match) {
     const aiMode = match.aiMode || 'normal';
-    const activeStat = match.rule.stat;
+    const statKeys = [match.rule.stat, match.rule.stat2].filter(Boolean);
     const cardsNeeded = match.rule.r;
     const roundsLeft = Math.max(1, AI_TOTAL_ROUNDS - match.round + 1);
     const aiAhead = match.oScore > match.pScore;
@@ -47,18 +53,18 @@ function chooseAiPlay(match) {
         result.cards = shuffleCards(availableCards).slice(0, cardsNeeded);
         result.support = chooseEasySupport(availableSupport);
     } else if (aiMode === 'normal') {
-        result.cards = sortByStat(availableCards, activeStat).slice(0, cardsNeeded);
-        result.support = chooseBestSupportForStat(availableSupport, activeStat);
+        result.cards = sortByRoundValue(availableCards, statKeys).slice(0, cardsNeeded);
+        result.support = chooseBestSupportForStat(availableSupport, statKeys);
     } else if (aiMode === 'hard') {
-        result.cards = chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive);
-        result.support = chooseHardSupport(availableSupport, activeStat, aiBehind, decisive);
+        result.cards = chooseHardCards(availableCards, statKeys, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive);
+        result.support = chooseHardSupport(availableSupport, statKeys, aiBehind, decisive);
     } else {
-        result.cards = chooseNightmareCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, match);
-        result.support = chooseNightmareSupport(availableSupport, activeStat);
+        result.cards = chooseNightmareCards(availableCards, statKeys, cardsNeeded, aiAhead, aiBehind, roundsLeft, match);
+        result.support = chooseNightmareSupport(availableSupport, statKeys);
     }
 
     if (result.support) {
-        result.supportBonus = result.support[activeStat] || 0;
+        result.supportBonus = roundStatValue(result.support, statKeys);
         // Never burn a support card for a +0 — it gets marked as used for the whole match
         // (resolveRound pushes it into match.used) with literally nothing in return. This
         // also covers easy AI's random pick landing on a support with 0 on the active stat.
@@ -76,13 +82,13 @@ function chooseEasySupport(availableSupport) {
     return shuffleCards(availableSupport)[0];
 }
 
-function chooseBestSupportForStat(availableSupport, activeStat) {
-    const usefulSupport = sortByStat(availableSupport, activeStat).find(card => (card[activeStat] || 0) > 0);
+function chooseBestSupportForStat(availableSupport, statKeys) {
+    const usefulSupport = sortByRoundValue(availableSupport, statKeys).find(card => roundStatValue(card, statKeys) > 0);
     return usefulSupport || null;
 }
 
-function chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive) {
-    const sortedByActiveStat = sortByStat(availableCards, activeStat);
+function chooseHardCards(availableCards, statKeys, cardsNeeded, aiAhead, aiBehind, roundsLeft, decisive) {
+    const sortedByActiveStat = sortByRoundValue(availableCards, statKeys);
     const sortedByTotal = [...availableCards].sort((a, b) => getCardTotal(b) - getCardTotal(a));
 
     if (aiBehind || decisive) {
@@ -98,17 +104,17 @@ function chooseHardCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBeh
     return sortedByActiveStat.slice(0, cardsNeeded);
 }
 
-function chooseHardSupport(availableSupport, activeStat, aiBehind, decisive) {
-    const bestSupport = chooseBestSupportForStat(availableSupport, activeStat);
+function chooseHardSupport(availableSupport, statKeys, aiBehind, decisive) {
+    const bestSupport = chooseBestSupportForStat(availableSupport, statKeys);
     if (!bestSupport) return null;
 
-    const supportValue = bestSupport[activeStat] || 0;
+    const supportValue = roundStatValue(bestSupport, statKeys);
     if (aiBehind || decisive || supportValue > 50 || Math.random() < 0.2) return bestSupport;
     return null;
 }
 
-function chooseNightmareCards(availableCards, activeStat, cardsNeeded, aiAhead, aiBehind, roundsLeft, match) {
-    const sortedByActiveStat = sortByStat(availableCards, activeStat);
+function chooseNightmareCards(availableCards, statKeys, cardsNeeded, aiAhead, aiBehind, roundsLeft, match) {
+    const sortedByActiveStat = sortByRoundValue(availableCards, statKeys);
     const sortedByTotal = [...availableCards].sort((a, b) => getCardTotal(b) - getCardTotal(a));
 
     if (match.oScore === 0 && match.pScore === 0 && match.round === 1) {
@@ -128,9 +134,9 @@ function chooseNightmareCards(availableCards, activeStat, cardsNeeded, aiAhead, 
     return sortedByActiveStat.slice(0, cardsNeeded);
 }
 
-function chooseNightmareSupport(availableSupport, activeStat) {
-    // Only ever a support that actually helps on the active stat — the old fallback
+function chooseNightmareSupport(availableSupport, statKeys) {
+    // Only ever a support that actually helps on the required stat(s) — the old fallback
     // ("play ANY support when desperate") could only fire when no support had a bonus
     // there, i.e. it burned the support card for +0.
-    return chooseBestSupportForStat(availableSupport, activeStat);
+    return chooseBestSupportForStat(availableSupport, statKeys);
 }

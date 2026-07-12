@@ -1,37 +1,64 @@
 function getCardBase(card) { return DB.find(c => c.id === card.id); }
         function getCardRarity(card) { return getCardBase(card).rarity; }
 
-        // FACE/HEEL alignment (the original game's diamond indicator) — drives the Tag Team
-        // alignment mechanic from WWE SuperCard 2014: a matched tag pair gets +10% on the
-        // active stat, a mismatched one -5% (applied in resolveRound). Assignments follow the
-        // 2014-era on-screen personas; wrestlers not listed fall back to a stable id-parity
-        // coin flip so every card always has SOME consistent alignment. HEEL list is checked
-        // FIRST so e.g. a "Hollywood Hogan" entry would hit "hollywood" before "hogan".
-        const HEEL_NAMES = ['randy orton', 'seth rollins', 'triple h', 'kane', 'brock lesnar',
-            'paul heyman', 'rusev', 'lana', 'the miz', 'damien sandow', 'cesaro', 'bad news barrett',
-            'bray wyatt', 'luke harper', 'erick rowan', 'alberto del rio', 'jbl', 'david otunga',
-            'titus', 'heath slater', 'bo dallas', 'fandango', 'ryback', 'mcmahon', 'batista',
-            'tyson kidd', 'vader', 'yokozuna', 'razor ramon', 'roddy piper', 'mr. perfect',
-            'ted dibiase', 'rick rude', 'bobby heenan', 'big john studd', 'andre the giant',
-            'mr. fuji', 'jimmy hart', 'hollywood', 'kevin nash', 'nikki bella', 'cameron',
-            'eva marie', 'summer rae', 'layla', 'alicia fox', 'rosa mendes', 'tamina', 'eve',
-            'stephanie', 'paige', 'edge'];
-        const FACE_NAMES = ['john cena', 'daniel bryan', 'roman reigns', 'dean ambrose',
-            'dolph ziggler', 'rey mysterio', 'big e', 'kofi kingston', 'xavier woods', 'sheamus',
-            'mark henry', 'chris jericho', 'rob van dam', 'zack ryder', 'santino', 'jey uso',
-            'jimmy uso', 'r-truth', 'adam rose', 'darren young', 'khali', 'justin gabriel',
-            'jack swagger', 'goldust', 'cody rhodes', 'stardust', 'christian', 'big show',
-            'sting', 'booker t', 'ric flair', 'hulk hogan', 'ultimate warrior', 'macho man',
-            'randy savage', 'ricky steamboat', 'dusty rhodes', 'bruno sammartino',
-            'eddie guerrero', 'shawn michaels', 'stone cold', 'the rock', 'undertaker',
-            'jake roberts', 'sgt. slaughter', 'virgil', 'aj lee', 'natalya', 'naomi',
-            'brie bella', 'emma'];
-        function getCardAlignment(base) {
+        // TAG TEAM CHEMISTRY — the original WWE SuperCard Season 1 half-diamond system:
+        // every fighter card carries a diamond with only HALF of it filled, in one of two
+        // colors. BLUE diamonds are split left/right; GOLD diamonds are split top/bottom.
+        // The rule reads itself straight off the card, no legend needed:
+        //   - the two halves COMPLETE one diamond (blue-left + blue-right, or gold-top +
+        //     gold-bottom)  →  💎 +10% on every stat
+        //   - the two halves are IDENTICAL                    →  0%, nothing moves
+        //   - the colors don't even match (blue vs gold)      →  💢 -5% on every stat
+        const CHEM_STYLES = {
+            'blue-l': { label: 'BLUE ◀ LEFT HALF — completes BLUE RIGHT' },
+            'blue-r': { label: 'BLUE ▶ RIGHT HALF — completes BLUE LEFT' },
+            'gold-t': { label: 'GOLD ▲ TOP HALF — completes GOLD BOTTOM' },
+            'gold-b': { label: 'GOLD ▼ BOTTOM HALF — completes GOLD TOP' },
+        };
+        function getChemFactor(a, b) {
+            if (!a || !b) return 0;
+            if (a === b) return 0;                       // same half — nothing new
+            if (a.slice(0, 4) === b.slice(0, 4)) return 0.10; // same color, other half — complete!
+            return -0.05;                                // colors clash
+        }
+        // Real Season 1 (2014-era) relationships decide the halves, so real tag teams
+        // genuinely complete each other's diamond: The Usos, Gold & Stardust, Miz & Mizdow,
+        // the Bella Twins... Trios get two members completing and the third on a SAME half
+        // (neutral) — except Seth Rollins, whose 2014 betrayal of The Shield puts him on the
+        // OTHER color entirely (clashes with both his old brothers). First match in this
+        // list wins; names not listed fall back to a stable hash of the NAME (not the id),
+        // so every rarity of the same wrestler always carries the same half.
+        const CHEM_ASSIGN = [
+            ['jimmy uso', 'blue-l'], ['jey uso', 'blue-r'],                      // The Usos
+            ['goldust', 'gold-t'], ['stardust', 'gold-b'], ['cody rhodes', 'gold-b'], // Gold & Stardust / Rhodes Brothers
+            ['the miz', 'blue-l'], ['damien mizdow', 'blue-r'], ['damien sandow', 'blue-r'], // Miz & Mizdow
+            ['roman reigns', 'gold-t'], ['dean ambrose', 'gold-b'], ['seth rollins', 'blue-l'], // The Shield (+ the betrayal)
+            ['luke harper', 'blue-l'], ['erick rowan', 'blue-r'], ['bray wyatt', 'blue-l'],     // Wyatt Family
+            ['heath slater', 'gold-t'], ['titus', 'gold-b'],                     // Slater Gator
+            ['kofi kingston', 'blue-l'], ['big e', 'blue-r'], ['xavier woods', 'blue-l'], // New Day
+            ['brie bella', 'gold-t'], ['nikki bella', 'gold-b'],                 // Bella Twins
+            ['cameron', 'blue-l'], ['naomi', 'blue-r'],                          // Funkadactyls
+            ['layla', 'gold-t'], ['summer rae', 'gold-b'],                       // SLayers
+            ['aj lee', 'blue-l'], ['tamina', 'blue-r'],                          // AJ & her bodyguard
+            ['kane', 'gold-t'], ['undertaker', 'gold-b'],                        // Brothers of Destruction
+            ['hollywood hogan', 'blue-l'], ['hulk hogan', 'blue-l'], ['macho man', 'blue-r'], ['randy savage', 'blue-r'], // Mega Powers
+            ['randy orton', 'gold-t'], ['batista', 'gold-b'], ['triple h', 'gold-t'], ['shawn michaels', 'gold-b'], // Evolution + DX
+            ['razor ramon', 'blue-l'], ['diesel', 'blue-r'],                     // The Outsiders
+            ['ted dibiase', 'gold-t'], ['virgil', 'gold-b'],                     // Million Dollar Man & bodyguard
+            ['mr. perfect', 'blue-l'], ['ric flair', 'blue-r'],                  // Perfect & Flair alliance
+            ['eddie guerrero', 'gold-t'], ['rey mysterio', 'gold-b'],            // Eddie & Rey
+            ['cesaro', 'blue-l'], ['jack swagger', 'blue-r'],                    // Real Americans
+        ];
+        const CHEM_VARIANTS = ['blue-l', 'blue-r', 'gold-t', 'gold-b'];
+        function getCardChemStyle(base) {
             if (!base || base.gender === 'S') return null;
             const n = base.name.toLowerCase();
-            if (HEEL_NAMES.some(x => n.includes(x))) return 'heel';
-            if (FACE_NAMES.some(x => n.includes(x))) return 'face';
-            return base.id % 2 === 0 ? 'face' : 'heel';
+            const hit = CHEM_ASSIGN.find(([sub]) => n.includes(sub));
+            if (hit) return hit[1];
+            // Stable name hash — every copy/rarity of the same wrestler shares one half.
+            let h = 0;
+            for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+            return CHEM_VARIANTS[h % 4];
         }
 
         // Nivel maxim fără upgrade, respectiv Pro/Perfect Pro, pentru raritatea cărții.
@@ -133,7 +160,7 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             let multi = getStatMultiplier(card);
             return {
                 ...base, uid: card.uid,
-                alignment: getCardAlignment(base),
+                chem: getCardChemStyle(base),
                 lvl: card.level,
                 xp: card.xp || 0,
                 xpNeeded: getXpNeeded(card),

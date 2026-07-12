@@ -328,7 +328,9 @@ function updateUI() {
             const val = stats[key] + extra;
             const isPenalty = extra < 0;
             const isBoosted = extra > 0;
-            const isHighlight = extra === 0 && highlight === key;
+            // `highlight` may carry BOTH of a two-stat round's keys ('pow,cha') — the keys
+            // are distinct 3-letter strings, so a simple includes() match is unambiguous.
+            const isHighlight = extra === 0 && !!highlight && highlight.includes(key);
             return `
                 <div class="stat-v2 ${isPenalty ? 'stat-penalty' : (isBoosted ? 'stat-boosted' : (isHighlight ? 'stat-highlight' : ''))}" data-stat="${key}">
                     <div class="stat-v2-label">${label}</div>
@@ -365,7 +367,7 @@ function updateUI() {
                     ${stats.locked ? '<div class="lock-badge">🔒</div>' : ''}
                     ${stats.perfect ? '<div class="star">★</div>' : upgradeTag}
                     <div class="card-header-v2">
-                        <div class="card-rarity-label">${stats.rarity}${stats.alignment ? `<span class="align-diamond align-${stats.alignment}" title="${stats.alignment.toUpperCase()}"></span>` : ''}</div>
+                        <div class="card-rarity-label">${stats.rarity}${stats.chem ? `<span class="align-diamond chem-${stats.chem}" title="${CHEM_STYLES[stats.chem].label}"></span>` : ''}</div>
                         <div class="card-name-v2">${stats.name}</div>
                     </div>
                     <div class="card-body-v2 ${isSupport ? 'card-body-support-v2' : ''}">

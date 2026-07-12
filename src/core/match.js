@@ -109,8 +109,18 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             if (rules.length === 0) return handleStalemate();
 
             let r = rules[Math.floor(Math.random() * rules.length)];
-            let st = ['pow', 'tgh', 'spd', 'cha'][Math.floor(Math.random()*4)];
-            match.rule = r; match.rule.stat = st;
+            // Original-style stat draw: most rounds ask for ONE stat, but ~35% ask for TWO
+            // (both counted — a card's round value is the SUM of the required stats), so
+            // well-rounded cards get their moment over one-trick specialists.
+            const allStats = ['pow', 'tgh', 'spd', 'cha'];
+            let st = allStats[Math.floor(Math.random()*4)];
+            let st2 = null;
+            if (Math.random() < 0.35) {
+                const rest = allStats.filter(k => k !== st);
+                st2 = rest[Math.floor(Math.random() * rest.length)];
+            }
+            match.rule = r; match.rule.stat = st; match.rule.stat2 = st2;
+            const statLabel = st.toUpperCase() + (st2 ? ' + ' + st2.toUpperCase() : '');
 
             // Round announcement, IN THE RING (like the original's stipulation reveal):
             // one animated card in the arena's center carrying the round, the match type
@@ -132,7 +142,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 <div class="round-intro ${introClass}">
                     <div class="round-intro-round">${roundLabel}</div>
                     <div class="round-intro-type">${matchTypeLabel}</div>
-                    <div class="round-intro-stat">STAT: <span>${st.toUpperCase()}</span></div>
+                    <div class="round-intro-stat">${st2 ? 'STATS' : 'STAT'}: <span>${statLabel}</span></div>
                     ${sweepLine}
                 </div>`;
 
@@ -140,11 +150,6 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             renderFallPips();
             document.getElementById('cards-to-pick').innerText = r.r;
             document.getElementById('cards-text').innerText = r.r === 1 ? "CARD" : "CARDS";
-            // The active stat is made readable ON the hand cards themselves: this attribute
-            // drives CSS that dims every OTHER stat block (like the played-card grey-out),
-            // so the round's stat is the only number that pops — no matter how many green
-            // manager-boost tints are lighting up the rest of the card.
-            document.getElementById('player-hand-area').dataset.activeStat = st;
 
             renderHand();
         }
@@ -171,9 +176,18 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 // freshly-signed manager's boost showing up all over the hand looked like the
                 // bonus applied before the card was ever played.
                 const showManagerBonus = !isSupportCard && match.managerSlideShown;
+                // Both required stats (two-stat rounds) stay bright/highlighted; every OTHER
+                // stat block dims like a played card, so the numbers that matter this round
+                // are the only ones that pop — regardless of manager-green noise.
+                const requiredStats = [match.rule.stat, match.rule.stat2].filter(Boolean);
                 let div = document.createElement('div');
-                div.innerHTML = renderHTMLCard(s, false, match.rule.stat, '', '', 0, showManagerBonus ? match.matchWideBonus : null);
+                div.innerHTML = renderHTMLCard(s, false, requiredStats.join(','), '', '', 0, showManagerBonus ? match.matchWideBonus : null);
                 let cardEl = div.children[0];
+                if (!isSupportCard) {
+                    cardEl.querySelectorAll('.stat-v2').forEach(el => {
+                        if (!requiredStats.includes(el.dataset.stat)) el.classList.add('stat-dim');
+                    });
+                }
                 div.style.position = 'relative';
                 div.dataset.uid = u;
 
@@ -255,13 +269,15 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                         } else {
                             match.activeSupportUID = u; match.used.push(u);
                             match.supportBonus = {pow: s.pow, tgh: s.tgh, spd: s.spd, cha: s.cha};
-                            // Only claim a bonus the card actually gives on THIS round's stat —
-                            // activating a support with 0 there is allowed (player's call, can
-                            // still undo), but the old message promised a bonus regardless.
-                            const roundBonus = s[match.rule.stat] || 0;
-                            document.getElementById('support-status').innerHTML = roundBonus > 0
-                                ? `<span style="color:#2ecc71">✅ ${s.name} Activat! +${roundBonus} ${match.rule.stat.toUpperCase()}! (tap again to undo)</span>`
-                                : `<span style="color:#f39c12">⚠️ ${s.name} gives no ${match.rule.stat.toUpperCase()} bonus this round! (tap again to undo)</span>`;
+                            // Only claim a bonus the card actually gives on THIS round's
+                            // required stat(s) — activating a support with 0 there is allowed
+                            // (player's call, can still undo), but never promise a bonus it
+                            // won't pay. Two-stat rounds list each stat's share.
+                            const roundStats = [match.rule.stat, match.rule.stat2].filter(Boolean);
+                            const bonusParts = roundStats.filter(k => (s[k] || 0) > 0).map(k => `+${s[k]} ${k.toUpperCase()}`);
+                            document.getElementById('support-status').innerHTML = bonusParts.length > 0
+                                ? `<span style="color:#2ecc71">✅ ${s.name} Activat! ${bonusParts.join(', ')}! (tap again to undo)</span>`
+                                : `<span style="color:#f39c12">⚠️ ${s.name} gives no ${roundStats.map(k => k.toUpperCase()).join('/')} bonus this round! (tap again to undo)</span>`;
                         }
                         renderHand();
                     };
@@ -427,11 +443,18 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // where each card's stats visibly count up/down as the step fires.
             const chemistryEvents = [];
 
+            // Two-stat rounds: a card's round value is the SUM of every required stat, and
+            // every bonus source below (manager/support/ability/chemistry) pays out on each
+            // required stat it actually covers.
+            const reqStats = [match.rule.stat, match.rule.stat2].filter(Boolean);
+            const isReq = k => reqStats.includes(k);
+            const statLabel = reqStats.map(k => k.toUpperCase()).join(' + ');
+
             // A manager-type support activated earlier this match permanently buffs every
             // card in the player's deck for the rest of the match (never the opponent's).
             // It's persistent state (already shown green on the hand cards), so it stays
             // baked into the arena render rather than replayed as an animation every round.
-            const managerBonus = match.matchWideBonus[match.rule.stat] || 0;
+            const managerBonus = reqStats.reduce((s, k) => s + (match.matchWideBonus[k] || 0), 0);
             pTot += managerBonus * match.selected.length;
 
             // Captured here (same reason as playerSupportCardStats below), fired further down
@@ -447,30 +470,36 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 }
             }
 
-            // Per-card ability bonuses are remembered so the TEAM chemistry % (applied
-            // LAST, on the final numbers) can include them in its base.
+            // Per-card, PER-STAT ability bonuses are remembered so the TEAM chemistry %
+            // (applied LAST, on the final numbers) can include them in its base.
             const abilityBonusByUid = {};
             match.selected.forEach(u => {
                 let cardObj = player.inventory.find(c=>c.uid===u);
                 let cardStats = getStats(cardObj);
-                let baseStat = cardStats[match.rule.stat];
-                pTot += baseStat;
+                reqStats.forEach(k => { pTot += cardStats[k]; });
                 match.used.push(u);
 
-                // Verifică abilitate specială (33% șansă)
+                // Verifică abilitate specială (33% șansă) — one roll per card; when it fires,
+                // it pays on EVERY required stat the ability covers (a two-stat round where
+                // the ability covers both pays double — rare, and it should feel huge).
                 const ab = ABILITIES[cardStats.id];
-                if (ab && ab.stats.includes(match.rule.stat)) {
+                if (ab && reqStats.some(k => ab.stats.includes(k))) {
                     if (Math.random() < 0.33) {
-                        // ABILITATE ACTIVATĂ! Bonus fix bazat pe raritate
-                        const bonus = getAbilityBonus(cardStats, match.rule.stat);
-                        // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
-                        // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
+                        const bumps = [];
+                        const perStat = {};
+                        let bonus = 0;
+                        reqStats.forEach(k => {
+                            const b = getAbilityBonus(cardStats, k);
+                            // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
+                            // nicio abilitate reală de arătat pe acel stat.
+                            if (b > 0) { bonus += b; perStat[k] = b; bumps.push({ uid: cardStats.uid, stat: k, delta: b }); }
+                        });
                         if (bonus > 0) {
                             pTot += bonus;
-                            abilityBonusByUid[cardStats.uid] = (abilityBonusByUid[cardStats.uid] || 0) + bonus;
+                            abilityBonusByUid[cardStats.uid] = perStat;
                             // Flash + burst + on-card callout + the stat counting up all
                             // fire from the SEQUENTIAL activation queue below.
-                            abilityEvents.push({ cardStats, ab, bonus, statName: match.rule.stat, isAI: false, bumps: [{ uid: cardStats.uid, stat: match.rule.stat, delta: bonus }] });
+                            abilityEvents.push({ cardStats, ab, bonus, statName: Object.keys(perStat).join(' + '), isAI: false, bumps });
                         }
                     }
                 }
@@ -478,38 +507,42 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // In a Tag Team round (2 cards per side), the support card backs up the whole
             // team, so its bonus counts double instead of a flat single-card add.
             const teamSupportMultiplier = match.rule.r === 2 ? 2 : 1;
-            const playerSupportBonus = (match.supportBonus[match.rule.stat] || 0) * teamSupportMultiplier;
+            const playerSupportBonus = reqStats.reduce((s, k) => s + (match.supportBonus[k] || 0), 0) * teamSupportMultiplier;
             pTot += playerSupportBonus;
 
             // NOTE: playerSupportBonus is already doubled for Tag Team rounds (team-wide
             // total) — animating that doubled amount onto EACH of the 2 cards would visually
             // double-count it. Each card's number rises by its own undoubled share instead,
             // so the two on-card increases sum to the real total added to pTot.
-            const perCardSupportBonus = match.supportBonus[match.rule.stat] || 0;
+            const perCardSupportBonus = k => match.supportBonus[k] || 0;
 
-            // TAG TEAM ALIGNMENT (original 2014 mechanic): a matching pair fights as a real
-            // team, +10% on EVERY stat of each card; a mismatched pair pays -5% on every
-            // stat. The TEAM bonus is ALWAYS applied LAST: the % is taken from each card's
-            // FINAL numbers this round (base + manager + support + ability), never from the
-            // raw base. Only the active stat's share counts toward the round total — but
-            // ALL four numbers animate up/down on both cards when the chemistry step plays.
+            // TAG TEAM CHEMISTRY (original 4-style system, see CHEM_MATRIX in cards.js):
+            // the pair's two styles decide the factor — +10% perfect / +5% good / -5% clash
+            // — applied to EVERY stat of each card. Two IDENTICAL styles are a flat 0: no
+            // stat moves at all, the badge just says so. The TEAM bonus is ALWAYS applied
+            // LAST: the % is taken from each card's FINAL numbers this round (base + manager
+            // + support + ability), never from the raw base. Only the required stats' share
+            // counts toward the round total — but ALL four numbers animate when it plays.
             if (match.rule.r === 2 && match.selected.length === 2) {
                 const pair = match.selected.map(u => getStats(player.inventory.find(c => c.uid === u)));
-                const matched = pair[0].alignment === pair[1].alignment;
-                const factor = matched ? 0.10 : -0.05;
+                const factor = getChemFactor(pair[0].chem, pair[1].chem);
                 const bumps = [];
-                pair.forEach(s => {
-                    ['pow','tgh','spd','cha'].forEach(k => {
-                        let eff = s[k] + (match.matchWideBonus[k] || 0);
-                        if (k === match.rule.stat) eff += perCardSupportBonus + (abilityBonusByUid[s.uid] || 0);
-                        const d = Math.round(eff * factor);
-                        if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
-                        if (k === match.rule.stat) pTot += d;
+                if (factor !== 0) {
+                    pair.forEach(s => {
+                        ['pow','tgh','spd','cha'].forEach(k => {
+                            let eff = s[k] + (match.matchWideBonus[k] || 0);
+                            if (isReq(k)) eff += perCardSupportBonus(k) + ((abilityBonusByUid[s.uid] || {})[k] || 0);
+                            const d = Math.round(eff * factor);
+                            if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
+                            if (isReq(k)) pTot += d;
+                        });
                     });
-                });
+                }
                 chemistryEvents.push({ kind: 'chemistry', bumps,
-                    text: matched ? '🤝 PERFECT TEAM! +10% ALL STATS' : '💢 BAD CHEMISTRY... -5% ALL STATS',
-                    color: matched ? '#2ecc71' : '#e74c3c' });
+                    text: factor > 0 ? '💎 PERFECT MATCH! +10% ALL STATS'
+                        : factor < 0 ? '💢 COLORS CLASH... -5% ALL STATS'
+                        : '➖ SAME HALF — NO CHEMISTRY',
+                    color: factor > 0 ? '#2ecc71' : factor < 0 ? '#e74c3c' : '#95a5a6' });
             }
             // Captured here, but the actual slide-in fires further below — AFTER
             // arena.innerHTML rebuilds the ring with this round's fighter cards. Firing it
@@ -522,7 +555,6 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             }
 
             // ---- AI CARD SELECTION ----
-            const activeStat = match.rule.stat;
             const aiPlay = chooseAiPlay(match);
             let oppP = aiPlay.cards;
 
@@ -531,48 +563,58 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             }
 
             oppP.forEach(c => {
-                oTot += c[activeStat];
+                reqStats.forEach(k => { oTot += c[k]; });
                 match.used.push(c.uid);
             });
 
+            // Per-stat AI support contribution (mirrors the player's supportBonus map).
+            const aiSupportPerStat = k => aiPlay.support ? (aiPlay.support[k] || 0) : 0;
             const aiSupportBonus = aiPlay.supportBonus * teamSupportMultiplier;
             oTot += aiSupportBonus;
 
             const aiAbilityByUid = {};
             oppP.forEach(c => {
                 const ab = ABILITIES[c.id];
-                if (ab && ab.stats.includes(activeStat) && Math.random() < aiPlay.abilityChance) {
-                    const bonus = getAbilityBonus(c, activeStat);
-                    // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
-                    // nicio abilitate reală de arătat, deci nu declanșăm popup/flash.
+                if (ab && reqStats.some(k => ab.stats.includes(k)) && Math.random() < aiPlay.abilityChance) {
+                    const bumps = [];
+                    const perStat = {};
+                    let bonus = 0;
+                    reqStats.forEach(k => {
+                        const b = getAbilityBonus(c, k);
+                        // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
+                        // nicio abilitate reală de arătat pe acel stat.
+                        if (b > 0) { bonus += b; perStat[k] = b; bumps.push({ uid: c.uid, stat: k, delta: b }); }
+                    });
                     if (bonus > 0) {
                         oTot += bonus;
-                        aiAbilityByUid[c.uid] = (aiAbilityByUid[c.uid] || 0) + bonus;
-                        abilityEvents.push({ cardStats: c, ab, bonus, statName: activeStat, isAI: true, bumps: [{ uid: c.uid, stat: activeStat, delta: bonus }] });
+                        aiAbilityByUid[c.uid] = perStat;
+                        abilityEvents.push({ cardStats: c, ab, bonus, statName: Object.keys(perStat).join(' + '), isAI: true, bumps });
                     }
                 }
             });
 
-            // Same all-stats tag-team chemistry for the AI's pair (its deck cards carry
-            // alignments too — getStats stamps them on every fighter). Same TEAM-bonus-last
-            // rule as the player: the % is taken from each AI card's final numbers this
-            // round (base + support + ability).
+            // Same 4-style chemistry for the AI's pair (its deck cards carry styles too —
+            // getStats stamps them on every fighter). Same TEAM-bonus-last rule as the
+            // player: the % is taken from each AI card's final numbers this round.
             if (match.rule.r === 2 && oppP.length === 2) {
-                const matched = oppP[0].alignment === oppP[1].alignment;
-                const factor = matched ? 0.10 : -0.05;
+                const factor = getChemFactor(oppP[0].chem, oppP[1].chem);
                 const bumps = [];
-                oppP.forEach(c => {
-                    ['pow','tgh','spd','cha'].forEach(k => {
-                        let eff = c[k];
-                        if (k === activeStat) eff += aiPlay.supportBonus + (aiAbilityByUid[c.uid] || 0);
-                        const d = Math.round(eff * factor);
-                        if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
-                        if (k === activeStat) oTot += d;
+                if (factor !== 0) {
+                    oppP.forEach(c => {
+                        ['pow','tgh','spd','cha'].forEach(k => {
+                            let eff = c[k];
+                            if (isReq(k)) eff += aiSupportPerStat(k) + ((aiAbilityByUid[c.uid] || {})[k] || 0);
+                            const d = Math.round(eff * factor);
+                            if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
+                            if (isReq(k)) oTot += d;
+                        });
                     });
-                });
+                }
                 chemistryEvents.push({ kind: 'chemistry', bumps,
-                    text: matched ? '⚠️ ENEMY TEAM CHEMISTRY! +10%' : '💢 ENEMY BAD CHEMISTRY -5%',
-                    color: matched ? '#e74c3c' : '#f39c12' });
+                    text: factor > 0 ? '⚠️ ENEMY PERFECT MATCH! +10%'
+                        : factor < 0 ? '💢 ENEMY COLORS CLASH -5%'
+                        : '➖ ENEMY SAME HALF — NO CHEMISTRY',
+                    color: factor > 0 ? '#e74c3c' : factor < 0 ? '#f39c12' : '#95a5a6' });
             }
 
             // Cards whose stat actually got boosted this round (ability and/or support —
@@ -590,11 +632,12 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // every other activation — otherwise the boost was visible before the manager
             // card ever "activated" in the ring.
             const managerMap = (match.activeManagerUID && !managerCardStats) ? match.matchWideBonus : null;
+            const highlightKeys = reqStats.join(',');
             arena.innerHTML = `
-                <div class="arena-stat-tag">${activeStat.toUpperCase()}</div>
-                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, match.rule.stat, '', '', 0, managerMap)).join('')}</div>
+                <div class="arena-stat-tag">${statLabel}</div>
+                <div class="arena-side slide-in-left" id="arena-player">${match.selected.map(u => renderHTMLCard(getStats(player.inventory.find(c=>c.uid===u)), false, highlightKeys, '', '', 0, managerMap)).join('')}</div>
                 <div class="vs-badge">VS</div>
-                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, match.rule.stat)).join('')}</div>
+                <div class="arena-side slide-in-right" id="arena-opp">${oppP.map(c => renderHTMLCard(c, false, highlightKeys)).join('')}</div>
             `;
             document.getElementById('btn-confirm-play').style.display = 'none';
             document.getElementById('support-status').innerText = "";
@@ -616,10 +659,24 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 });
                 activations.push({ kind: 'support', side: 'player', card: managerCardStats, tag: `${managerAddedText} TO DECK`, icon: '🎙️', bumps: managerBumps });
             }
-            if (playerSupportCardStats) activations.push({ kind: 'support', side: 'player', card: playerSupportCardStats, tag: `+${playerSupportBonus} ${match.rule.stat.toUpperCase()}`,
-                bumps: match.selected.map(u => ({ uid: u, stat: match.rule.stat, delta: perCardSupportBonus })) });
-            if (aiPlay.support && aiSupportBonus > 0) activations.push({ kind: 'support', side: 'ai', card: aiPlay.support, tag: `+${aiSupportBonus} ${activeStat.toUpperCase()}`,
-                bumps: oppP.map(c => ({ uid: c.uid, stat: activeStat, delta: aiPlay.supportBonus })) });
+            if (playerSupportCardStats) {
+                const supportBumps = [];
+                match.selected.forEach(u => reqStats.forEach(k => {
+                    if (perCardSupportBonus(k) > 0) supportBumps.push({ uid: u, stat: k, delta: perCardSupportBonus(k) });
+                }));
+                const supportTag = reqStats.filter(k => perCardSupportBonus(k) > 0)
+                    .map(k => `+${perCardSupportBonus(k) * teamSupportMultiplier} ${k.toUpperCase()}`).join(', ');
+                activations.push({ kind: 'support', side: 'player', card: playerSupportCardStats, tag: supportTag, bumps: supportBumps });
+            }
+            if (aiPlay.support && aiSupportBonus > 0) {
+                const aiBumps = [];
+                oppP.forEach(c => reqStats.forEach(k => {
+                    if (aiSupportPerStat(k) > 0) aiBumps.push({ uid: c.uid, stat: k, delta: aiSupportPerStat(k) });
+                }));
+                const aiTag = reqStats.filter(k => aiSupportPerStat(k) > 0)
+                    .map(k => `+${aiSupportPerStat(k) * teamSupportMultiplier} ${k.toUpperCase()}`).join(', ');
+                activations.push({ kind: 'support', side: 'ai', card: aiPlay.support, tag: aiTag, bumps: aiBumps });
+            }
             abilityEvents.forEach(evt => activations.push({ kind: 'ability', evt, bumps: evt.bumps }));
             // TEAM CHEMISTRY PLAYS LAST — same order the math already uses (its % is taken
             // from each card's FINAL numbers: base + manager + support + ability). Playing it

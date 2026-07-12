@@ -69,13 +69,23 @@ function getPccPlayerVotes() {
 }
 
 // Called on entering the event screen (and by the menu banner): if the stored state
-// belongs to an already-finished cycle, settle it — decide the community winner, hand
-// out the champion card / consolation — then reset for the current cycle.
+// belongs to a cycle whose VOTING has already closed, settle it — decide the community
+// winner, hand out the champion card / consolation — then reset for the current cycle.
 // `onDone(resultHtmlOrNull)` runs after any reward UI so the caller can re-render.
+//
+// Gated on the 66h ACTIVE window closing, NOT on the full 72h cycle rolling over: the
+// old version compared cycleIdx (which only advances after the whole 72h, active+break)
+// against the stored cycle, so a player who finished playing right as voting closed sat
+// staring at "ring being set up" for the entire 6h break with zero payout and — worse —
+// that break screen showed THEIR OWN just-closed matchup mislabeled as "come back for
+// X vs Y", as if it were still upcoming. Voting closing is what actually decides the
+// outcome, so that's the real trigger.
 function settlePccIfNeeded(onDone) {
     const s = ensurePccState();
     const info = getPccCycleInfo();
-    if (s.cycle === info.cycleIdx) { onDone(null); return; }
+    const votingCloseTime = (s.cycle !== null) ? (PCC_EPOCH + s.cycle * PCC_CYCLE_MS + PCC_ACTIVE_MS) : 0;
+    const votingClosedForStored = s.cycle !== null && Date.now() >= votingCloseTime;
+    if (!votingClosedForStored) { onDone(null); return; }
 
     // Never participated in the old cycle (or first visit ever) — just roll forward.
     if (s.cycle === null || !s.side || s.points <= 0) {

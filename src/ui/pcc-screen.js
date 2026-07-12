@@ -181,7 +181,14 @@ function renderPccScreen(regenOpponents) {
     if (!container) return;
     if (regenOpponents) _pccOpponents = null;
 
-    const chA = getPccChampion(info.matchup.a), chB = getPccChampion(info.matchup.b);
+    // During the 6h break, info.matchup/info.cycleIdx still describe the cycle that JUST
+    // closed (cycleIdx only advances once the full 72h — active+break — has elapsed) —
+    // showing that in "come back for X vs Y!" would advertise the fight the player already
+    // finished (and whose votes are already settled) as if it were still ahead of them.
+    // The genuinely upcoming one is next cycle's matchup, which is what actually opens the
+    // moment the break ends.
+    const displayMatchup = info.active ? info.matchup : PCC_MATCHUPS[((info.cycleIdx + 1) % PCC_MATCHUPS.length + PCC_MATCHUPS.length) % PCC_MATCHUPS.length];
+    const chA = getPccChampion(displayMatchup.a), chB = getPccChampion(displayMatchup.b);
 
     let body;
     if (!info.active) {
@@ -206,14 +213,14 @@ function renderPccScreen(regenOpponents) {
                 <div class="pcc-stat-box"><div class="pcc-stat-num">${s.losses}</div><div class="pcc-stat-label">LOSSES</div></div>
             </div>
             ${_pccOpponentsHTML()}
-            ${_pccRewardTrackHTML(s)}
+            ${_pccRewardTrackHTML(s, info)}
             ${_pccMilestonesHTML(s)}`;
     }
 
     container.innerHTML = `
         <div class="pcc-banner">
             <div class="pcc-title">PEOPLE'S CHAMPION CHALLENGE</div>
-            <div class="pcc-tagline">${info.matchup.tagline}</div>
+            <div class="pcc-tagline">${displayMatchup.tagline}</div>
             <div class="pcc-matchup">
                 ${_pccChampionPosterHTML(chA, 'TEAM ' + chA.name.toUpperCase(), s.side === 'a')}
                 <div class="pcc-vs">VS</div>
