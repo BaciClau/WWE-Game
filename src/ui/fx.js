@@ -211,7 +211,7 @@ function showCardActivationOverlay(evt, onDone) {
     wrap.innerHTML = `
         <div class="cao-icon">${evt.ab.icon}</div>
         <div class="cao-name">${evt.ab.name}</div>
-        <div class="cao-bonus">+${evt.bonus} ${evt.statName.toUpperCase()}</div>`;
+        <div class="cao-bonus">${evt.tag}</div>`;
     document.body.appendChild(wrap);
     // Clamp the callout fully on-screen: it's centered on the card, so a card hugging the
     // ring's left/right edge (tag rounds on phones) pushed half the badge past the viewport.

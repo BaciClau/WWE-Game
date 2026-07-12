@@ -52,34 +52,45 @@ const PCC_MATCHUPS = [
 // If your side LOSES the community vote you drop exactly one tier (SuperRare → a
 // picks-only consolation) — performance still pays, but crowning the champ pays more.
 // Calibrated against the real economy (packs cost 100-1,500 coins, an Exhibition win
-// pays 2 picks): the top card demands a serious multi-day grind — 75 points is 15 wins
-// against the hardest (+5) opponent inside one 66h event — so the event stays a chase,
-// not a free power spike every 3 days.
+// pays 2 picks): the champion card must NEVER out-pace the rest of the game's grind.
+// The first pass here (3/15/35/75) failed that test badly — a barely-Rare deck walked
+// away with an Epic after literally 3 wins, which made both the Ladder Rewards
+// (thousands of wins) and the whole training/combine loop feel pointless. These
+// thresholds are the original-PCC philosophy instead: the top cards belong to players
+// who effectively LIVE in the event for its 66 hours — Survivor is 32 wins against the
+// hardest (+5) opponent, Legendary 18, and even the entry SuperRare card asks for a
+// real session, not a coffee break. The event still helps a lot — but you contribute
+// accordingly.
 const PCC_REWARD_TIERS = [
-    { points: 3,  rarity: 'SuperRare' },
-    { points: 15, rarity: 'Epic' },
-    { points: 35, rarity: 'Legendary' },
-    { points: 75, rarity: 'Survivor' },
+    { points: 12,  rarity: 'SuperRare' },
+    { points: 40,  rarity: 'Epic' },
+    { points: 90,  rarity: 'Legendary' },
+    { points: 160, rarity: 'Survivor' },
 ];
 const PCC_LOSER_CONSOLATION_PICKS = 3;
 
 // Rewards sprinkled through the event "for playing, winning, and so on" — claimable
 // from the event screen the moment the threshold is reached. Sized as a nice daily
-// drip (a pack's worth of coins here, a few picks there), never a jackpot.
+// drip (a pack's worth of coins here, a few picks there), never a jackpot — and
+// stretched across the SAME scale as the card tiers, so they pace the whole grind
+// instead of all landing in the first hour.
 const PCC_MILESTONES = [
-    { points: 3,  label: '3 Draft Picks',           picks: 3 },
-    { points: 8,  label: '300 Coins',               coins: 300 },
-    { points: 15, label: 'Free Pack (Rare/SR)',     pack: ['Rare', 'SuperRare'] },
-    { points: 25, label: '5 Draft Picks',           picks: 5 },
-    { points: 40, label: '500 Coins + 2 Picks',     coins: 500, picks: 2 },
+    { points: 5,   label: '3 Draft Picks',           picks: 3 },
+    { points: 15,  label: '300 Coins',               coins: 300 },
+    { points: 30,  label: 'Free Pack (Rare/SR)',     pack: ['Rare', 'SuperRare'] },
+    { points: 60,  label: '5 Draft Picks',           picks: 5 },
+    { points: 110, label: '500 Coins + 2 Picks',     coins: 500, picks: 2 },
 ];
 
 // The three standing opponents: points paid on a WIN, power relative to the player's
 // deck, and the AI brain used. Mirrors the original's "+1 / +3 / +5, harder pays more".
+// The +5 MAIN EVENTER is deliberately nasty (up to ~114% of your power on nightmare
+// AI): farming him is the only fast lane to the big cards, so he has to genuinely cost
+// you losses along the way — points paid per win only matter if the win isn't assured.
 const PCC_OPPONENT_SLOTS = [
-    { points: 1, minPct: 0.90, maxPct: 0.96, aiMode: 'easy',      label: 'CONTENDER' },
-    { points: 3, minPct: 0.98, maxPct: 1.03, aiMode: 'hard',      label: 'HEADLINER' },
-    { points: 5, minPct: 1.03, maxPct: 1.08, aiMode: 'nightmare', label: 'MAIN EVENTER' },
+    { points: 1, minPct: 0.92, maxPct: 0.98, aiMode: 'easy',      label: 'CONTENDER' },
+    { points: 3, minPct: 1.00, maxPct: 1.06, aiMode: 'hard',      label: 'HEADLINER' },
+    { points: 5, minPct: 1.06, maxPct: 1.14, aiMode: 'nightmare', label: 'MAIN EVENTER' },
 ];
 
 // --- Exclusive reward cards, generated into DB ---

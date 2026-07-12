@@ -479,27 +479,37 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 reqStats.forEach(k => { pTot += cardStats[k]; });
                 match.used.push(u);
 
-                // Verifică abilitate specială (33% șansă) — one roll per card; when it fires,
-                // it pays on EVERY required stat the ability covers (a two-stat round where
-                // the ability covers both pays double — rare, and it should feel huge).
+                // Verifică abilitate specială (33% șansă) — one roll per card, but it can
+                // only ATTEMPT to fire if at least one of the ability's own two stats is
+                // being tested this round. Once it fires, it ALWAYS evaluates BOTH of the
+                // ability's stats (ab.stats[0] AND ab.stats[1]) — matching exactly what the
+                // card's own footer promises (e.g. "CHA +17, POW +17") — not just whichever
+                // one happens to be required. A stat that fires but ISN'T required this
+                // round still bumps green on the card (real feedback that the ability truly
+                // activated); it just doesn't add to the round's score, since it isn't in
+                // play. This is what makes an ability's proc always visible, never silent.
                 const ab = ABILITIES[cardStats.id];
                 if (ab && reqStats.some(k => ab.stats.includes(k))) {
                     if (Math.random() < 0.33) {
                         const bumps = [];
                         const perStat = {};
-                        let bonus = 0;
-                        reqStats.forEach(k => {
+                        const tagParts = [];
+                        ab.stats.forEach(k => {
                             const b = getAbilityBonus(cardStats, k);
                             // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
                             // nicio abilitate reală de arătat pe acel stat.
-                            if (b > 0) { bonus += b; perStat[k] = b; bumps.push({ uid: cardStats.uid, stat: k, delta: b }); }
+                            if (b > 0) {
+                                perStat[k] = b;
+                                bumps.push({ uid: cardStats.uid, stat: k, delta: b });
+                                tagParts.push(`+${b} ${k.toUpperCase()}`);
+                                if (isReq(k)) pTot += b;
+                            }
                         });
-                        if (bonus > 0) {
-                            pTot += bonus;
+                        if (tagParts.length > 0) {
                             abilityBonusByUid[cardStats.uid] = perStat;
                             // Flash + burst + on-card callout + the stat counting up all
                             // fire from the SEQUENTIAL activation queue below.
-                            abilityEvents.push({ cardStats, ab, bonus, statName: Object.keys(perStat).join(' + '), isAI: false, bumps });
+                            abilityEvents.push({ cardStats, ab, tag: tagParts.join(', '), isAI: false, bumps });
                         }
                     }
                 }
@@ -531,7 +541,13 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     pair.forEach(s => {
                         ['pow','tgh','spd','cha'].forEach(k => {
                             let eff = s[k] + (match.matchWideBonus[k] || 0);
-                            if (isReq(k)) eff += perCardSupportBonus(k) + ((abilityBonusByUid[s.uid] || {})[k] || 0);
+                            // Support only ever touches a REQUIRED stat, but an ability can now
+                            // land on either of its own two stats regardless of what's required
+                            // (see the ability block above) — its bonus is a real, already-
+                            // applied number on the card by the time chemistry fires, so it
+                            // always counts here, required or not.
+                            if (isReq(k)) eff += perCardSupportBonus(k);
+                            eff += (abilityBonusByUid[s.uid] || {})[k] || 0;
                             const d = Math.round(eff * factor);
                             if (d !== 0) bumps.push({ uid: s.uid, stat: k, delta: d });
                             if (isReq(k)) pTot += d;
@@ -576,19 +592,26 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             oppP.forEach(c => {
                 const ab = ABILITIES[c.id];
                 if (ab && reqStats.some(k => ab.stats.includes(k)) && Math.random() < aiPlay.abilityChance) {
+                    // Same rule as the player's abilities: once it fires, BOTH of its own
+                    // stats always show (matching the card's footer) — only the required
+                    // one(s) count toward the score.
                     const bumps = [];
                     const perStat = {};
-                    let bonus = 0;
-                    reqStats.forEach(k => {
+                    const tagParts = [];
+                    ab.stats.forEach(k => {
                         const b = getAbilityBonus(c, k);
                         // Common (și Uncommon pe stat-ul secundar) dau bonus 0 — nu există
                         // nicio abilitate reală de arătat pe acel stat.
-                        if (b > 0) { bonus += b; perStat[k] = b; bumps.push({ uid: c.uid, stat: k, delta: b }); }
+                        if (b > 0) {
+                            perStat[k] = b;
+                            bumps.push({ uid: c.uid, stat: k, delta: b });
+                            tagParts.push(`+${b} ${k.toUpperCase()}`);
+                            if (isReq(k)) oTot += b;
+                        }
                     });
-                    if (bonus > 0) {
-                        oTot += bonus;
+                    if (tagParts.length > 0) {
                         aiAbilityByUid[c.uid] = perStat;
-                        abilityEvents.push({ cardStats: c, ab, bonus, statName: Object.keys(perStat).join(' + '), isAI: true, bumps });
+                        abilityEvents.push({ cardStats: c, ab, tag: tagParts.join(', '), isAI: true, bumps });
                     }
                 }
             });
@@ -603,7 +626,8 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     oppP.forEach(c => {
                         ['pow','tgh','spd','cha'].forEach(k => {
                             let eff = c[k];
-                            if (isReq(k)) eff += aiSupportPerStat(k) + ((aiAbilityByUid[c.uid] || {})[k] || 0);
+                            if (isReq(k)) eff += aiSupportPerStat(k);
+                            eff += (aiAbilityByUid[c.uid] || {})[k] || 0;
                             const d = Math.round(eff * factor);
                             if (d !== 0) bumps.push({ uid: c.uid, stat: k, delta: d });
                             if (isReq(k)) oTot += d;
