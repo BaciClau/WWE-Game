@@ -349,10 +349,14 @@ function updateUI() {
                 let lvlLabel = stats.effectiveLvl ?? stats.lvl;
                 let maxLabel = stats.effectiveMax ?? stats.maxLvl;
                 if (stats.lvl === '?') { lvlLabel = '?'; maxLabel = '?'; }
-                else if (stats.perfect && stats.phase === 2) { lvlLabel = `★${stats.lvl}`; maxLabel = `${stats.effectiveLvl}/${stats.effectiveMax}`; }
+                // Perfect Pro runs its OWN ★0..★stretchMax scale (see getStatMultiplier in
+                // cards.js), separate from the regular level count — showing it as
+                // "★lvl/stretchMax" is one clean ratio instead of tacking the star onto the
+                // effective level/max pair, which read as three numbers stacked together.
+                else if (stats.perfect && stats.phase === 2) { lvlLabel = `★${stats.lvl}`; maxLabel = `${stats.effectiveMax - stats.maxLvl}`; }
                 lvlText = stats.lvl === '?' ? 'SCALAT' : `${lvlLabel}/${maxLabel}`;
             }
-            const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">◆</div>' : '';
+            const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">★</div>' : '';
 
             const abilityInfo = isSupport ? null : getAbilityInfo(stats);
             const footerName = isSupport ? 'SUPPORT BONUS' : (abilityInfo ? abilityInfo.name : 'NA');

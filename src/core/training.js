@@ -170,12 +170,20 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             return { level, xp: sim.xp, xpNeeded: getXpNeeded(sim), maxed: level >= getEffectiveMax(sim) };
         }
 
-        // AUTO fodder select: fills the sacrifice list with the CHEAPEST cards first —
-        // Common upward, and lowest XP value first within a rarity — adding only as many
-        // as the simulation says are needed to reach the chosen goal, not one more.
+        // AUTO fodder select. mode 'max' fills the sacrifice list with the CHEAPEST cards
+        // first — Common upward, and lowest XP value first within a rarity — adding only as
+        // many as the simulation says are needed to reach the full training cap; ordering
+        // by rarity there is deliberate (hoard the valuable fodder, spend junk first) since
+        // overshoot past the cap is impossible.
         // mode 'one' is INCREMENTAL: it keeps whatever is already selected and each press
-        // stacks one more level on top of the current projection, until fodder runs out.
-        // mode 'max' rebuilds the selection from scratch for the full training cap.
+        // is meant to stack exactly one more level on top of the current projection. That
+        // promise can only be kept by grabbing the CHEAPEST XP VALUE available regardless of
+        // rarity — ranking by rarity first (like 'max' does) could hand it, say, an
+        // already-leveled Common worth 3 levels' worth of XP ahead of a fresh Rare worth
+        // barely half a level, turning "+1" into "+3". A single card can still overshoot by
+        // more than one level if literally nothing smaller exists in the fodder pool — cards
+        // can't be split — so that's reported explicitly instead of silently handed over as
+        // if it were the requested +1.
         // Locked, equipped and favorite cards are never touched.
         function focusAutoSelectFodder(mode = 'max') {
             const target = player.inventory.find(c => c.uid === tradeTarget);
@@ -187,26 +195,28 @@ function getSacrificeXpEnhanced(uid, targetCard) {
                 return info.xp + info.levelBonus;
             };
 
-            let totalXp, goalLevel;
+            let totalXp, goalLevel, startLevel;
             if (mode === 'one') {
                 totalXp = tradeSacrifices.reduce((s, u) => s + xpOf(u), 0);
-                const projected = simulateFeed(target, totalXp).level;
-                if (projected >= getEffectiveMax(target)) {
+                startLevel = simulateFeed(target, totalXp).level;
+                if (startLevel >= getEffectiveMax(target)) {
                     showNotification('✅ Selection already reaches MAX level — nothing more to add.', 1800);
                     return;
                 }
-                goalLevel = projected + 1;
+                goalLevel = startLevel + 1;
             } else {
                 tradeSacrifices = [];
                 totalXp = 0;
                 goalLevel = getEffectiveMax(target);
             }
 
-            const ranked = player.inventory
+            const candidates = player.inventory
                 .filter(c => c.uid !== tradeTarget && !c.locked && !isCardEquipped(c.uid)
                     && c.uid !== player.favoriteUid && !tradeSacrifices.includes(c.uid))
-                .map(c => ({ uid: c.uid, rank: RARITIES.indexOf(getCardRarity(c)), value: xpOf(c.uid) }))
-                .sort((a, b) => a.rank - b.rank || a.value - b.value);
+                .map(c => ({ uid: c.uid, rank: RARITIES.indexOf(getCardRarity(c)), value: xpOf(c.uid) }));
+            const ranked = mode === 'one'
+                ? candidates.sort((a, b) => a.value - b.value)
+                : candidates.sort((a, b) => a.rank - b.rank || a.value - b.value);
 
             let added = 0;
             for (const f of ranked) {
@@ -215,12 +225,15 @@ function getSacrificeXpEnhanced(uid, targetCard) {
                 totalXp += f.value;
                 added++;
             }
+            const finalLevel = simulateFeed(target, totalXp).level;
             if (tradeSacrifices.length === 0) {
                 showNotification('❌ No fodder cards available — locked, equipped and favorite cards are skipped.', 2200);
             } else if (mode === 'one' && added === 0) {
                 showNotification('❌ Out of fodder — every available card is already selected.', 2000);
-            } else if (mode === 'one' && simulateFeed(target, totalXp).level < goalLevel) {
+            } else if (mode === 'one' && finalLevel < goalLevel) {
                 showNotification('⚠️ Not enough fodder left for a full extra level — added everything available.', 2200);
+            } else if (mode === 'one' && finalLevel > goalLevel) {
+                showNotification(`⚠️ No smaller fodder available — that card alone jumps LVL ${startLevel} ➜ LVL ${finalLevel}.`, 2400);
             }
             renderFocusFodderGrid();
             updateFocusTrainStatus();
@@ -317,6 +330,20 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             if (btnAutoMax) btnAutoMax.style.display = 'inline-flex';
         }
 
+        // Renders how much each of the four stats actually moved — Train and Combine both
+        // used to just say "it got better" and leave the player to compare the numbers on
+        // the card by memory. Zero-change stats still show "±0" (e.g. fed XP that didn't
+        // reach the next level yet) instead of silently vanishing from the line, so the
+        // readout always accounts for all four.
+        function statDeltaHTML(before, after) {
+            return ['pow', 'tgh', 'spd', 'cha'].map(k => {
+                const d = after[k] - before[k];
+                if (d === 0) return `${k.toUpperCase()} <span style="color:#888">±0</span>`;
+                const color = d > 0 ? '#2ecc71' : '#e74c3c';
+                return `${k.toUpperCase()} <span style="color:${color};font-weight:bold">${d > 0 ? '+' : ''}${d}</span>`;
+            }).join(' &nbsp;·&nbsp; ');
+        }
+
         // TRAIN-only — feeds fodder XP into the target. Never called in combine mode (the
         // FEED button is hidden there; see updateFocusTrainStatus()).
         function focusFeedSacrifices() {
@@ -324,6 +351,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const sacs = tradeSacrifices.slice();
             if (!target || sacs.length === 0 || focusMode === 'combine') return;
 
+            const before = getStats(target);
             let baseXP = 0, bonusXP = 0;
             let hasNormalUpgradeFodder = false;
             sacs.forEach(uid => {
@@ -336,12 +364,14 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             consumeSacrifices();
             target.xp = (target.xp || 0) + totalXP;
             const levels = processLevelUps(target);
+            const after = getStats(target);
 
             let msg = `+${baseXP} XP added!`;
             if (hasNormalUpgradeFodder) msg += `<br><span style="color:#e040fb">🔮 2× XP from Pro fodder!</span>`;
             if (bonusXP > 0) msg += `<br><span style="color:#f1c40f">+${bonusXP} XP level fodder bonus</span>`;
             if (levels > 0) msg += `<br>⬆️ ${getCardBase(target).name} → LVL ${getEffectiveLevel(target)}`;
-            showNotification(msg, 2000);
+            msg += `<br>${statDeltaHTML(before, after)}`;
+            showNotification(msg, 2400);
 
             autoEquipDeck(); save();
             incrementMission('train_card');
@@ -378,6 +408,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const dup = player.inventory.find(c => c.uid === tradeSacrifices[0]);
             if (!dup) return;
 
+            const before = getStats(target);
             // Bank the BETTER of the two cards' earned multipliers (partial XP included)
             // BEFORE resetting the level — the level number drops back to 1, but the stats
             // must NEVER end up below what either card already had: averaging here meant a
@@ -395,7 +426,8 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             target.xp = 0;
             target.comboMultiplier = banked;
             incrementMission('combine_card');
-            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} reset to LVL 1 (stats boosted from training) — can now reach LVL ${proMax}.`, 2500);
+            const after = getStats(target);
+            showNotification(`⬆️ PRO!<br>${getCardBase(target).name} reset to LVL 1 (stats boosted from training) — can now reach LVL ${proMax}.<br>${statDeltaHTML(before, after)}`, 3000);
             autoEquipDeck(); save();
             focusBackToMenu();
         }
@@ -410,6 +442,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const dupMaxed = getEffectiveLevel(dup) >= getBaseMaxLevel(dup);
             if (!targetMaxed || !dupMaxed) return; // Perfect Pro needs BOTH cards fully trained
 
+            const before = getStats(target);
             // Same banking as focusPromoteNormal — both cards are required to already be
             // maxed here, so this lands right at MAX_STAT_RATIO + COMBINE_BASE_BONUS
             // (which is exactly what the opponent simulation in opponents.js assumes).
@@ -423,7 +456,8 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             target.maxLvl = getBaseMaxLevel(target);
             target.comboMultiplier = banked;
             incrementMission('combine_card');
-            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 (stats boosted from training) — can now reach LVL ${proMax}!`, 2500);
+            const after = getStats(target);
+            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 (stats boosted from training) — can now reach LVL ${proMax}!<br>${statDeltaHTML(before, after)}`, 3000);
             autoEquipDeck(); save();
             focusBackToMenu();
         }

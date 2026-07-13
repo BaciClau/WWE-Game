@@ -100,6 +100,7 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
         // focusPromotePerfect) and keep growing from there, not from 1.
         function getStatMultiplier(card) {
             const baseMax = getBaseMaxLevel(card);
+            const proMax = getProMaxLevel(card);
             const banked = card.comboMultiplier || 1;
             if (card.upgradeType === 'perfect' && card.phase === 2) {
                 // Perfect Pro's post-combine climb is its own short stretch (card.level runs
@@ -108,8 +109,20 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
                 // requires both source cards fully trained), climbing further to banked +
                 // (PERFECT_STAT_RATIO - 1) at the top of the stretch. Deliberately NOT using
                 // getEffectiveLevel()'s baseMax offset here.
-                const stretchMax = getProMaxLevel(card) - baseMax;
+                const stretchMax = proMax - baseMax;
                 return banked + (UPGRADE.PERFECT_STAT_RATIO - 1) * (card.level / stretchMax);
+            }
+            if (card.upgradeType === 'normal') {
+                // Pro also resets to level 1 and climbs its OWN stretched range (1..proMax,
+                // wider than a normal card's 1..baseMax — see LEVEL_CAPS vs PRO_LEVEL_CAPS).
+                // This MUST be normalized against that same wider range, not baseMax: dividing
+                // by (baseMax - 1) while card.level legally climbs past baseMax up to proMax
+                // let the growth term blow straight through the intended +80% and out the
+                // other side (a Rare Pro at its own max level came out stronger than a
+                // Perfect Pro at ITS max — the whole point of Perfect Pro being the rarer,
+                // better upgrade). Same "climb from 1, reach exactly +80% at your own real
+                // max" shape a normal card gets, just stretched to the longer Pro ladder.
+                return banked + (UPGRADE.MAX_STAT_RATIO - 1) * ((card.level - 1) / (proMax - 1));
             }
             const lvl = getEffectiveLevel(card);
             return banked + (UPGRADE.MAX_STAT_RATIO - 1) * ((lvl - 1) / (baseMax - 1));

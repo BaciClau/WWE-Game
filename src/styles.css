@@ -443,9 +443,11 @@
         .chem-gold-b { background-image: linear-gradient(to top left,    #f1c40f 50%, transparent 50%); }
 
         .star { position: absolute; top: 3px; right: 3px; font-size: 24px; color: gold; text-shadow: 0 0 5px #000, 0 0 10px orange; z-index: 5;}
-        /* Same top-right spot as .star (Perfect Pro) — top-left used to sit right on top of
-           the rarity label text (RARE/UNCOMMON/etc.), making it unreadable. */
-        .star-normal { color: #bdc3c7; font-size: 17px; top: 4px; right: 4px; }
+        /* Same top-right spot as .star (Perfect Pro, gold) — top-left used to sit right on
+           top of the rarity label text (RARE/UNCOMMON/etc.), making it unreadable. Pro cards
+           get the same star shape in silver, so the two upgrade tiers read as "a star" at a
+           glance and differ only by which metal. */
+        .star-normal { color: #e6e9ec; text-shadow: 0 0 5px #000, 0 0 8px #8fa0ad; font-size: 20px; top: 4px; right: 4px; }
         .card.trade-sacrifice { box-shadow: 0 0 25px #e74c3c; border-color: #e74c3c !important; }
 
         /* Ladder Reward cards — same rarity color glow underneath, plus a gold ring so they

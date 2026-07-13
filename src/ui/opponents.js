@@ -127,20 +127,17 @@ function showOpponentSelect() {
             showScreen('opp-select-screen');
         }
 
-        // Given a target stat multiplier, find the level/upgrade combo that a real player
-        // card of this rarity could actually have (level 1-baseMax = no upgrade,
-        // baseMax-proMax = Pro) that produces that same multiplier via the real
-        // getStatMultiplier() formula (inverted).
+        // Given a target stat multiplier, find the plain (no upgrade) level that a real
+        // player card of this rarity could actually have that produces that same
+        // multiplier via the real getStatMultiplier() formula (inverted). Always plain: a
+        // card with NO combine bank (comboMultiplier 1) can't exceed MAX_STAT_RATIO no
+        // matter its level — Pro/Perfect need an actual bank, which is cardUpgradeInfo's
+        // job, called separately wherever an upgrade tier is deliberately rolled.
         function multiplierToLevel(rarity, m) {
             const baseMax = LEVEL_CAPS[rarity] || UPGRADE.BASE_MAX;
-            const proMax = PRO_LEVEL_CAPS[rarity] || (baseMax + 5);
-            let lv = (m - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1);
-            if (lv <= baseMax) {
-                lv = Math.max(1, Math.min(baseMax, Math.round(lv)));
-                return { level: lv, upgradeType: null, phase: 1 };
-            }
-            lv = Math.max(baseMax, Math.min(proMax, Math.round(lv)));
-            return { level: lv, upgradeType: 'normal', phase: 1 };
+            let lv = 1 + (m - 1) * (baseMax - 1) / (UPGRADE.MAX_STAT_RATIO - 1);
+            lv = Math.max(1, Math.min(baseMax, Math.round(lv)));
+            return { level: lv, upgradeType: null, phase: 1 };
         }
 
         // Chooses a per-card upgrade tier (none / Pro / Perfect Pro) with odds that grow with
@@ -164,7 +161,10 @@ function showOpponentSelect() {
         // card (~2.95x) with nothing to hold it back. Clamping to each tier's own range means
         // Pro/Perfect can still only overshoot by AT MOST that tier's own floor above target
         // (bounded), never by the tier's full ceiling (unbounded).
-        function cardUpgradeInfo(rarity, tier, avgMultiplier) {
+        // `p` is the opponent's own tier percentile (0 at Rare .. 1 at Survivor++) — reused
+        // here to size a PLAUSIBLE combine bank for a 'pro' roll: a higher-ranked opponent
+        // more plausibly combined two well-trained duplicates, not two fresh level-1s.
+        function cardUpgradeInfo(rarity, tier, avgMultiplier, p) {
             const baseMax = LEVEL_CAPS[rarity] || UPGRADE.BASE_MAX;
             const proMax = PRO_LEVEL_CAPS[rarity] || (baseMax + 5);
 
@@ -178,12 +178,19 @@ function showOpponentSelect() {
                 return { level: lvl, upgradeType: 'perfect', phase: 2, comboMultiplier: banked };
             }
             if (tier === 'pro') {
-                let lvl = Math.round((avgMultiplier - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1));
-                lvl = Math.max(baseMax, Math.min(proMax, lvl));
-                return { level: lvl, upgradeType: 'normal', phase: 1, comboMultiplier: 1 };
+                // Same "climb from level 1 across the full 1..proMax Pro ladder" shape as the
+                // player's own getStatMultiplier() (cards.js) — a Pro card with NO bank can
+                // only ever reach MAX_STAT_RATIO at proMax, same ceiling as a maxed plain
+                // card, so it needs a real bank to be worth its badge. Ranges from a bare
+                // COMBINE_BASE_BONUS (two barely-trained dupes) up toward Perfect Pro's own
+                // baseline (two well-trained dupes, just not maxed) as p grows.
+                const banked = 1 + UPGRADE.COMBINE_BASE_BONUS + (UPGRADE.MAX_STAT_RATIO - 1) * Math.min(1, p * 1.3);
+                let lvl = Math.round(1 + (avgMultiplier - banked) * (proMax - 1) / (UPGRADE.MAX_STAT_RATIO - 1));
+                lvl = Math.max(1, Math.min(proMax, lvl));
+                return { level: lvl, upgradeType: 'normal', phase: 1, comboMultiplier: banked };
             }
-            let lv = Math.round((avgMultiplier - 1) * baseMax / (UPGRADE.MAX_STAT_RATIO - 1));
-            lv = Math.max(1, Math.min(baseMax, lv || 1));
+            let lv = 1 + (avgMultiplier - 1) * (baseMax - 1) / (UPGRADE.MAX_STAT_RATIO - 1);
+            lv = Math.max(1, Math.min(baseMax, Math.round(lv) || 1));
             return { level: lv, upgradeType: null, phase: 1, comboMultiplier: 1 };
         }
 
@@ -302,7 +309,7 @@ const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'SuperRare', 'UltraRare', 'E
                 let upgradedTotal = 0, plainBaseSum = 0;
                 levelableCards.forEach((c, i) => {
                     if (rolls[i] === 'none') { plainBaseSum += c.pow + c.tgh + c.spd + c.cha; return; }
-                    const info = cardUpgradeInfo(best.rarity, rolls[i], best.rawMultiplier);
+                    const info = cardUpgradeInfo(best.rarity, rolls[i], best.rawMultiplier, p);
                     const st = getStats({ id: c.id, uid: 'o_'+i, level: info.level, xp: 0, upgradeType: info.upgradeType, phase: info.phase, comboMultiplier: info.comboMultiplier, locked: false });
                     upgradedStats[i] = st;
                     upgradedTotal += st.pow + st.tgh + st.spd + st.cha;
