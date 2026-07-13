@@ -8,8 +8,20 @@ function generateBoard() {
 // grid + COLLECT ALL used by the pack shop) once they run out of picks.
 let _draftSessionPulls = [];
 
+// Where leaving the Draft Board (out of picks, or the header back button) sends the
+// player back to. Opened straight from the main menu → back to the main menu (the
+// default, reset every time enterDraftBoard() runs). Opened as a match's reward screen
+// (see match.js) → back to the Opponent Select list instead, so a play session flows
+// match → picks → next opponent without detouring through the menu every time.
+let _draftBoardReturnScreen = 'main-menu';
+function _goToDraftBoardReturn() {
+    if (_draftBoardReturnScreen === 'opp-select-screen') showOpponentSelect();
+    else showScreen('main-menu');
+}
+
 function enterDraftBoard() {
     _draftSessionPulls = [];
+    _draftBoardReturnScreen = 'main-menu';
     renderDraftBoard();
 }
 
@@ -183,7 +195,7 @@ function renderDraftBoard() {
                 const pulls = [..._draftSessionPulls];
                 _draftSessionPulls = [];
                 setTimeout(() => {
-                    showCardSummaryModal(pulls, 'DRAFT SUMMARY', () => showScreen('main-menu'));
+                    showCardSummaryModal(pulls, 'DRAFT SUMMARY', _goToDraftBoardReturn);
                 }, 500);
             }
         }

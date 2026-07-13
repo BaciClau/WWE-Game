@@ -127,10 +127,14 @@ function updateUI() {
         // extra screen. No pulls this session → just go back, nothing to show.
         function headerBackClicked() {
             const current = document.querySelector('.screen.active');
-            if (current && current.id === 'draft-board-screen' && _draftSessionPulls.length > 0) {
-                const pulls = [..._draftSessionPulls];
-                _draftSessionPulls = [];
-                showCardSummaryModal(pulls, 'DRAFT SUMMARY', () => showScreen('main-menu'));
+            if (current && current.id === 'draft-board-screen') {
+                if (_draftSessionPulls.length > 0) {
+                    const pulls = [..._draftSessionPulls];
+                    _draftSessionPulls = [];
+                    showCardSummaryModal(pulls, 'DRAFT SUMMARY', _goToDraftBoardReturn);
+                } else {
+                    _goToDraftBoardReturn();
+                }
                 return;
             }
             // The dedicated FORFEIT button is hidden now (see .match-forfeit-row in

@@ -139,7 +139,10 @@ function settlePccIfNeeded(onDone) {
 // ---- PCC MATCH HOOKS ----
 
 // Set while a PCC match is running; endMatch() routes its outcome here instead of the
-// Exhibition rewards path (no picks, no win/loss record, no streak — points only).
+// Exhibition rewards path (no win/loss record, no streak — event points are the real
+// prize). The original DID hand out Draft Picks per PCC match too, on top of points —
+// a win/draw pays picks here at the same size as an Exhibition win/draw, since a
+// 4-card PCC match is no faster to play than a full one.
 window._pccMatch = null;
 
 function endPccMatch(forfeit, isDraw) {
@@ -153,11 +156,13 @@ function endPccMatch(forfeit, isDraw) {
         msg = `🏳️ You forfeited — no points earned.`;
     } else if (isDraw) {
         s.points += 1;
-        msg = `🤝 A DRAW! The people award you 1 point for the war.`;
+        player.picks += 3; save();
+        msg = `🤝 A DRAW! The people award you 1 point for the war.<br>+3 Draft picks.`;
     } else if (match.pScore > match.oScore) {
         s.wins++;
         s.points += pm.points;
-        msg = `🎉 VICTORY! +${pm.points} POINT${pm.points > 1 ? 'S' : ''} (${(pm.points * PCC_VOTES_PER_POINT).toLocaleString()} votes) for ${pm.champName}!`;
+        player.picks += 2; save();
+        msg = `🎉 VICTORY! +${pm.points} POINT${pm.points > 1 ? 'S' : ''} (${(pm.points * PCC_VOTES_PER_POINT).toLocaleString()} votes) for ${pm.champName}!<br>+2 Draft picks.`;
     } else {
         s.losses++;
         msg = `💀 You lost the match... no points this time.`;
