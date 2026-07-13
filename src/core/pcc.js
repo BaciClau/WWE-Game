@@ -113,6 +113,7 @@ function settlePccIfNeeded(onDone) {
 
     const summary = `${champ.name}: ${(s.side === 'a' ? aTotal : bTotal).toLocaleString()} votes vs ${(s.side === 'a' ? bTotal : aTotal).toLocaleString()}`;
     player.pcc = { cycle: info.cycleIdx, side: null, points: 0, wins: 0, losses: 0, claimedMilestones: [] };
+    if (mySideWon) player.pccChampionWins = (player.pccChampionWins || 0) + 1;
 
     if (tierIdx >= 0) {
         // ×2 tiers pay the SAME card twice — duplicates are deliberately the prize:
@@ -125,6 +126,7 @@ function settlePccIfNeeded(onDone) {
         const headline = mySideWon
             ? `🏆 ${champ.name.toUpperCase()} IS THE PEOPLE'S CHAMPION!`
             : `😤 Your side lost the vote... but your effort still counts.`;
+        playSfx(mySideWon ? 'champion' : 'reward');
         showNotification(`${headline}<br><span style="font-size:14px;color:#bbb;">${summary}</span>`, 3200, () => {
             showCardSummaryModal(grantedIds, "PEOPLE'S CHAMPION REWARD", () => onDone(true));
         });

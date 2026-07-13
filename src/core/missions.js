@@ -114,5 +114,6 @@ function claimMissionReward(missionId) {
     save();
     updateUI();
     if (typeof updateMissionsUI === 'function') updateMissionsUI();
+    playSfx('reward');
     showNotification(`🎯 MISSION COMPLETE!<br><strong>${mission.title}</strong><br>${rewardParts.join(' + ')}`, 2500);
 }

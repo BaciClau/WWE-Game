@@ -1,5 +1,66 @@
+// Best-to-worst full ranking for one gender/slot — shared by both the "manually edited"
+// upgrade check and the full auto-build below, so the two paths can never disagree about
+// what "better" means. S ranking is multi-criteria (rarity, then Manager preference, then
+// stats) so it can't collapse to a simple stat-total number the way M/F can — callers use
+// each card's POSITION in this list as its rank instead (see _autoUpgradeIfBetter).
+function _rankedGenderList(gender) {
+    if (gender === 'S') {
+        return player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => {
+            let baseA = DB.find(x=>x.id===a.id), baseB = DB.find(x=>x.id===b.id);
+            let rankA = RARITIES.indexOf(baseA.rarity), rankB = RARITIES.indexOf(baseB.rarity);
+            if (rankB !== rankA) return rankB - rankA;
+            let mgrA = baseA.manager ? 1 : 0, mgrB = baseB.manager ? 1 : 0;
+            if (mgrB !== mgrA) return mgrB - mgrA;
+            let stA=getStats(a), stB=getStats(b);
+            return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+        });
+    }
+    return player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === gender).sort((a,b) => {
+        let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
+    });
+}
+
+// Fills empty seats and swaps out the WORST currently-equipped, UN-PINNED card whenever a
+// not-yet-equipped card outranks it (by position in `sortedFull`, best-first) — one-for-one,
+// never more swaps than there are genuine upgrades. A PINNED card (see player.deckPinned,
+// toggled via the 📌 button in the deck editor) is never evicted, no matter how it ranks —
+// that's the whole point of pinning: "this exact card stays, auto can do whatever it wants
+// with the rest." Leaves a slot alone entirely when nothing beats what's already there (or
+// everything left is pinned), so a curated deck only ever gets STRONGER on its open slots,
+// never rearranged where the player explicitly said not to.
+function _autoUpgradeIfBetter(currentUids, pinnedUids, sortedFull, limit) {
+    const rankOf = new Map(sortedFull.map((c, i) => [c.uid, i]));
+    let uids = currentUids.slice();
+    let changed = false;
+    for (const candidate of sortedFull) {
+        if (uids.includes(candidate.uid)) continue;
+        if (uids.length < limit) { uids.push(candidate.uid); changed = true; continue; }
+        let worstUid = null, worstRank = -1;
+        uids.forEach(uid => {
+            if (pinnedUids.includes(uid)) return; // pinned — never a swap-out candidate
+            const r = rankOf.has(uid) ? rankOf.get(uid) : -1;
+            if (r > worstRank) { worstRank = r; worstUid = uid; }
+        });
+        if (worstUid === null) continue; // every equipped slot here is pinned
+        const candRank = rankOf.get(candidate.uid);
+        if (candRank < worstRank) { uids = uids.map(uid => uid === worstUid ? candidate.uid : uid); changed = true; }
+    }
+    return { uids, changed };
+}
+
 function autoEquipDeck(force = false) {
-            // Dacă userul și-a editat manual deck-ul, nu îl suprascrie automat
+            let sortedM = _rankedGenderList('M');
+            let sortedF = _rankedGenderList('F');
+            let sortedS = _rankedGenderList('S');
+            if (!player.deckPinned) player.deckPinned = [];
+            // Stale pins (the card was sacrificed/deleted) can't protect anything — drop them
+            // so they don't silently linger in save data forever.
+            player.deckPinned = player.deckPinned.filter(uid => player.inventory.some(c => c.uid === uid));
+
+            // Dacă userul și-a editat manual deck-ul, nu îl suprascrie complet — dar tot
+            // trebuie să poată "auto" un card mai bun pe care l-a primit între timp, pe orice
+            // slot NEpinned, altfel "auto" pare stricat pentru totdeauna după prima editare
+            // manuală (vezi _autoUpgradeIfBetter mai sus).
             if (!force && player.deckManuallyEdited) {
                 // Verifică totuși că cărțile din deck mai există în inventar (pot fi sacrificate)
                 player.deck.M = player.deck.M.filter(uid => player.inventory.some(c => c.uid === uid));
@@ -9,30 +70,15 @@ function autoEquipDeck(force = false) {
                 if (player.deck.M.length < 4 || player.deck.F.length < 2) {
                     _fillMissingDeckSlots();
                 }
+                const upM = _autoUpgradeIfBetter(player.deck.M, player.deckPinned, sortedM, 4);
+                const upF = _autoUpgradeIfBetter(player.deck.F, player.deckPinned, sortedF, 2);
+                const upS = _autoUpgradeIfBetter(player.deck.S, player.deckPinned, sortedS, 1);
+                player.deck.M = upM.uids; player.deck.F = upF.uids; player.deck.S = upS.uids;
                 return;
             }
-            let sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M').sort((a,b) => {
-                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
-            });
-            let sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F').sort((a,b) => {
-                let stA=getStats(a), stB=getStats(b); return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
-            });
-            let sortedS = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'S').sort((a,b) => {
-                let baseA = DB.find(x=>x.id===a.id), baseB = DB.find(x=>x.id===b.id);
-                let rankA = RARITIES.indexOf(baseA.rarity), rankB = RARITIES.indexOf(baseB.rarity);
-                // A strictly higher-rank (rarer) support card always wins outright.
-                if (rankB !== rankA) return rankB - rankA;
-                // Same rank — always prefer a Manager card over a non-Manager one, regardless
-                // of raw stat total (managers give the Support Bonus a different in-match role
-                // than a plain object card, so they're worth keeping equipped when tied).
-                let mgrA = baseA.manager ? 1 : 0, mgrB = baseB.manager ? 1 : 0;
-                if (mgrB !== mgrA) return mgrB - mgrA;
-                let stA=getStats(a), stB=getStats(b);
-                return (stB.pow+stB.tgh+stB.spd+stB.cha) - (stA.pow+stA.tgh+stA.spd+stA.cha);
-            });
-            
-            while(sortedM.length < 4) { addCard(1); sortedM = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'M'); }
-            while(sortedF.length < 2) { addCard(11); sortedF = player.inventory.filter(c => DB.find(b=>b.id===c.id).gender === 'F'); }
+
+            while(sortedM.length < 4) { addCard(1); sortedM = _rankedGenderList('M'); }
+            while(sortedF.length < 2) { addCard(11); sortedF = _rankedGenderList('F'); }
 
             player.deck.M = sortedM.slice(0, 4).map(c => c.uid);
             player.deck.F = sortedF.slice(0, 2).map(c => c.uid);
@@ -63,6 +109,11 @@ function autoEquipDeck(force = false) {
         // --- EDITARE MANUALĂ DECK ---
         let deckEditMode = false;
         let deckEditDraft = { M: [], F: [], S: [] }; // draft temporar cât ești în edit
+        // Draft-ul de pin-uri (📌) — cărțile alese aici NU vor fi niciodată înlocuite automat
+        // de autoEquipDeck() (vezi _autoUpgradeIfBetter în deck.js), chiar dacă mai târziu
+        // primești ceva "mai bun" statistic. Orice slot NEpinned rămâne liber pentru auto —
+        // exact "jumi-juma" cerut: tu ții ce vrei, restul se optimizează singur.
+        let deckEditPinned = [];
 
         // Live preview: while editing, the header tier bar reflects the in-progress draft
         // (deckEditDraft) instead of the saved player.deck, so swapping cards updates the tier
@@ -80,6 +131,8 @@ function autoEquipDeck(force = false) {
             deckEditMode = true;
             // Porneste cu deck-ul curent ca baza
             deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
+            deckEditPinned = [...(player.deckPinned || [])].filter(uid =>
+                [...deckEditDraft.M, ...deckEditDraft.F, ...deckEditDraft.S].includes(uid));
             // visibility (not display) — these stay in the layout flow either way, so the
             // screen's total height doesn't change when entering/exiting edit mode, which
             // would otherwise make the auto-scale safety net visibly re-shrink everything.
@@ -105,6 +158,7 @@ function autoEquipDeck(force = false) {
         function cancelDeckEdit() {
             deckEditMode = false;
             deckEditDraft = { M: [], F: [], S: [] };
+            deckEditPinned = [];
             document.getElementById('btn-auto-deck').style.visibility = 'hidden';
             document.getElementById('btn-auto-deck').style.pointerEvents = 'none';
             document.getElementById('btn-save-deck').style.visibility = 'hidden';
@@ -131,6 +185,9 @@ function autoEquipDeck(force = false) {
             player.deck.M = [...deckEditDraft.M];
             player.deck.F = [...deckEditDraft.F];
             player.deck.S = [...deckEditDraft.S];
+            // Doar pin-urile pentru cărți încă prezente în deck-ul salvat contează.
+            const allUids = [...player.deck.M, ...player.deck.F, ...player.deck.S];
+            player.deckPinned = deckEditPinned.filter(uid => allUids.includes(uid));
             player.deckManuallyEdited = true; // Marchează că deck-ul e manual — autoEquip nu îl va suprascrie
             save();
             showNotification('✅ Deck saved!', 1200);
@@ -139,6 +196,7 @@ function autoEquipDeck(force = false) {
 
         function applyAutoDeck() {
             player.deckManuallyEdited = false; // Permite autoEquip să suprascrie
+            deckEditPinned = []; // "cel mai bun deck posibil" ignoră orice pin anterior
             autoEquipDeck(true);
             deckEditDraft = { M: [...player.deck.M], F: [...player.deck.F], S: [...player.deck.S] };
             renderDeck();
@@ -158,16 +216,34 @@ function autoEquipDeck(force = false) {
 
             if (inDeck) {
                 deckEditDraft[slot] = deckEditDraft[slot].filter(x => x !== uid);
+                deckEditPinned = deckEditPinned.filter(x => x !== uid);
             } else {
                 if (deckEditDraft[slot].length >= limit) {
                     // Înlocuiește primul din slot cu noul
-                    deckEditDraft[slot].shift();
+                    const evicted = deckEditDraft[slot].shift();
+                    deckEditPinned = deckEditPinned.filter(x => x !== evicted);
                 }
                 deckEditDraft[slot].push(uid);
+                // Orice carte adusă AICI e o alegere deliberată a jucătorului — se pinuiește
+                // automat, fără sa mai trebuiască să apese și butonul 📍 separat. "Auto" tot
+                // rămâne liber pe sloturile pe care jucătorul nu le-a atins deloc (completate
+                // de _fillMissingDeckSlots sau rămase din auto-equip-ul inițial). Butonul de
+                // pin manual e doar pentru a ELIBERA explicit un slot ales manual, dacă vrea.
+                if (!deckEditPinned.includes(uid)) deckEditPinned.push(uid);
             }
             updateDeckSlotsInfo();
             renderDeck();
             refreshLiveTierPreview();
+        }
+
+        // 📌 pin toggle — stops event bubbling so tapping the pin button never ALSO triggers
+        // the tile's own onclick (which would remove the card from the deck entirely).
+        function toggleDeckPin(uid, event) {
+            if (event) event.stopPropagation();
+            if (!deckEditMode) return;
+            const i = deckEditPinned.indexOf(uid);
+            if (i === -1) deckEditPinned.push(uid); else deckEditPinned.splice(i, 1);
+            renderDeck();
         }
 
         function updateDeckSlotsInfo() {

@@ -179,6 +179,7 @@ function renderDraftBoard() {
             addCard(pulledId); save(); renderDraftBoard();
             _draftSessionPulls.push(pulledId);
             checkTierMissions();
+            playSfx('pull');
 
             let s = getStats({uid:'preview', id: pulledId, level: 1, maxLvl: UPGRADE.BASE_MAX, xp: 0, upgradeType: null, phase: 1});
             document.getElementById('pull-card-container').innerHTML = renderHTMLCard(s);

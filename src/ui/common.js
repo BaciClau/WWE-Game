@@ -58,6 +58,8 @@ function updateUI() {
 
             if (typeof updatePccDashStatus === 'function') updatePccDashStatus();
             if (typeof updateLoginBonusDashDot === 'function') updateLoginBonusDashDot();
+            if (typeof updateSoundToggleUI === 'function') updateSoundToggleUI();
+            if (typeof updateAchievementsDashDot === 'function') updateAchievementsDashDot();
 
             if (tierInfo.name !== player.lastTierName) {
                 const tierNames = TIERS.map(t => t.name);
@@ -346,14 +348,17 @@ function updateUI() {
             const isSupport = stats.gender === 'S';
             let lvlText = '';
             if (!isSupport) {
+                // Perfect Pro shows EXACTLY the same "effective level / effective max" text as
+                // a regular Pro card — no separate ★0..5 counter. Both upgrade tiers share the
+                // same real ceiling (PRO_LEVEL_CAPS, +5 over a normal card's cap — Perfect Pro
+                // does NOT stack a second +5 on top), so a fresh ★-promote reads as e.g.
+                // "20/25" (already meaningfully progressed, matching the maxed source cards it
+                // was built from) instead of a misleading "0/5" that looked stuck at zero. The
+                // ★ glyph still marks the card — as the corner badge (see .star below) — so
+                // it's not lost, just not duplicated into the level text too.
                 let lvlLabel = stats.effectiveLvl ?? stats.lvl;
                 let maxLabel = stats.effectiveMax ?? stats.maxLvl;
                 if (stats.lvl === '?') { lvlLabel = '?'; maxLabel = '?'; }
-                // Perfect Pro runs its OWN ★0..★stretchMax scale (see getStatMultiplier in
-                // cards.js), separate from the regular level count — showing it as
-                // "★lvl/stretchMax" is one clean ratio instead of tacking the star onto the
-                // effective level/max pair, which read as three numbers stacked together.
-                else if (stats.perfect && stats.phase === 2) { lvlLabel = `★${stats.lvl}`; maxLabel = `${stats.effectiveMax - stats.maxLvl}`; }
                 lvlText = stats.lvl === '?' ? 'SCALAT' : `${lvlLabel}/${maxLabel}`;
             }
             const upgradeTag = stats.upgradeType === 'normal' ? '<div class="star star-normal">★</div>' : '';

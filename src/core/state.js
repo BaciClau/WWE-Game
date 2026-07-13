@@ -1,4 +1,4 @@
-let player = { coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null };
+let player = { coins: 0, picks: 0, winStreak: 0, highestWinStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, deckPinned: [], board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: null, discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null, soundOn: true, claimedAchievements: [], pccChampionWins: 0, tour: { stageProgress: {}, claimedChapters: [] } };
 
 // One-time data cleanup: several DB ids were exact duplicate entries (same wrestler, same
 // rarity, same stats — copy-pasted by mistake) and have been removed from src/data/cards.js.
@@ -87,7 +87,7 @@ const DUPLICATE_ID_REMAP = {
         }
 
         function freshStart(nickname) {
-            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null };
+            player = { nickname: nickname || 'Superstar', coins: 0, picks: 0, winStreak: 0, highestWinStreak: 0, wins: 0, losses: 0, inventory: [], deck: { M: [], F: [], S: [] }, deckPinned: [], board: new Array(25).fill(false), resetIdx: -1, deckManuallyEdited: false, favoriteUid: null, lastTierName: 'Rare', highestTierName: 'Rare', guaranteedPickRarity: null, guaranteedPickDelay: 0, lastFreePackClaim: null, resetCounter: 0, missionProgress: {}, completedMissions: [], lastDailyReset: Date.now(), discoveredCardIds: [], loginStreak: 0, lastLoginClaim: null, soundOn: true, claimedAchievements: [], pccChampionWins: 0, tour: { stageProgress: {}, claimedChapters: [] } };
             const starterIds = [
                 ...pickRandomStarterCards('Rare', 1),
                 ...pickRandomStarterCards('Uncommon', 2),
@@ -161,6 +161,12 @@ const DUPLICATE_ID_REMAP = {
                 if (player.lastDailyReset === undefined) player.lastDailyReset = null;
                 if (player.loginStreak === undefined) player.loginStreak = 0;
                 if (player.lastLoginClaim === undefined) player.lastLoginClaim = null;
+                if (player.soundOn === undefined) player.soundOn = true;
+                if (player.claimedAchievements === undefined) player.claimedAchievements = [];
+                if (player.highestWinStreak === undefined) player.highestWinStreak = player.winStreak || 0;
+                if (player.pccChampionWins === undefined) player.pccChampionWins = 0;
+                if (player.tour === undefined) player.tour = { stageProgress: {}, claimedChapters: [] };
+                if (player.deckPinned === undefined) player.deckPinned = [];
                 if (player.discoveredCardIds === undefined) {
                     // Backfill from current inventory so cards already owned before this
                     // feature existed don't regress to "?" in the Catalog.
@@ -183,6 +189,11 @@ const DUPLICATE_ID_REMAP = {
                         // A PCC match never touches the Exhibition record — abandoning one just
                         // costs the points it might have earned.
                         showNotification('🏳️ You left a People\'s Champion match in progress — no points earned.', 2800);
+                    } else if (inProgress === 'tour') {
+                        // Tour stages don't touch the Exhibition record either — a fixed-power
+                        // gauntlet stage, not the win/loss ladder — leaving one just means
+                        // re-fighting that stage later, no forfeit recorded.
+                        showNotification('🏳️ You left a Tour match in progress — that stage is still unbeaten.', 2800);
                     } else {
                         player.winStreak = 0;
                         player.losses = (player.losses || 0) + 1;
@@ -214,6 +225,17 @@ const DUPLICATE_ID_REMAP = {
             if (update) updateUI();
         }
         function uid() { return Math.random().toString(36).substr(2, 9); }
+
+        // ⚙️ OPTIONS — one menu for the settings that used to be scattered across the header
+        // (sound toggle) and the bottom of the main menu (Codes, Hard Reset).
+        function openOptionsModal() {
+            if (typeof updateSoundToggleUI === 'function') updateSoundToggleUI();
+            document.getElementById('options-modal').style.display = 'flex';
+        }
+        function closeOptionsModal() {
+            document.getElementById('options-modal').style.display = 'none';
+        }
+
         function openCodesModal() {
             const input = document.getElementById('codes-input');
             input.value = '';

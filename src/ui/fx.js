@@ -179,6 +179,8 @@ function animateStatBump(cardUid, statKey, delta, duration = 700) {
 function showChemistryBadge(text, color) {
     const arena = document.getElementById('arena-area');
     if (!arena) return;
+    if (color === '#2ecc71') playSfx('chemistry');
+    else if (color === '#e74c3c' || color === '#f39c12') playSfx('chemistryBad');
     const el = document.createElement('div');
     el.className = 'chemistry-badge';
     el.style.color = color;
@@ -194,6 +196,7 @@ function showCardActivationOverlay(evt, onDone) {
     const arena = document.getElementById('arena-area');
     const el = (arena && arena.querySelector('#card-' + evt.cardStats.uid)) || document.getElementById('card-' + evt.cardStats.uid);
     if (!el) { if (onDone) setTimeout(onDone, 50); return; }
+    playSfx('ability');
 
     // If the ring is scrolled out of view (small screens scroll to reach the hand), bring
     // it back first — otherwise the callout lands at off-screen coordinates and the whole

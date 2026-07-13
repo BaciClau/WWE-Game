@@ -371,6 +371,8 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             if (bonusXP > 0) msg += `<br><span style="color:#f1c40f">+${bonusXP} XP level fodder bonus</span>`;
             if (levels > 0) msg += `<br>⬆️ ${getCardBase(target).name} → LVL ${getEffectiveLevel(target)}`;
             msg += `<br>${statDeltaHTML(before, after)}`;
+            playSfx(levels > 0 ? 'levelup' : 'confirm');
+            if (levels > 0) vibrate('levelup');
             showNotification(msg, 2400);
 
             autoEquipDeck(); save();
@@ -427,6 +429,7 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             target.comboMultiplier = banked;
             incrementMission('combine_card');
             const after = getStats(target);
+            playSfx('levelup'); vibrate('levelup');
             showNotification(`⬆️ PRO!<br>${getCardBase(target).name} reset to LVL 1 (stats boosted from training) — can now reach LVL ${proMax}.<br>${statDeltaHTML(before, after)}`, 3000);
             autoEquipDeck(); save();
             focusBackToMenu();
@@ -451,13 +454,14 @@ function getSacrificeXpEnhanced(uid, targetCard) {
             const proMax = getProMaxLevel(target);
             target.upgradeType = 'perfect';
             target.phase = 2;
-            target.level = 0;
+            target.level = 1;
             target.xp = 0;
-            target.maxLvl = getBaseMaxLevel(target);
+            target.maxLvl = proMax;
             target.comboMultiplier = banked;
             incrementMission('combine_card');
             const after = getStats(target);
-            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to ★0 (stats boosted from training) — can now reach LVL ${proMax}!<br>${statDeltaHTML(before, after)}`, 3000);
+            playSfx('levelup'); vibrate('levelup');
+            showNotification(`★ PERFECT PRO!<br>${getCardBase(target).name} reset to LVL 1 (stats boosted from training) — can now reach LVL ${proMax}!<br>${statDeltaHTML(before, after)}`, 3000);
             autoEquipDeck(); save();
             focusBackToMenu();
         }

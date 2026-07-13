@@ -170,11 +170,12 @@ function showOpponentSelect() {
 
             if (tier === 'perfect') {
                 // Perfect Pro requires both source cards fully trained before combining, so a
-                // real one always banks close to MAX_STAT_RATIO — matches that baseline.
+                // real one always banks close to MAX_STAT_RATIO — matches that baseline. Same
+                // 1..proMax ladder as Pro (see getStatMultiplier in cards.js) — only the ratio
+                // differs.
                 const banked = UPGRADE.MAX_STAT_RATIO + UPGRADE.COMBINE_BASE_BONUS;
-                const stretchMax = Math.max(1, proMax - baseMax);
-                let lvl = Math.round(((avgMultiplier - banked) / (UPGRADE.PERFECT_STAT_RATIO - 1)) * stretchMax);
-                lvl = Math.max(0, Math.min(stretchMax, lvl));
+                let lvl = Math.round(1 + (avgMultiplier - banked) * (proMax - 1) / (UPGRADE.PERFECT_STAT_RATIO - 1));
+                lvl = Math.max(1, Math.min(proMax, lvl));
                 return { level: lvl, upgradeType: 'perfect', phase: 2, comboMultiplier: banked };
             }
             if (tier === 'pro') {

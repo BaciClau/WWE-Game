@@ -292,6 +292,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                         if (already) match.selected = match.selected.filter(x => x !== u);
                         else if (match.selected.length < match.rule.r) match.selected.push(u);
                         else return; // hand full — ignore the tap, same as before
+                        playSfx(already ? 'deselect' : 'select');
                         cardEl.classList.toggle('card-selected', !already);
                         document.getElementById('btn-confirm-play').style.display = (match.selected.length === match.rule.r) ? 'flex' : 'none';
                     };
@@ -430,6 +431,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
         }
 
         function resolveRound() {
+            playSfx('confirm'); vibrate('confirm');
             // A manager's buff is permanent for the rest of the match the moment a round
             // actually resolves with it active — once THAT'S happened, un-signing must no
             // longer be possible (it would retroactively cancel a buff that already decided
@@ -728,6 +730,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     if (ap) { ap.classList.remove('slide-in-left'); ap.classList.add('anim-clash-left'); }
                     if (ao) { ao.classList.remove('slide-in-right'); ao.classList.add('anim-clash-right'); }
                     arena.classList.add('impact-flash');
+                    playSfx('clash'); vibrate('tap');
                     setTimeout(() => arena.classList.remove('impact-flash'), 500);
 
                     _clashTimer2 = setTimeout(() => {
@@ -766,6 +769,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             // People's Champion Challenge matches settle through their own rewards path —
             // event points only, never picks/wins/losses/streak (see endPccMatch in pcc.js).
             if (window._pccMatch && window._pccMatch.active) return endPccMatch(forfeit, isDraw);
+            if (window._tourMatch) return endTourMatch(forfeit, isDraw);
 
             let priorStreak = player.winStreak || 0;
 
@@ -773,6 +777,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 match.oScore = 3; match.pScore = 0;
                 player.winStreak = 0; player.losses = (player.losses || 0) + 1; save();
                 incrementMission('play_exhibition');
+                playSfx('lose'); vibrate('lose');
                 let resetNote = priorStreak >= 3 ? `<br><span style="color:#e74c3c; font-size:15px;">🔥 Win streak reset (was ${priorStreak}).</span>` : '';
                 // Unlike win/loss/draw, a forfeit earns zero picks — sending the player to the
                 // draft board (nothing new to spend) was pointless. Back to Exhibition instead,
@@ -787,6 +792,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                 // outcome the player doesn't even control. Doesn't touch wins/losses/streak.
                 player.picks += 3; save();
                 incrementMission('play_exhibition');
+                playSfx('draw');
                 showNotification(`🤝 MATCH DRAW!<br>Even Overtime couldn't decide it — you received 3 Draft picks.`, 3000, () => { _draftBoardReturnScreen = 'opp-select-screen'; showScreen('draft-board-screen'); renderDraftBoard(); });
                 return;
             }
@@ -801,6 +807,7 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
             if (w) {
                 player.wins = (player.wins || 0) + 1;
                 player.winStreak = priorStreak + 1;
+                player.highestWinStreak = Math.max(player.highestWinStreak || 0, player.winStreak);
                 let streak = player.winStreak;
 
                 if (streak % STREAK_REWARDS.freePackEvery === 0) {
@@ -826,12 +833,14 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
 
             if(w) {
                 celebrateMatchWin();
+                playSfx('win'); vibrate('win');
                 showNotification(`🎉 YOU WON THE MATCH! 🎉<br>You received ${picksWon} Draft picks.${streakHtml}`, streakMsgs.length ? 4000 : 3000, () => {
                     _draftBoardReturnScreen = 'opp-select-screen';
                     showScreen('draft-board-screen'); renderDraftBoard();
                     if (freePackEarned) grantBonusPack(STREAK_REWARDS.freePackRarities);
                 });
             } else {
+                playSfx('lose'); vibrate('lose');
                 showNotification(`💀 YOU LOST THE MATCH... 💀<br>You received 1 consolation pick.${lossResetNote}`, 3000, () => { _draftBoardReturnScreen = 'opp-select-screen'; showScreen('draft-board-screen'); renderDraftBoard(); });
             }
         }

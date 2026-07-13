@@ -6,12 +6,12 @@
 // (missions + Exhibition + PCC) already earns.
 const LOGIN_BONUS_GRACE_MS = 48 * 60 * 60 * 1000; // miss more than 2 days -> streak resets
 const LOGIN_BONUS_SCHEDULE = [
-    { day: 1, coins: 50 },
-    { day: 2, coins: 75 },
+    { day: 1, coins: 5 },
+    { day: 2, coins: 8 },
     { day: 3, picks: 1 },
-    { day: 4, coins: 100 },
+    { day: 4, coins: 10 },
     { day: 5, picks: 2 },
-    { day: 6, coins: 150 },
+    { day: 6, coins: 15 },
     { day: 7, picks: 3, pack: ['Rare', 'SuperRare'] },
 ];
 

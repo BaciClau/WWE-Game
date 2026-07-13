@@ -106,7 +106,11 @@ function renderDeck() {
                     let wrapper = document.createElement('div');
                     wrapper.className = 'deck-slot deck-slot-filled';
                     if (deckEditMode) {
-                        wrapper.innerHTML = renderHTMLCard(s, false, '', 'deck-edit-in') + `<div class="card-slot-label">IN DECK (${def.type})</div>`;
+                        const isPinned = deckEditPinned.includes(card.uid);
+                        wrapper.innerHTML = renderHTMLCard(s, false, '', 'deck-edit-in') +
+                            `<div class="card-slot-label">IN DECK (${def.type})
+                                <button class="deck-pin-btn ${isPinned ? 'pinned' : ''}" onclick="toggleDeckPin('${card.uid}', event)" title="${isPinned ? 'Pinned — Auto will never replace this card. Tap to unpin.' : 'Tap to PIN — keep this exact card, Auto will never replace it.'}">${isPinned ? '📌' : '📍'}</button>
+                            </div>`;
                         wrapper.onclick = () => toggleDeckCard(card.uid);
                         wrapper.style.cursor = 'pointer';
                     } else {

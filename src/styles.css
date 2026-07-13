@@ -81,6 +81,7 @@
             box-shadow: 0 3px 0 #000, 0 5px 10px rgba(0,0,0,0.7); transition: transform 0.15s;
         }
         .header-icon-btn:hover { transform: translateY(-2px) scale(1.05); border-color: #fff; }
+        #options-sound-btn.sound-off { opacity: 0.6; }
 
         /* EXHIBITION / OPPONENT SELECT — dramatic dark-red backdrop, current-deck strip,
            and edit-deck / ladder-rewards row above the opponent list. */
@@ -313,13 +314,6 @@
         .dash-btn.half { width: auto; flex: 1; font-size: 15px; padding: 0 40px; }
         .dash-btn.half .dash-btn-icon { font-size: 28px; left: 12px; }
         .dash-btn.half.dash-btn-reverse .dash-btn-icon { left: auto; right: 12px; }
-
-        .hub-reset-btn {
-            align-self: center; margin-top: 4px; background: transparent; color: var(--wwe-red-bright);
-            border: 2px solid var(--wwe-red-bright); border-radius: 8px; padding: 10px 24px; font-family: inherit;
-            font-weight: bold; font-size: 15px; letter-spacing: 1px; cursor: pointer;
-        }
-        .hub-reset-btn:hover { background: rgba(231,76,60,0.15); }
 
         .menu-btn {
             background: linear-gradient(135deg, var(--wwe-red-dark), var(--wwe-black)); color: white;
@@ -890,9 +884,18 @@
         .card-slot-label {
             position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.85); color: #f1c40f; font-size: 10px;
-            padding: 1px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;
+            padding: 1px 4px 1px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;
             font-family: Arial; font-weight: bold; letter-spacing: 1px;
+            display: inline-flex; align-items: center; gap: 4px;
         }
+        /* 📌 pin toggle, inline with the "IN DECK" chip — pinned cards are exempt from
+           autoEquipDeck()'s auto-upgrade pass (see _autoUpgradeIfBetter in deck.js). */
+        .deck-pin-btn {
+            background: none; border: none; padding: 0 1px; font-size: 12px; cursor: pointer;
+            opacity: 0.5; filter: grayscale(100%); line-height: 1;
+        }
+        .deck-pin-btn.pinned { opacity: 1; filter: none; }
+        .deck-pin-btn:hover { opacity: 1; transform: scale(1.15); }
 
         /* ACTIVE DECK — sloturi fixe (4 Superstar, 1 Diva, 1 Support) cu contur premium */
         .deck-slot { position: relative; }
@@ -1148,6 +1151,20 @@
         .mission-claim-btn.ready { color: #fff; border-color: #2ecc71; cursor: pointer; box-shadow: 0 0 10px rgba(46,204,113,0.3); animation: missionClaimPulse 1.6s ease-in-out infinite; }
         .mission-claim-btn.ready:hover { background: rgba(46,204,113,0.15); }
         .mission-claim-btn.done { color: #2ecc71; border-color: #2ecc71; cursor: default; animation: none; }
+
+        /* ============ ACHIEVEMENTS / TROPHY ROOM ============ */
+        .achievements-summary {
+            text-align: center; font-size: 14px; font-weight: 900; color: #f1c40f;
+            font-family: Arial; letter-spacing: 0.5px; margin-bottom: 16px;
+        }
+        .ach-pips { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
+        .ach-pip {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 900;
+            font-family: Arial; border: 1px solid #555; color: #777; background: #111;
+        }
+        .ach-pip-ready { border-color: #f1c40f; color: #f1c40f; box-shadow: 0 0 6px rgba(241,196,15,0.6); }
+        .ach-pip-claimed { border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.15); }
         @keyframes missionClaimPulse {
             0%, 100% { box-shadow: 0 0 8px rgba(46,204,113,0.25); }
             50% { box-shadow: 0 0 16px rgba(46,204,113,0.55); }
@@ -1505,6 +1522,28 @@
             .pcc-dash-btn .dash-exhibition-title { font-size: 20px; }
             /* 2x2 grid of reward cards on phones: 0.44 zoom ≈ 76px each, two per row. */
             .pcc-reward-card-scale { zoom: 0.44; }
+        }
+
+        /* ============ TOUR MODE ============ */
+        /* Same banner footprint as Exhibition/PCC but in a blue/gold "story" palette, so all
+           three big modes read as distinct at a glance on the main menu. */
+        .tour-dash-btn {
+            height: 84px; margin-top: 12px;
+            background:
+                linear-gradient(0deg, rgba(0,10,26,0.92), rgba(6,32,72,0.55) 55%, rgba(0,10,26,0.7)),
+                radial-gradient(ellipse at center, #163a7a 0%, #050f22 80%);
+            border: 3px solid #2980b9;
+        }
+        .tour-dash-btn .dash-exhibition-title { font-size: 24px; color: #f1c40f; text-shadow: 2px 2px 0 #000, 0 0 18px rgba(41,128,185,0.9); }
+        .tour-dash-btn .dash-exhibition-record { color: #a9d1f0; }
+
+        .tour-chapter-locked { opacity: 0.55; }
+        .tour-stage-beaten { border-color: #2ecc71 !important; opacity: 0.75; cursor: default !important; }
+        .tour-stage-beaten .opponent-fight-btn { display: none; }
+        .tour-stage-locked { opacity: 0.4; cursor: default !important; pointer-events: none; }
+        .tour-chapter-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; gap: 10px; flex-wrap: wrap;
         }
 
         /* ============ LIFE LAYER — ambient & feedback animations ============ */

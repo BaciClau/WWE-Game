@@ -26,6 +26,7 @@
                 <div class="header-tier-numbers" id="tier-numbers-display">0 / 0</div>
             </div>
         </div>
+        <button id="options-btn" class="header-icon-btn" onclick="openOptionsModal()" title="Options">⚙️</button>
     </header>
 
     <div id="app-viewport">
@@ -60,6 +61,11 @@
                 <div class="dash-exhibition-record" id="pcc-dash-status"></div>
             </button>
 
+            <button class="dash-exhibition tour-dash-btn" onclick="showScreen('tour-screen'); enterTourScreen();">
+                <div class="dash-exhibition-title">🗺️ TOUR MODE</div>
+                <div class="dash-exhibition-record" id="tour-dash-status"></div>
+            </button>
+
             <button class="dash-btn" onclick="showScreen('card-list-screen'); renderCardList()">
                 <span class="dash-btn-icon">🃏</span><span>MY CARDS</span>
             </button>
@@ -72,9 +78,15 @@
             <button class="dash-btn dash-btn-reverse" onclick="showNotification('🚧 Coming soon!', 1500)">
                 <span class="dash-btn-icon">👥</span><span>FRIENDS</span>
             </button>
-            <button class="dash-btn" onclick="showScreen('missions-screen'); enterMissionsScreen();">
-                <span class="dash-btn-icon">🎯</span><span>MISSIONS</span>
-            </button>
+            <div class="dash-btn-row">
+                <button class="dash-btn half" onclick="showScreen('missions-screen'); enterMissionsScreen();">
+                    <span class="dash-btn-icon">🎯</span><span>MISSIONS</span>
+                </button>
+                <button class="dash-btn dash-btn-reverse half" onclick="showScreen('achievements-screen'); enterAchievementsScreen();">
+                    <span class="dash-btn-icon">🏅</span><span>TROPHIES</span>
+                    <span id="achievements-dash-dot" class="dash-btn-dot" style="display:none;"></span>
+                </button>
+            </div>
             <div class="dash-btn-row">
                 <button class="dash-btn half" onclick="openLoginBonusModal()">
                     <span class="dash-btn-icon">📅</span><span>LOGIN BONUS</span>
@@ -85,8 +97,6 @@
                 </button>
             </div>
 
-            <button class="hub-reset-btn" onclick="resetGamePrompt()">HARD RESET</button>
-            <button class="hub-reset-btn" onclick="openCodesModal()">CODES</button>
         </div>
     </div>
 
@@ -172,6 +182,17 @@
         <div id="pcc-content"></div>
     </div>
 
+    <div id="tour-screen" class="screen">
+        <h2 class="section-title">🗺️ TOUR MODE</h2>
+        <div id="tour-content"></div>
+    </div>
+
+    <div id="achievements-screen" class="screen">
+        <h2 class="missions-title">🏅 TROPHY ROOM</h2>
+        <div class="achievements-summary" id="achievements-summary"></div>
+        <div class="missions-list" id="achievements-list"></div>
+    </div>
+
     <div id="match-screen" class="screen">
         <div class="match-forfeit-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <button class="menu-btn btn-danger" style="flex-direction:row;" onclick="endMatch(true)">🏳️ FORFEIT</button>
@@ -249,6 +270,16 @@
         </div>
     </div>
 
+    <div id="options-modal" class="pull-modal-overlay" onclick="if(event.target===this) closeOptionsModal()">
+        <div class="pull-modal-box">
+            <h2 class="pull-title">⚙️ OPTIONS</h2>
+            <button id="options-sound-btn" class="menu-btn pull-continue-btn" onclick="toggleGameSound()">🔊 SOUND: ON</button>
+            <button class="menu-btn pull-continue-btn" onclick="closeOptionsModal(); openCodesModal();">🎫 CODES</button>
+            <button class="menu-btn btn-danger pull-continue-btn" onclick="closeOptionsModal(); resetGamePrompt();">💥 HARD RESET</button>
+            <button class="menu-btn pull-continue-btn" onclick="closeOptionsModal()">✖ CLOSE</button>
+        </div>
+    </div>
+
     <div id="nickname-modal" class="pull-modal-overlay">
         <div class="pull-modal-box">
             <h2 class="pull-title">CHOOSE YOUR SUPERSTAR NAME</h2>
@@ -321,13 +352,17 @@
     <script src="src/data/pcc.js"></script>
     <script src="src/data/abilities.js"></script>
     <script src="src/data/missions.js"></script>
+    <script src="src/data/achievements.js"></script>
+    <script src="src/data/tour.js"></script>
     <script src="src/core/display-version.js"></script>
     <script src="src/core/config.js"></script>
     <script src="src/core/state.js"></script>
+    <script src="src/core/sound.js"></script>
     <script src="src/core/cards.js"></script>
     <script src="src/core/training.js"></script>
     <script src="src/core/deck.js"></script>
     <script src="src/core/missions.js"></script>
+    <script src="src/core/achievements.js"></script>
     <script src="src/core/login-bonus.js"></script>
     <script src="src/ui/common.js"></script>
     <script src="src/ui/autoscale.js"></script>
@@ -337,11 +372,14 @@
     <script src="src/core/ai.js"></script>
     <script src="src/core/match.js"></script>
     <script src="src/core/pcc.js"></script>
+    <script src="src/core/tour.js"></script>
     <script src="src/ui/draft-shop.js"></script>
     <script src="src/ui/store-screen.js"></script>
     <script src="src/ui/catalog-screen.js"></script>
     <script src="src/ui/missions-screen.js"></script>
+    <script src="src/ui/achievements-screen.js"></script>
     <script src="src/ui/pcc-screen.js"></script>
+    <script src="src/ui/tour-screen.js"></script>
     <script src="src/main.js"></script>
 </body>
 </html>

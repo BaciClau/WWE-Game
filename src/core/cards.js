@@ -71,12 +71,17 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
 
         function getMaxLevel(card) {
             if (card.upgradeType === 'normal') return getProMaxLevel(card);
-            if (card.upgradeType === 'perfect') return getBaseMaxLevel(card);
+            if (card.upgradeType === 'perfect') return getProMaxLevel(card);
             return getBaseMaxLevel(card);
         }
 
+        // Perfect Pro is now structurally identical to Pro for level-counting purposes: both
+        // reset to LEVEL 1 on promotion and climb the same real 1..proMax ladder (no separate
+        // ★0..5 offset scale) — the level shown on the card (e.g. "1/15" fresh, growing to
+        // "15/15" maxed) means exactly the same thing for both upgrade tiers. Only the stat
+        // MULTIPLIER curve (getStatMultiplier below) still tells them apart, via a steeper
+        // ratio for Perfect Pro.
         function getEffectiveLevel(card) {
-            if (card.upgradeType === 'perfect' && card.phase === 2) return getBaseMaxLevel(card) + card.level;
             return card.level;
         }
 
@@ -103,25 +108,22 @@ function getCardBase(card) { return DB.find(c => c.id === card.id); }
             const proMax = getProMaxLevel(card);
             const banked = card.comboMultiplier || 1;
             if (card.upgradeType === 'perfect' && card.phase === 2) {
-                // Perfect Pro's post-combine climb is its own short stretch (card.level runs
-                // 0..stretchMax, shown as the ★ rating). ★0 — right away — already carries the
-                // banked pre-combine multiplier (typically ~MAX_STAT_RATIO, since Perfect Pro
-                // requires both source cards fully trained), climbing further to banked +
-                // (PERFECT_STAT_RATIO - 1) at the top of the stretch. Deliberately NOT using
-                // getEffectiveLevel()'s baseMax offset here.
-                const stretchMax = proMax - baseMax;
-                return banked + (UPGRADE.PERFECT_STAT_RATIO - 1) * (card.level / stretchMax);
+                // Perfect Pro climbs the EXACT same 1..proMax ladder as Pro (see
+                // getEffectiveLevel above) — only the ratio differs (PERFECT_STAT_RATIO >
+                // MAX_STAT_RATIO), so a maxed Perfect Pro still ends up stronger than a maxed
+                // Pro with the same banked combine bonus, but the level COUNTER on the card
+                // reads identically either way ("1/15" fresh, "15/15" maxed — never a separate
+                // ★0..5 scale).
+                return banked + (UPGRADE.PERFECT_STAT_RATIO - 1) * ((card.level - 1) / (proMax - 1));
             }
             if (card.upgradeType === 'normal') {
-                // Pro also resets to level 1 and climbs its OWN stretched range (1..proMax,
-                // wider than a normal card's 1..baseMax — see LEVEL_CAPS vs PRO_LEVEL_CAPS).
-                // This MUST be normalized against that same wider range, not baseMax: dividing
-                // by (baseMax - 1) while card.level legally climbs past baseMax up to proMax
-                // let the growth term blow straight through the intended +80% and out the
-                // other side (a Rare Pro at its own max level came out stronger than a
-                // Perfect Pro at ITS max — the whole point of Perfect Pro being the rarer,
-                // better upgrade). Same "climb from 1, reach exactly +80% at your own real
-                // max" shape a normal card gets, just stretched to the longer Pro ladder.
+                // Pro resets to level 1 and climbs its OWN stretched range (1..proMax, wider
+                // than a normal card's 1..baseMax — see LEVEL_CAPS vs PRO_LEVEL_CAPS). This
+                // MUST be normalized against that same wider range, not baseMax: dividing by
+                // (baseMax - 1) while card.level legally climbs past baseMax up to proMax let
+                // the growth term blow straight through the intended +80% and out the other
+                // side. Same "climb from 1, reach exactly +80% at your own real max" shape a
+                // normal card gets, just stretched to the longer Pro ladder.
                 return banked + (UPGRADE.MAX_STAT_RATIO - 1) * ((card.level - 1) / (proMax - 1));
             }
             const lvl = getEffectiveLevel(card);

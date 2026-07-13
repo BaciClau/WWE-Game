@@ -258,6 +258,7 @@ function showCardSummaryModal(cardIds, title, onCollect) {
     const counter = document.getElementById('pack-reveal-counter');
     const titleEl = modal.querySelector('.pull-title');
     if (!modal || !container || !collectBtn) return;
+    playSfx('pull');
 
     if (titleEl) titleEl.innerText = title;
     if (counter) counter.innerText = `${cardIds.length} CARD${cardIds.length === 1 ? '' : 'S'} RECEIVED`;

@@ -82,13 +82,13 @@ const PCC_LOSER_CONSOLATION_PICKS = 3;
 // that still can't compete with the champion card it's pacing you toward.
 const PCC_MILESTONES = [
     { points: 5,    label: '3 Draft Picks',           picks: 3 },
-    { points: 15,   label: '300 Coins',               coins: 300 },
+    { points: 15,   label: '30 Coins',                coins: 30 },
     { points: 40,   label: 'Free Pack (Rare/SR)',     pack: ['Rare', 'SuperRare'] },
     { points: 90,   label: '5 Draft Picks',           picks: 5 },
-    { points: 160,  label: '600 Coins + 2 Picks',     coins: 600, picks: 2 },
+    { points: 160,  label: '60 Coins + 2 Picks',      coins: 60, picks: 2 },
     { points: 300,  label: 'Random EPIC Superstar',   randomCard: 'Epic' },
     { points: 700,  label: 'Random LEGENDARY Superstar', randomCard: 'Legendary' },
-    { points: 1600, label: '1,500 Coins + 5 Picks',   coins: 1500, picks: 5 },
+    { points: 1600, label: '150 Coins + 5 Picks',     coins: 150, picks: 5 },
 ];
 
 // The three standing opponents: points paid on a WIN, power relative to the player's
