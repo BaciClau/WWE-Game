@@ -289,11 +289,27 @@ let match = { round: 1, pScore: 0, oScore: 0, fallResults: [], hand: [], oppHand
                     // class (animated by .card's transition) is all that's needed.
                     div.onclick = () => {
                         const already = match.selected.includes(u);
-                        if (already) match.selected = match.selected.filter(x => x !== u);
-                        else if (match.selected.length < match.rule.r) match.selected.push(u);
-                        else return; // hand full — ignore the tap, same as before
-                        playSfx(already ? 'deselect' : 'select');
-                        cardEl.classList.toggle('card-selected', !already);
+                        if (already) {
+                            match.selected = match.selected.filter(x => x !== u);
+                            playSfx('deselect');
+                            cardEl.classList.remove('card-selected');
+                        } else if (match.selected.length < match.rule.r) {
+                            match.selected.push(u);
+                            playSfx('select');
+                            cardEl.classList.add('card-selected');
+                        } else {
+                            // Hand already full — SWAP instead of ignoring the tap: changing
+                            // your mind about a pick shouldn't require deselecting first. The
+                            // OLDEST pick (first one chosen) gives up its spot to this one —
+                            // its own card element needs the class removed directly since it's
+                            // a different DOM node than the one just clicked.
+                            const evictedUid = match.selected.shift();
+                            match.selected.push(u);
+                            const evictedEl = document.getElementById('card-' + evictedUid);
+                            if (evictedEl) evictedEl.classList.remove('card-selected');
+                            cardEl.classList.add('card-selected');
+                            playSfx('select');
+                        }
                         document.getElementById('btn-confirm-play').style.display = (match.selected.length === match.rule.r) ? 'flex' : 'none';
                     };
                 }
